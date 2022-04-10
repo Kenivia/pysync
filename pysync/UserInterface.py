@@ -108,7 +108,6 @@ def user_push_pull(push_keys, pull_keys, diff_infos):
         print("\tUse `push <change_type> or pull <change_type> to modify actions")
         print("\tUnderscores are not necessary, e.g local_new = local new")
         print("\tPress Enter or use `apply` to apply the above changes.")
-        print("")
 
         pushing_str = ", ".join(
             [i+"("+str(len(diff_infos[i]))+")" for i in push_keys])
@@ -126,9 +125,9 @@ def user_push_pull(push_keys, pull_keys, diff_infos):
             types_alias[i] = [i, i.replace("_", " ")]
         for i in pull_keys:
             types_alias[i] = [i, i.replace("_", " ")]
-        command_alias["apply"] = ["apply", "",]
-        command_alias["push"] = ["push", ]
-        command_alias["pull"] = ["pull",]
+        command_alias["apply"] = ["apply", "", "a"]
+        command_alias["push"] = ["push", "s"]
+        command_alias["pull"] = ["pull", "l"]
 
         print(ask_str)
         inp = input(">>> ").lower()

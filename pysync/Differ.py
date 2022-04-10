@@ -1,4 +1,3 @@
-from operator import truediv
 import random
 import concurrent.futures as cf
 import copy
@@ -17,55 +16,51 @@ def one_diff(args):
 
     in_local = path in local_dict
     in_remote = path in remote_dict
-    diff_type = False
+    change_type = False
     if in_remote and in_local:
         obj = local_dict[path]
         obj.partner = remote_dict[path]
-        diff_type = obj.compare_info()
+        change_type = obj.compare_info()
 
     elif in_local:
         obj = local_dict[path]
-        obj.diff_type = diff_type = "local_new"
+        obj.change_type = change_type = "local_new"
 
     elif in_remote:
 
         obj = remote_dict[path]
-        # if not obj.isremotegdoc: # * this line will ignore google docs
-        obj.diff_type = diff_type = "remote_new"
+        obj.change_type = change_type = "remote_new"
     else:
         raise ValueError
 
-    return diff_type, obj
+    return change_type, obj
 
 
 @logtime
 def get_diff(local_dict, remote_dict):
     """Finds which change type a file should have and sort them into dictionaries
 
-    assigns the change type to .diff_type of the FileInfo object
+    assigns the change type to .change_type of the FileInfo object
     returns a dictionary with 4 keys, corresponding to the type of modification detected
     """
 
-    diff_dict = copy.deepcopy(EMPTY_OUTPUT)
+    # diff_dict = copy.deepcopy(EMPTY_OUTPUT)
+    diff_infos = []
     all_keys = set(local_dict).union(set(remote_dict))
     _map = [(path, local_dict, remote_dict)
             for path in all_keys]
     random.shuffle(_map)
-    all_infos = {}
+    all_path_dict = {}
     with cf.ProcessPoolExecutor(max_workers=MAX_COMPUTE_THREADS) as executor:
         chunksize = int(len(all_keys)/MAX_COMPUTE_THREADS)
-        for diff_type, obj in executor.map(one_diff, _map, chunksize=chunksize):
+        for change_type, obj in executor.map(one_diff, _map, chunksize=chunksize):
             # for i in all_res:
             if isinstance(obj, dict):
-                all_infos[PATH] = obj
+                all_path_dict[PATH] = obj
             else:
-                all_infos[obj.path] = obj
-            if diff_type:
-                diff_dict[diff_type].append(obj)
+                all_path_dict[obj.path] = obj
+            if change_type:
+                diff_infos.append(obj)
 
-    isempty = True
-    for i in diff_dict:
-        if len(diff_dict[i]) > 0:
-            isempty = False
-            break
-    return diff_dict, all_infos, isempty
+    
+    return diff_infos, all_path_dict

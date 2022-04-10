@@ -10,13 +10,14 @@ Necessary checks and transformations are performed to the variables
 # * path to the local copy of the gdrive
 PATH = "~/gdrive"
 
+ASK_BEFORE_EXIT = True
 
 # * paths to always push
 ALWAYS_PUSH = []
 # * paths to always pull
 ALWAYS_PULL = ["~/gdrive/Saved", "~/gdrive/Colab Notebooks"]
 # * paths to ignore, applies to both pushing and pulling
-IGNORE = ["~/gdrive/.gd"]# should probably include saved_creds.json by default, but expired tokens will just reprompt so it's not really necessary
+ALWAYS_IGNORE = ["~/gdrive/.gd"]# should probably include saved_creds.json by default, but expired tokens will just reprompt so it's not really necessary
 
 
 # * whether or not to print whenever a thread is started
@@ -34,12 +35,13 @@ MAX_PUSH_THREADS = 50
 # * a value of 0 or less will default to the number of cpu cores available
 MAX_COMPUTE_THREADS = 0
 
-# * the default categories to push or pull
+# * the categories to push, pull or ignore at first
+# * this is just what category pysync displays before asking you
 # * must include all of the following once:
 # * "local_new", "content_change", "mtime_change", "remote_new"
 DEFAULT_PUSH = ["local_new", "content_change", "mtime_change", ]
 DEFAULT_PULL = ["remote_new"]
-
+DEFAULT_IGNORE = []
 
 # todo take care of cases where the signature is changed
 # todo maybe run a function to change it?

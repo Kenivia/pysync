@@ -4,5 +4,5 @@ data/saved_creds.json
 .vscode/*
 junkyard.py
 example file output
-# test/*
+pysync/*test*
 data/client_secrets.json

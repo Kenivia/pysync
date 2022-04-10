@@ -1,6 +1,8 @@
 from pysync.Timer import TimeLogger
-from pysync.UserInterface import (
-    print_diff_types,
+from pysync.UserPushPull import (
+    print_change_types,
+    apply_forced_and_default,
+    decide_push_pull,
     user_push_pull,
 )
 from pysync.Differ import get_diff
@@ -11,7 +13,7 @@ from pysync.RemoteFiles import (
     process_remote
 )
 from pysync.ApplyOperation import (
-    decide_push_pull,
+
     run_drive_ops,
 )
 from pysync.ProcessedOptions import (
@@ -59,29 +61,27 @@ def event_flow(path):
     try:
         remote_path_dict = process_remote(remote_list,
                                           timer=timer.comp("Processing remote files"))
-        diff_dict, all_path_dict, no_change = get_diff(local_path_dict, remote_path_dict,
-                                            timer=timer.comp("Comparing local and remote files"))
+        diff_infos, all_path_dict = get_diff(local_path_dict, remote_path_dict,
+                                                       timer=timer.comp("Comparing local and remote files"))
     except Exception as e:
         error_report(e, "while processing files:")
 
-    if no_change:
+    if not diff_infos:
         print("Everthing is up to date")
         return timer
 
     try:
-        push, pull = user_push_pull(DEFAULT_PUSH.copy(), DEFAULT_PULL.copy(), diff_dict,
-                                    timer=timer.user("Choosing which types to push & pull"))
+        apply_forced_and_default(diff_infos)
+        user_push_pull(diff_infos,
+                       timer=timer.user("Choosing which types to push & pull"))
     except KeyboardInterrupt:
         cancel_report()
     except Exception as e:
         error_report(e, "while inputting action")
 
     try:
-        pushpull_list = decide_push_pull(diff_dict, push, pull, 
-                                         timer=timer.comp())
-        # confirm("Total of "+str(len(info_list)) +" changes.\n"
-        #         "Apply these changes?", timer)
-        run_drive_ops(pushpull_list, all_path_dict, drive,
+        
+        run_drive_ops(diff_infos, all_path_dict, drive,
                       timer=timer.load("Applying changes"))
     except Exception as e:
         error_report(

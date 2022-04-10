@@ -16,6 +16,21 @@ This file defines miscellaneous functions that:
     
 """
 
+def to_ing(inp):
+    return inp[0:-1]+ "ING"  if inp.upper() == "IGNORE" else inp.upper() + "ING" 
+
+def match_attr(infos,**kwargs):
+    out = []
+    for i in infos:
+        matched = True
+        for key in kwargs:
+            if getattr(i, key) != kwargs[key]:
+                matched = False
+                break
+        if matched:
+            out.append(i)
+    return out
+
 
 def raise_this_error(error):
     # * for use as the target for Thread
@@ -75,7 +90,8 @@ class HandledpysyncException(Exception):
 
 
 def contains_parent(parents_list, inp):
-    """Returns True if parents_list contain(or equal to) a parent of inp"""
+    """Returns True if parents_list contain(or equal to) a parent of inp
+    designed for use with ALWAYS_PULL etc"""
     for i in parents_list:
         if pathlib.Path(i) in pathlib.Path(inp).parents or inp == i:
             return True

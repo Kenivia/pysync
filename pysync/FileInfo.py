@@ -15,7 +15,7 @@ from pysync.Functions import (
 from pysync.ProcessedOptions import (
     CHECK_MD5,
     EXE_SIGNATURE,
-    IGNORE,
+    ALWAYS_IGNORE,
     PATH,
 )
 
@@ -32,13 +32,15 @@ class FileInfo():
         self.parent = None  # * checked by isorphan
         self.action = None  # * checked  by check_possible
         self.partner = None  # * checked by id and parent_id
-        self.diff_type = None  # * checked by check_possible
+        self.change_type = None  # * checked by check_possible
         self._md5sum = None  # * checked by md5sum
         self._id = None  # * checked by id
         self.link = None  # * checked by check_possible
         self.isremotegdoc = False  # * checked by check_possible
         self.path = None  # * checked by remote_path
-
+        self.forced = False 
+        self.index = None
+        
         self.location = location # * whether local or remote
         self.operation_done = False  # * set by drive_op, checked by check_possible
         self.checked_good = False # * set by check_possible, checked by drive_op
@@ -89,12 +91,12 @@ class FileInfo():
             # assert self.md5sum is not None and self.partner.md5sum is not None
             content_diff = self.md5sum != self.partner.md5sum
             if content_diff:
-                self.diff_type = "content_change"
-                return self.diff_type
+                self.change_type = "content_change"
+                return self.change_type
 
         if (self.mtime - self.partner.mtime) >= 3:
-            self.diff_type = "mtime_change"
-            return self.diff_type
+            self.change_type = "mtime_change"
+            return self.change_type
 
         return False
 
@@ -108,7 +110,7 @@ class FileInfo():
         if self.isremotegdoc:
             assert self.link is not None
 
-        if self.diff_type == "local_new":
+        if self.change_type == "local_new":
             # print(self.path)
             assert os.path.exists(self.path)
             if self.action == "push":
@@ -126,7 +128,7 @@ class FileInfo():
             elif self.action == "pull":
                 pass
 
-        elif self.diff_type == "remote_new":
+        elif self.change_type == "remote_new":
             assert self.id is not None
             assert not os.path.exists(self.path)
             if self.action == "push":
@@ -136,7 +138,7 @@ class FileInfo():
                     raise OperationNotReadyError(
                         "local parent folder "+self.parent_path+" doesn't exist yet")
 
-        elif self.diff_type == "content_change" or self.diff_type == "mtime_change":
+        elif self.change_type == "content_change" or self.change_type == "mtime_change":
             assert os.path.exists(self.path)
             assert self.id is not None
         else:
@@ -145,14 +147,14 @@ class FileInfo():
         self.checked_good = True
 
     def drive_op(self, path_dict, drive):
-        """Applies the  operation specified by self.diff_type and self.action
+        """Applies the  operation specified by self.change_type and self.action
 
         self.checked_possible must be run before this to ensure a proper operation
 
         path_dict - a dictionary containing all the FileInfo, probably returned by combine_dict
 
         There are several scenarios:
-        diff_type       action      outcome
+        change_type       action      outcome
 
         local_new       push        file uploaded to gdrive
         local_new       pull        local file deleted
@@ -180,7 +182,7 @@ class FileInfo():
             raise RuntimeError("already done", self.path)
 
         deletion = False
-        if self.diff_type == "local_new":
+        if self.change_type == "local_new":
             if self.action == "push":
                 if isinstance(path_dict[self.parent_path], dict):
                     parent_id = path_dict[self.parent_path]["id"]
@@ -224,7 +226,7 @@ class FileInfo():
                 send2trash(self.path)
                 deletion = True
 
-        elif self.diff_type == "remote_new":
+        elif self.change_type == "remote_new":
 
             if self.action == "push":
                 # * doesn't matter if its folder or file
@@ -247,7 +249,7 @@ class FileInfo():
                     mtime = int(dup.parse(_file["modifiedDate"]).timestamp())
                     os.utime(self.path, (mtime, mtime))
 
-        elif self.diff_type == "content_change" or self.diff_type == "mtime_change":
+        elif self.change_type == "content_change" or self.change_type == "mtime_change":
             # * can't be folder
             _file = drive.CreateFile({"id": self.id, })
 
@@ -332,7 +334,7 @@ class FileInfo():
     def ignore_me(self):
         # if self.islocal and is_desktop(self.path):
         #     return True
-        return contains_parent(IGNORE, self.path)
+        return contains_parent(ALWAYS_IGNORE, self.path)
 
     def get_path(self, path):
         assert self.location == "remote"
@@ -348,3 +350,5 @@ class FileInfo():
         assert self.path is not None
         assert self.path.startswith(PATH)
         return self.path[len(PATH):]
+
+
