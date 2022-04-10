@@ -1,0 +1,8 @@
+**/__pycache__
+data/token.json
+data/saved_creds.json
+.vscode/*
+junkyard.py
+example file output
+# test/*
+data/client_secrets.json

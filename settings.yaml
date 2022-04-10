@@ -1,0 +1,7 @@
+client_config_backend: file
+client_config_file: /home/kenivia/gdrive/Python/Projects/pysync/data/client_secrets.json
+
+
+save_credentials: True
+save_credentials_backend: file
+save_credentials_file: /home/kenivia/gdrive/Python/Projects/pysync/data/saved_creds.json

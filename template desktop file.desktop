@@ -1,0 +1,12 @@
+[Desktop Entry]
+#make this file executable and change the paths to point to wherever you put the pysync folder, then you can put this on your desktop or wherever
+Icon=itmages-upload
+Terminal=true
+Type=Application
+Comment=Google drive syncing tool
+
+Exec=python3 /home/foo/bar/pysync/pysync
+Path=/home/foo/bar/pysync/pysync
+Name=template desktop file
+
+Name[en_NZ]=template desktop file
