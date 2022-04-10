@@ -20,6 +20,7 @@ Other files should import from this file
 """
 
 
+
 assert isinstance(CHECK_MD5, bool)
 assert isinstance(MAX_COMPUTE_THREADS, int)
 assert isinstance(MAX_PUSH_THREADS, int)
@@ -31,7 +32,6 @@ assert EXE_SIGNATURE.startswith("#")
 
 
 ROOTPATH = PurePath(__file__).parent.parent # * root as in the directory containing pysync, not the actual root
-
 
 if MAX_PUSH_THREADS > 50:
     print("Warning! MAX_PUSH_THREADS was set to a value higher than 50. This may cause upload to fail")
@@ -70,6 +70,7 @@ RECHECK_INTERVAL = 0.01
 
 class HandledpysyncException(Exception):
     pass
+
 
 
 # raise AssertionError

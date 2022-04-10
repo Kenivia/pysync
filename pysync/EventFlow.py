@@ -1,4 +1,3 @@
-import os
 import subprocess as sp
 from threading import Thread
 from pysync.UserInterface import (
@@ -25,24 +24,25 @@ from pysync.ProcessedOptions import (
 )
 from pysync.Functions import HandledpysyncException
 
-
+        
 def raise_this_error(error):
     raise error
 
 
-def error_report(exception_object, text, full_text=False):
+def error_report(exception_object, text, full_text=False, raise_exception=True):
     try:
         if full_text:
             print(text)
         else:
             print("The following error occured " + text)
-            t = Thread(target=raise_this_error, args=(exception_object,))
-            t.start()
+        t = Thread(target=raise_this_error, args=(exception_object,))
+        t.start()
 
     # print(repr(exception_object))
     finally:
         t.join()
-        raise HandledpysyncException()
+        if raise_exception:
+            raise HandledpysyncException()
 
 
 def cancel_report():
@@ -57,7 +57,6 @@ def event_flow(path):
     prompts the user to modify which keys to push and pull
     outputs the computation time(excludes time waiting for user input)
     """
-    
 
     timer = TimeLogger(2)
     print_start()
@@ -82,7 +81,7 @@ def event_flow(path):
                                           timer=timer.comp("Processing local files"))
     except Exception as e:
         error_report(e, "while reading local files:")
-
+    
     try:
         remote_path_dict = process_remote(remote_list,
                                           timer=timer.comp("Processing remote files"))
@@ -121,34 +120,35 @@ def event_flow(path):
 
 def post_sync_options(timer=None, failure=False):
 
+    line_input = "\n\n>>> "
+    line_exit = "\nPress enter to exit"
+    line_restart = "\nType \"restart\" to sync again"
+    line_time = "\nType \"time\" to see how long each stage took"
+
+    cancel_text = "The syncing process was canceled by user" + \
+        line_exit + line_restart + line_input
+
+    complete_text = "The syncing process has completed successfully" + \
+        line_exit + line_time + line_restart + line_input
+
+    handled_error_text = "The error above has occurred " + \
+        line_exit + line_restart + line_input
+
+    
     while True:
-        cancel_text = """The syncing process was canceled by user
-Press enter to exit
-Type \"restart\" to sync again
 
->>> """
-
-        complete_text = """The syncing process has completed successfully
-Press enter to exit
-Type \"time\" to see how long each stage took
-Type \"restart\" to sync again
-
->>> """
-
-        failure_text = """The syncing process has failed, the error has been printed above
-Press enter to exit
-Type \"restart\" to sync again
-
->>> """
-
-        user_inp = input(failure_text) if failure else (
-            input(cancel_text) if timer is None else input(complete_text))
-        cancel_text
+        text = handled_error_text if failure else (
+            cancel_text if timer is None else complete_text)
+        user_inp = input(text)
         user_inp = user_inp.lower().strip()
         if user_inp == "":
             return
         elif user_inp == "time":
             timer.print_times()
+            text = """Press enter to exit
+Type \"restart\" to try again
+
+>> > """
         elif user_inp == "restart":
             restart()
             return
@@ -156,17 +156,19 @@ Type \"restart\" to sync again
             return
 
 
-
 def restart():
-    retval = sp.run(["dpkg", "-s", "gnome-terminal"], stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+    retval = sp.run(["dpkg", "-s", "gnome-terminal"],
+                    stdout=sp.DEVNULL, stderr=sp.DEVNULL)
     if retval.returncode == 0:
         sp.call(["gnome-terminal", "--", "python3",  str(ROOTPATH)+"/pysync"])
-    else: 
-        retval = sp.run(["dpkg", "-s", "xfce4-terminal"], stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+    else:
+        retval = sp.run(["dpkg", "-s", "xfce4-terminal"],
+                        stdout=sp.DEVNULL, stderr=sp.DEVNULL)
         if retval.returncode == 0:
             sp.call(["xfce4-terminal", "-x", "python3",  str(ROOTPATH)+"/pysync"])
         else:
-            print("Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
+            print(
+                "Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
             input("Press enter to exit")
             return
     print("A new instance of pysync has been started, this window should close immediately")

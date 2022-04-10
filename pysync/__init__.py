@@ -1,6 +1,6 @@
 
 try:
-    from pysync.EventFlow import event_flow, post_sync_options
+    from pysync.EventFlow import event_flow, post_sync_options, error_report
     from pysync.ProcessedOptions import PATH
     from pysync.Functions import HandledpysyncException
     
@@ -14,12 +14,12 @@ def main():
         timer = event_flow(PATH)
         
     except KeyboardInterrupt:
-        post_sync_options(timer,False)    
+        post_sync_options(timer, False)    
     except HandledpysyncException:
-        post_sync_options(timer,True)
+        post_sync_options(timer, True)
     except Exception as e:
-        print("An unknown error has occured and it wasn't handled:")
-        raise e
+        error_report(e, "The following error occured unexpectedly:", full_text=True, raise_exception=False)
+        post_sync_options(timer, True)
 
         
         
