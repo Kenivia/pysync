@@ -12,14 +12,20 @@ def main():
         import pysync.ProcessedOptions
     except Exception as e:
         from pysync.Functions import error_report
-        from pysync.UserPushPull import pre_exit_options
+        from pysync.Exit import on_exit
         error_report(e, "while parsing Options.py:", raise_exception=False)
         on_exit(failure=True)
         return
 
-    from pysync.EventFlow import event_flow, error_report
+    from pysync.EventFlow import (
+        event_flow,
+        error_report,
+    )
     from pysync.ProcessedOptions import PATH
-    from pysync.Functions import HandledpysyncException
+    from pysync.Functions import (
+        HandledpysyncException,
+        pysyncSilentExit,
+    )
     from pysync.Exit import on_exit
 
     timer = None
@@ -28,6 +34,8 @@ def main():
         timer = event_flow(PATH)
         on_exit(timer=timer, failure=False)
 
+    except pysyncSilentExit:
+        pass
     except KeyboardInterrupt:
         on_exit(failure=False)
 

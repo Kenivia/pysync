@@ -16,10 +16,16 @@ This file defines miscellaneous functions that:
     
 """
 
-def to_ing(inp):
-    return inp[0:-1]+ "ING"  if inp.upper() == "IGNORE" else inp.upper() + "ING" 
 
-def match_attr(infos,**kwargs):
+class pysyncSilentExit(Exception):
+    pass
+
+
+def to_ing(inp):
+    return inp[0:-1].upper() + "ING" if inp.upper() == "IGNORE" else inp.upper() + "ING"
+
+
+def match_attr(infos, **kwargs):
     out = []
     for i in infos:
         matched = True
@@ -52,8 +58,8 @@ def error_report(exception_object, text, full_text=False, raise_exception=True):
             raise HandledpysyncException()
 
 
-def cancel_report():
-    raise KeyboardInterrupt
+# def cancel_report():
+#     raise KeyboardInterrupt
 
 
 def init_libraries():

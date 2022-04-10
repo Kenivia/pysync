@@ -1,8 +1,6 @@
 from pysync.Timer import TimeLogger
 from pysync.UserPushPull import (
-    print_change_types,
     apply_forced_and_default,
-    decide_push_pull,
     user_push_pull,
 )
 from pysync.Differ import get_diff
@@ -16,14 +14,10 @@ from pysync.ApplyOperation import (
 
     run_drive_ops,
 )
-from pysync.ProcessedOptions import (
-    DEFAULT_PULL,
-    DEFAULT_PUSH,
 
-)
 from pysync.Functions import (
-    cancel_report,
-    error_report
+    error_report,
+    pysyncSilentExit
 )
 
 
@@ -39,16 +33,14 @@ def event_flow(path):
     timer = TimeLogger(2)
     try:
         drive = init_drive(timer=timer.user("Initializing drive"))
-    except KeyboardInterrupt:
-        cancel_report()
+    
     except Exception as e:
         error_report(e, "during drive initialization:")
 
     try:
         remote_list = list_remote(drive,
                                   timer=timer.load("Listing remote files"))
-    except KeyboardInterrupt:
-        cancel_report()
+    
     except Exception as e:
         error_report(e, "while downloading remote files:")
 
@@ -74,8 +66,8 @@ def event_flow(path):
         apply_forced_and_default(diff_infos)
         user_push_pull(diff_infos,
                        timer=timer.user("Choosing which types to push & pull"))
-    except KeyboardInterrupt:
-        cancel_report()
+    except pysyncSilentExit:
+        raise pysyncSilentExit
     except Exception as e:
         error_report(e, "while inputting action")
 

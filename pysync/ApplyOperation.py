@@ -6,16 +6,10 @@ from threading import (
 from pysync.Timer import logtime
 from pysync.ProcessedOptions import (
     MAX_PUSH_THREADS,
-    ALWAYS_IGNORE,
-    ALWAYS_PULL,
-    ALWAYS_PUSH,
     RECHECK_INTERVAL,
     PRINT_PROGRESS,
 )
-from pysync.Functions import (
-    contains_parent,
-    flatten_dict
-)
+
 from pysync.FileInfo import OperationNotReadyError
 
 

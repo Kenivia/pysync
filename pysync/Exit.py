@@ -1,6 +1,10 @@
 import sys
 import subprocess as sp
-from pysync.ProcessedOptions import ROOTPATH,ASK_BEFORE_EXIT
+
+from pysync.ProcessedOptions import (
+    ROOTPATH,
+    ASK_BEFORE_EXIT,
+)
 
 
 def on_exit(timer=None, failure=False):

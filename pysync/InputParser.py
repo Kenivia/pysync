@@ -1,5 +1,3 @@
-
-
 from pysync.ProcessedOptions import (
     DEFAULT_IGNORE,
     DEFAULT_PULL,
@@ -18,14 +16,13 @@ def replace_type_alias(inp):
     for index, item in enumerate(inp):
         if item.isnumeric():
             out.append(item)
-        if item in DEFAULT_PUSH + DEFAULT_PULL + DEFAULT_IGNORE:
+        if item in DEFAULT_PUSH + DEFAULT_PULL + DEFAULT_IGNORE or item == "all":
             out.append(item)
         else:
             if index + 1 == len(inp):
                 break
             if item + " " + inp[index+1] in types_alias:
                 out.append(item + "_" + inp[index+1])
-            # del inp[index+1], inp[index]  # * must be in this order
 
     return out
 
@@ -35,10 +32,10 @@ def change_type_to_action(diff_dict, action_dict, change_type, action):
     action_dict[action].extend(diff_dict[change_type])
     for i in diff_dict[change_type]:
         i.action = action
-    
 
 
 def replace_numbers(inp, upperbound):
+    message = ""
     out = []
     for item in inp:
         if item.isnumeric():
@@ -46,8 +43,7 @@ def replace_numbers(inp, upperbound):
                 if str(item) not in out:
                     out.append(str(item))
             else:
-                print(
-                    item, "is out of range, ignored. It must be between 1 and "+str(upperbound))
+                message += item + " is out of range, ignored. It must be between 1 and " + str(upperbound) + "\n"
 
         elif "-" in item and item.split("-")[0].isnumeric() and item.split("-")[0].isnumeric():
             lower = int(item.split("-")[0])
@@ -59,13 +55,9 @@ def replace_numbers(inp, upperbound):
                         out.append(str(i))
                     temp += 1
             else:
-                print(
-                    item, "is out of range, ignored. It must be between 1 and "+str(upperbound))
+                message += item + " is out of range, ignored. It must be between 1 and " + str(upperbound) + "\n"
         else:
             out.append(item)
             # * doesn't touch non-numerical things
 
-    return out
-
-
-# print(replace_type_alias(["push", "content", "change"]))
+    return out, message

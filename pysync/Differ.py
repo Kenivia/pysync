@@ -1,9 +1,7 @@
 import random
 import concurrent.futures as cf
-import copy
 
 from pysync.ProcessedOptions import (
-    EMPTY_OUTPUT,
     MAX_COMPUTE_THREADS,
     PATH,
 )

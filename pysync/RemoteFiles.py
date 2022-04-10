@@ -1,7 +1,6 @@
 import os
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
-from pathlib import PurePath
 from send2trash import send2trash
 
 from pysync.Timer import logtime
@@ -26,7 +25,7 @@ save_credentials_file: {0}/data/saved_creds.json""".format(ROOTPATH)
     
     with open(yamlpath,"w") as f:
         f.write(content)
-    # * All this isn't necessary   
+
 @logtime
 def init_drive():
     """Initializes the google drive and returns an UNPICKLABLE object"""
