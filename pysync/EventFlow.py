@@ -1,9 +1,6 @@
-import subprocess as sp
-from threading import Thread
+from pysync.Timer import TimeLogger
 from pysync.UserInterface import (
-    TimeLogger,
     print_diff_types,
-    print_start,
     user_push_pull,
 )
 from pysync.Differ import get_diff
@@ -20,33 +17,12 @@ from pysync.ApplyOperation import (
 from pysync.ProcessedOptions import (
     DEFAULT_PULL,
     DEFAULT_PUSH,
-    ROOTPATH,
+
 )
-from pysync.Functions import HandledpysyncException
-
-        
-def raise_this_error(error):
-    raise error
-
-
-def error_report(exception_object, text, full_text=False, raise_exception=True):
-    try:
-        if full_text:
-            print(text)
-        else:
-            print("The following error occured " + text)
-        t = Thread(target=raise_this_error, args=(exception_object,))
-        t.start()
-
-    # print(repr(exception_object))
-    finally:
-        t.join()
-        if raise_exception:
-            raise HandledpysyncException()
-
-
-def cancel_report():
-    raise KeyboardInterrupt
+from pysync.Functions import (
+    cancel_report,
+    error_report
+)
 
 
 def event_flow(path):
@@ -59,8 +35,6 @@ def event_flow(path):
     """
 
     timer = TimeLogger(2)
-    print_start()
-
     try:
         drive = init_drive(timer=timer.user("Initializing drive"))
     except KeyboardInterrupt:
@@ -81,18 +55,16 @@ def event_flow(path):
                                           timer=timer.comp("Processing local files"))
     except Exception as e:
         error_report(e, "while reading local files:")
-    
+
     try:
         remote_path_dict = process_remote(remote_list,
                                           timer=timer.comp("Processing remote files"))
-        diff_dict, all_path_dict = get_diff(local_path_dict, remote_path_dict,
+        diff_dict, all_path_dict, no_change = get_diff(local_path_dict, remote_path_dict,
                                             timer=timer.comp("Comparing local and remote files"))
     except Exception as e:
         error_report(e, "while processing files:")
 
-    printed = print_diff_types(diff_dict, False,
-                               timer=timer.comp())
-    if not printed:
+    if no_change:
         print("Everthing is up to date")
         return timer
 
@@ -105,7 +77,7 @@ def event_flow(path):
         error_report(e, "while inputting action")
 
     try:
-        pushpull_list = decide_push_pull(diff_dict, push, pull, False,
+        pushpull_list = decide_push_pull(diff_dict, push, pull, 
                                          timer=timer.comp())
         # confirm("Total of "+str(len(info_list)) +" changes.\n"
         #         "Apply these changes?", timer)
@@ -116,59 +88,3 @@ def event_flow(path):
             e, "The following error occured, in the main thread, while applying the sync:", True)
 
     return timer
-
-
-def post_sync_options(timer=None, failure=False):
-
-    line_input = "\n\n>>> "
-    line_exit = "\nPress enter to exit"
-    line_restart = "\nType \"restart\" to sync again"
-    line_time = "\nType \"time\" to see how long each stage took"
-
-    cancel_text = "The syncing process was canceled by user" + \
-        line_exit + line_restart + line_input
-
-    complete_text = "The syncing process has completed successfully" + \
-        line_exit + line_time + line_restart + line_input
-
-    handled_error_text = "The error above has occurred " + \
-        line_exit + line_restart + line_input
-
-    
-    while True:
-
-        text = handled_error_text if failure else (
-            cancel_text if timer is None else complete_text)
-        user_inp = input(text)
-        user_inp = user_inp.lower().strip()
-        if user_inp == "":
-            return
-        elif user_inp == "time":
-            timer.print_times()
-            text = """Press enter to exit
-Type \"restart\" to try again
-
->> > """
-        elif user_inp == "restart":
-            restart()
-            return
-        else:
-            return
-
-
-def restart():
-    retval = sp.run(["dpkg", "-s", "gnome-terminal"],
-                    stdout=sp.DEVNULL, stderr=sp.DEVNULL)
-    if retval.returncode == 0:
-        sp.call(["gnome-terminal", "--", "python3",  str(ROOTPATH)+"/pysync"])
-    else:
-        retval = sp.run(["dpkg", "-s", "xfce4-terminal"],
-                        stdout=sp.DEVNULL, stderr=sp.DEVNULL)
-        if retval.returncode == 0:
-            sp.call(["xfce4-terminal", "-x", "python3",  str(ROOTPATH)+"/pysync"])
-        else:
-            print(
-                "Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
-            input("Press enter to exit")
-            return
-    print("A new instance of pysync has been started, this window should close immediately")

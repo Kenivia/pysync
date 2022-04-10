@@ -20,7 +20,6 @@ Other files should import from this file
 """
 
 
-
 assert isinstance(CHECK_MD5, bool)
 assert isinstance(MAX_COMPUTE_THREADS, int)
 assert isinstance(MAX_PUSH_THREADS, int)
@@ -30,8 +29,8 @@ assert isinstance(IGNORE, list)
 assert isinstance(PRINT_PROGRESS, bool)
 assert EXE_SIGNATURE.startswith("#")
 
-
-ROOTPATH = PurePath(__file__).parent.parent # * root as in the directory containing pysync, not the actual root
+# * root as in the directory containing pysync, not the actual root
+ROOTPATH = PurePath(__file__).parent.parent
 
 if MAX_PUSH_THREADS > 50:
     print("Warning! MAX_PUSH_THREADS was set to a value higher than 50. This may cause upload to fail")
@@ -39,8 +38,8 @@ if MAX_PUSH_THREADS > 50:
 MAX_COMPUTE_THREADS = psutil.cpu_count(
 ) if MAX_COMPUTE_THREADS <= 0 else MAX_COMPUTE_THREADS
 
-
-PATH = remove_slash(abs_path(PATH)) # * slash removal is vital for a lot of the program
+# * slash removal is vital for a lot of the program
+PATH = remove_slash(abs_path(PATH))
 ALWAYS_PUSH = [remove_slash(abs_path(i)) for i in ALWAYS_PUSH]
 ALWAYS_PULL = [remove_slash(abs_path(i)) for i in ALWAYS_PULL]
 IGNORE = [remove_slash(abs_path(i)) for i in IGNORE]
@@ -53,7 +52,8 @@ temp = copy.deepcopy(DEFAULT_PULL)
 temp.extend(DEFAULT_PUSH)
 assert len(temp) == 4
 if len(DEFAULT_PUSH) + len(DEFAULT_PULL) != 4:
-    raise AssertionError("Options DEFAULT_PUSH and DEFAULT_PULL must contain exactly 4 items between them")
+    raise AssertionError(
+        "Options DEFAULT_PUSH and DEFAULT_PULL must contain exactly 4 items between them")
 
 needed = ["local_new", "content_change", "mtime_change", "remote_new"]
 for i in needed:
@@ -62,18 +62,10 @@ for i in needed:
 Each of the following must be included exactly once:
 \t\"local_new\", \"content_change\", \"mtime_change\", \"remote_new\"""")
 
-
 EMPTY_OUTPUT = {
     "local_new": [], "remote_new": [],  # ! names kinda confusing
     "content_change": [], "mtime_change": [], }
 RECHECK_INTERVAL = 0.01
-
-class HandledpysyncException(Exception):
-    pass
-
-
-
-# raise AssertionError
 
 # PRIO_LOCAL_PUSH = ["local_del", "local_new", "both_new",
 #                    "local_change", "remote_change", "mtime_change", "remote_del"]

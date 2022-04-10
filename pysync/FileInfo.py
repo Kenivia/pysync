@@ -170,9 +170,6 @@ class FileInfo():
 
         if a new remote file is a google application e.g. google sheets, google docs
             then an executable text file will be created in the local copy that opens the document in a browser
-            this executable file does not undergo any coentent/mtime checks,
-            nor will deleting it locally affect the remote file in any way.
-
 
         after the operation finishes, it will set self.operation_done to True
             - future calls of drive_op will raise RuntimeError

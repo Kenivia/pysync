@@ -2,14 +2,72 @@ import os
 import pathlib
 import datetime as dt
 import hashlib as hl
+import subprocess as sp
+import sys
+import pkg_resources
+from threading import Thread
 
 
 """
 This file defines miscellaneous functions that:
-    - completes a simple, standalone task that don't depend on any other files in pysync
+    - don't depend on any other files in pysync
+    - complete a standalone task            
     - are flexible for use in a variety of situations
     
 """
+
+
+def raise_this_error(error):
+    # * for use as the target for Thread
+    raise error
+
+
+def error_report(exception_object, text, full_text=False, raise_exception=True):
+    try:
+        if full_text:
+            print(text)
+        else:
+            print("The following error occured " + text)
+        t = Thread(target=raise_this_error, args=(exception_object,))
+        t.start()
+
+    finally:
+        t.join()
+        if raise_exception:
+            raise HandledpysyncException()
+
+
+def cancel_report():
+    raise KeyboardInterrupt
+
+
+def init_libraries():
+
+    required = {'pydrive2', 'send2trash', }
+    installed = {pkg.key for pkg in pkg_resources.working_set}
+    missing = list(required - installed)
+
+    if missing:
+        missingtext = ", ".join(missing)
+        command_list = [sys.executable, '-m', 'pip', 'install', *missing]
+        print("The following packages are required by pysync:")
+        print("\t" + missingtext)
+        print("The following command will be ran:")
+        print("\t" + " ".join(command_list))
+        inp = input("Proceed (y/N)? ")
+        if inp.lower() == "y":
+            print("")
+            completed = sp.run(command_list)
+            if completed.returncode != 0:
+                print("An error occured while running the command above")
+                return False
+            print("")  # * looks better
+            return True
+        else:
+            print("Installation was cancelled by the user")
+            return False
+    else:
+        return True
 
 
 class HandledpysyncException(Exception):
@@ -109,17 +167,20 @@ def gen_exe(url, signatures):
 {signatures}"""
     return text
 
+
 class FileIDNotFoundError(Exception):
     pass
+
 
 def get_id_exe(text):
     for line in text.split("\n"):
         if line.startswith("xdg-open https://docs.google.com/"):
             split = text.split("/")
             for index, item in enumerate(split):
-                if item == "d": # * the id is after a /d/ sequence
+                if item == "d":  # * the id is after a /d/ sequence
                     return split[index+1]
     raise FileIDNotFoundError()
+
 
 def assert_start(start, inp_list):
     for i in inp_list:

@@ -3,10 +3,9 @@ from threading import (
     Thread,
     active_count,
 )
-
+from pysync.Timer import logtime
 from pysync.UserInterface import (
     assign_action,
-    logtime,
 )
 from pysync.ProcessedOptions import (
     MAX_PUSH_THREADS,
@@ -36,7 +35,7 @@ def check_override(override_lists, push_pulls, change_type, diff_infos, info):
 
 
 @logtime
-def decide_push_pull(diff_dict, push_keys, pull_keys, clear_screen=False):
+def decide_push_pull(diff_dict, push_keys, pull_keys):
     """Determines whether a FileInfo object should be pushed or pulled
 
     Prompts the user using user_push_pull
@@ -59,7 +58,7 @@ def decide_push_pull(diff_dict, push_keys, pull_keys, clear_screen=False):
         elif change_type in pull_keys:
             pulling[change_type] = diff_dict[change_type]
 
-    assign_action(pushing, pulling, clear_screen)
+    assign_action(pushing, pulling)
     out = flatten_dict(pushing)
     out.extend(flatten_dict(pulling))
     return out

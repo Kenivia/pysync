@@ -1,3 +1,4 @@
+from operator import truediv
 import random
 import concurrent.futures as cf
 import copy
@@ -7,8 +8,7 @@ from pysync.ProcessedOptions import (
     MAX_COMPUTE_THREADS,
     PATH,
 )
-from pysync.UserInterface import logtime
-
+from pysync.Timer import logtime
 
 def one_diff(args):
     path, local_dict, remote_dict = args[0], args[1], args[2]
@@ -46,7 +46,7 @@ def get_diff(local_dict, remote_dict):
     returns a dictionary with 4 keys, corresponding to the type of modification detected
     """
 
-    out = copy.deepcopy(EMPTY_OUTPUT)
+    diff_dict = copy.deepcopy(EMPTY_OUTPUT)
     all_keys = set(local_dict).union(set(remote_dict))
     _map = [(path, local_dict, remote_dict)
             for path in all_keys]
@@ -61,6 +61,11 @@ def get_diff(local_dict, remote_dict):
             else:
                 all_infos[obj.path] = obj
             if diff_type:
-                out[diff_type].append(obj)
+                diff_dict[diff_type].append(obj)
 
-    return out, all_infos
+    isempty = True
+    for i in diff_dict:
+        if len(diff_dict[i]) > 0:
+            isempty = False
+            break
+    return diff_dict, all_infos, isempty

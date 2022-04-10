@@ -1,7 +1,7 @@
 import os
 
 from pysync.FileInfo import FileInfo
-from pysync.UserInterface import logtime
+from pysync.Timer import logtime
 
 
 @logtime

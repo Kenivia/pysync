@@ -4,7 +4,7 @@ from pydrive2.drive import GoogleDrive
 from pathlib import PurePath
 from send2trash import send2trash
 
-from pysync.UserInterface import logtime
+from pysync.Timer import logtime
 from pysync.ProcessedOptions import PATH, ROOTPATH
 from pysync.FileInfo import FileInfo
 
@@ -45,7 +45,7 @@ def list_remote(drive):
     """Lists remote files that are not in trash"""
     print("Listing remote files, this should take around 30 seconds")
     file_list = drive.ListFile({"q": "trashed=false"}).GetList()
-    print(len(file_list), "files listed, processing")
+    print(len(file_list), "files listed, processing..")
     out = []
 
     for i in file_list:
