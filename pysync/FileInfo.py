@@ -6,9 +6,6 @@ import subprocess as sp
 
 
 from pysync.Functions import (
-    gen_exe,
-    get_id_exe,
-    FileIDNotFoundError,
     hex_md5_file,
     contains_parent,
 )

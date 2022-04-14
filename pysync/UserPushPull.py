@@ -6,7 +6,6 @@ from pysync.Functions import (
     contains_parent,
     match_attr,
     pysyncSilentExit,
-    num_shorten,
 )
 from pysync.ProcessedOptions import (
     ALWAYS_PULL,
