@@ -82,12 +82,14 @@ class TimeLogger():
 def logtime(func):
     @wraps(func)
     def wrap(*args, **kwargs):
-        assert "timer" in kwargs
-        timer = kwargs["timer"]
-        del kwargs["timer"]
-        timer.times[-1].start()
+        if "timer" in kwargs:
+            timer = kwargs["timer"]
+            del kwargs["timer"]
+            timer.times[-1].start()
 
-        result = func(*args, **kwargs)
-        timer.times[-1].stop()
+            result = func(*args, **kwargs)
+            timer.times[-1].stop()
+        else:
+            result = func(*args, **kwargs)
         return result
     return wrap

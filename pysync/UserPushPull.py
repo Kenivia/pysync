@@ -1,5 +1,4 @@
 from pysync.InputParser import (
-    replace_type_alias,
     replace_numbers
 )
 from pysync.Timer import logtime
@@ -8,6 +7,7 @@ from pysync.Functions import (
     match_attr,
     pysyncSilentExit,
     to_ing,
+    num_shorten,
 )
 from pysync.ProcessedOptions import (
     ALWAYS_PULL,
@@ -19,46 +19,6 @@ from pysync.ProcessedOptions import (
 
 )
 from pysync.Exit import restart
-
-
-
-def print_half(infos, initing, forced, index):
-
-    actions = ["pull", "push", "ignore"]
-    for action in actions:
-        this = match_attr(infos, action=action)
-        if this:
-            if forced:
-                print("\n" + "FORCED " + to_ing(action))
-            else:
-                print("\n" + to_ing(action))
-        if initing:
-            this.sort(key=lambda x: x.change_type)
-        else:
-            this.sort(key=lambda x: (x.change_type, x.index))
-
-        for i in this:
-            if forced:
-                print(i.change_type, i.path)
-            else:
-                if initing:
-                    i.index = index
-                    print(index, i.change_type, i.path)
-                else:
-                    print(i.index, i.change_type, i.path)
-                index += 1
-    return index
-
-
-def print_change_types(infos, initing=False):
-    """Prints the paths in diff_paths, sorted based on the type of their modificaiton
-
-    """
-    normal = match_attr(infos, forced=False, )
-    index = print_half(normal, initing, False, 1)
-
-    forced = match_attr(infos, forced=True)
-    print_half(forced, initing, True, None)
 
 
 def in_override(info):
@@ -94,66 +54,124 @@ def apply_forced_and_default(diff_infos):
     return diff_infos
 
 
+def print_half(infos, initing, forced, index):
+
+    actions = ["pull", "push", "ignore"]
+    for action in actions:
+        this = match_attr(infos, action=action)
+        if initing:
+            this.sort(key=lambda x: x.change_type)
+        else:
+            this.sort(key=lambda x: (x.index))
+
+        for i in this:
+            if forced:
+                print(i.change_type, i.path)
+            else:
+                if initing:
+                    i.index = index
+                    print(index, i.action_human, i.path)
+                else:
+                    print(i.index, i.action_human,  i.path)
+                index += 1
+
+
+def print_change_types(infos, initing=False):
+    """Prints the paths in diff_paths, sorted based on the type of their modificaiton
+
+    """
+    #todo abbreviate folders where all content are new/deleted
+    normal = match_attr(infos, forced=False,)
+    print_half(normal, initing, False, 1)
+
+    forced = match_attr(infos, forced=True)
+    print_half(forced, initing, True, None)
+
+
+def print_status(infos):
+    cur_actions = {}
+    for i in infos:
+        if i.action_human not in cur_actions:
+            cur_actions[i.action_human] = [i]
+        else:
+            cur_actions[i.action_human].append(i)
+
+    for key in cur_actions:
+        short = num_shorten([i.index for i in cur_actions[key]])
+        print(key + "("+str(len(cur_actions[key])) + "):", " ".join(short))
+
+
 @logtime
 def user_push_pull(diff_infos):
     """Prompts the user to change which change types to push/pull
 
     """
     initing = True
-    text = """Use `push <change type> or pull <change type> to modify actions(Underscores are not necessary)
-Use `push <number>` to change the action of a single file
-Press Enter or use `apply` to apply the above changes."""
+    text = """Use `push a` or `pull a-b` to change the action of files, e.g push 1-5
+Press Enter or use `apply` to apply the changes."""
     while True:
         print_change_types(diff_infos, initing)
         initing = False
 
         print("\n" + text)
+        print_status(diff_infos)
 
         inp = input("\n>>> ").lower()
+        inp = inp.strip()
         if inp == "":
+            print("Applying changes")
             return
+
         inp = inp.replace(",", " ")
         inp = inp.split(" ")
+        inp = [i for i in inp if i]  # * remove blanks
 
         command = inp[0]
         arguments = inp[1:]
         if command == "apply":
             if len(arguments) > 0:
-                text = " Apply doesn't take more arguments, ignored"
+                print("apply doesn't take arguments, ignored")
+            print("Applying changes")
             return
 
-        valid_actions = ["push", "pull", "ignore", "restart"]
+        valid_actions = ["push", "pull", "ignore", "restart", "exit"]
         if not command in valid_actions:
             text = "Unrecognized action, valid actions are: " + \
                 ", ".join(valid_actions)
             continue
+
+        if command == "exit":
+            print("restart doesn't take arguments, ignored")
+            raise pysyncSilentExit
+
         if command == "restart":
             restart()
+            print("restart doesn't take arguments, ignored")
             raise pysyncSilentExit
-        arguments, message = replace_numbers(arguments, len(diff_infos))
-        arguments = replace_type_alias(arguments)
-        
 
+        arguments, message = replace_numbers(arguments, len(diff_infos))
+        print(arguments)
         changed = []
         for item in arguments:
-            if item in DEFAULT_PUSH + DEFAULT_PULL + DEFAULT_IGNORE:
-                for i in match_attr(diff_infos, change_type=item, forced=False):
-                    i.action = command
-                    changed.append(str(i.index))
-                
-            elif item == "all":
+            if item == "all":
                 for i in match_attr(diff_infos, forced=False):
                     i.action = command
                     changed.append(str(i.index))
-                    
+
             elif item.isnumeric():
-                for i in match_attr(diff_infos, index=int(item)): # * shouldn't need to check for forced here
-                    assert not i.forced
-                    i.action = command
-                    changed.append(str(i.index))
-                    
+                # * shouldn't need to check for forced here since forced don't get an index
+                infos = match_attr(diff_infos, index=int(item))
+                assert len(infos) == 1
+                info = infos[0]
+                info.action = command
+                changed.append(str(info.index))
+            else:
+                print(item, "is invalid, ignored")
+
+        changed = num_shorten(changed)
         text = message
         if changed:
-            text += "Command interpreted as: " + command + " " + " ".join(changed)
+            text += "Command interpreted as: " + \
+                command + " " + " ".join(changed)
         else:
             text += "Command was not valid, nothing has been changed"

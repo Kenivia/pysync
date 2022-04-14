@@ -7,6 +7,7 @@ from pysync.ProcessedOptions import (
 )
 from pysync.Timer import logtime
 
+
 def one_diff(args):
     path, local_dict, remote_dict = args[0], args[1], args[2]
     if path == PATH:
@@ -42,7 +43,6 @@ def get_diff(local_dict, remote_dict):
     returns a dictionary with 4 keys, corresponding to the type of modification detected
     """
 
-    # diff_dict = copy.deepcopy(EMPTY_OUTPUT)
     diff_infos = []
     all_keys = set(local_dict).union(set(remote_dict))
     _map = [(path, local_dict, remote_dict)
@@ -52,7 +52,6 @@ def get_diff(local_dict, remote_dict):
     with cf.ProcessPoolExecutor(max_workers=MAX_COMPUTE_THREADS) as executor:
         chunksize = int(len(all_keys)/MAX_COMPUTE_THREADS)
         for change_type, obj in executor.map(one_diff, _map, chunksize=chunksize):
-            # for i in all_res:
             if isinstance(obj, dict):
                 all_path_dict[PATH] = obj
             else:
@@ -60,5 +59,4 @@ def get_diff(local_dict, remote_dict):
             if change_type:
                 diff_infos.append(obj)
 
-    
     return diff_infos, all_path_dict

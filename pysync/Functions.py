@@ -17,6 +17,28 @@ This file defines miscellaneous functions that:
 """
 
 
+def num_shorten(num_list):
+    num_list = sorted([int(i) for i in num_list])
+    #* doesn't have to take in string, can take int too
+    all_segments = []
+    cur_segment = []
+    for i in num_list:
+        if not cur_segment or cur_segment[-1] + 1 == i:
+            cur_segment.append(i)
+        else:
+            all_segments.append(cur_segment)
+            cur_segment = [i]
+    all_segments.append(cur_segment)
+    
+    out = []
+    for i in all_segments:
+        if len(i) >= 3:
+            out.append(str(i[0]) + "-" + str(i[-1]))
+        else:
+            out.extend([str(i) for i in i])
+    return out
+
+
 class pysyncSilentExit(Exception):
     pass
 
@@ -158,8 +180,6 @@ def union_dicts(dict1, dict2):
     return all_dict
 
 
-# def get_pkl(path):
-#     return pkl.load(open(path, "rb"))
 
 
 def abs_path(inp):

@@ -38,12 +38,12 @@ class FileInfo():
         self.link = None  # * checked by check_possible
         self.isremotegdoc = False  # * checked by check_possible
         self.path = None  # * checked by remote_path
-        self.forced = False 
-        self.index = None
-        
-        self.location = location # * whether local or remote
+        self.forced = False # * used in UserPushPull
+        self.index = None # * used in UserPushPull
+
+        self.location = location  # * whether local or remote
         self.operation_done = False  # * set by drive_op, checked by check_possible
-        self.checked_good = False # * set by check_possible, checked by drive_op
+        self.checked_good = False  # * set by check_possible, checked by drive_op
 
         if self.islocal:
             self.path = kwargs["path"]
@@ -111,7 +111,6 @@ class FileInfo():
             assert self.link is not None
 
         if self.change_type == "local_new":
-            # print(self.path)
             assert os.path.exists(self.path)
             if self.action == "push":
                 if self.parent_path not in path_dict:
@@ -202,8 +201,10 @@ class FileInfo():
                     try:
                         args["id"] = get_id_exe(open(self.path, "r").read())
                     except FileIDNotFoundError:
-                        print("parsing "+self.path+" failed, couldn't find the file id for the google doc")
-                        raise ValueError("Google doc file-id not in executable file")
+                        print(
+                            "parsing "+self.path+" failed, couldn't find the file id for the google doc")
+                        raise ValueError(
+                            "Google doc file-id not in executable file")
                     # print(args)
                     _file = drive.CreateFile(args)
 
@@ -217,7 +218,7 @@ class FileInfo():
                                          "id": args["parents"][0]["id"]}]
                     # print(_file)
                     _file.Upload()
-                    
+
                 else:
                     _file = drive.CreateFile(args)
                     _file.SetContentFile(self.path)
@@ -243,8 +244,7 @@ class FileInfo():
                         _file.GetContentFile(self.path, remove_bom=True)
                     else:
                         with open(self.path, "w") as exe_file:
-                            exe_file.write(
-                                gen_exe(self.link, EXE_SIGNATURE))
+                            exe_file.write(gen_exe(self.link, EXE_SIGNATURE))
                             sp.run(["chmod", "+x", self.path])
                     mtime = int(dup.parse(_file["modifiedDate"]).timestamp())
                     os.utime(self.path, (mtime, mtime))
@@ -287,8 +287,7 @@ class FileInfo():
             return self._id
         if self.partner is not None:
             return self.partner.id
-        return None 
-        # raise ValueError(self.path, self.islocal)
+        return None
 
     @property
     def isfolder(self):
@@ -351,4 +350,26 @@ class FileInfo():
         assert self.path.startswith(PATH)
         return self.path[len(PATH):]
 
+    @property
+    def action_human(self):
+        out = "Forced" if self.forced else ""
+        if self.action == "ignore":
+            return out + "ignoring"
 
+        if self.change_type == "local_new":
+            if self.action == "push":
+                return out + "uploading new"
+            elif self.action == "pull":
+                return out + "deleting local file"
+
+        elif self.change_type == "remote_new":
+            if self.action == "push":
+                return out + "deleting remote file"
+            elif self.action == "pull":
+                return out + "downloading new"
+
+        elif self.change_type == "content_change" or self.change_type == "mtime_change":
+            if self.action == "push":
+                return out + "uploading difference"
+            elif self.action == "pull":
+                return out + "downloading difference"

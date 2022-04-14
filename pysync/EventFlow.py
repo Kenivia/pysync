@@ -10,11 +10,7 @@ from pysync.RemoteFiles import (
     list_remote,
     process_remote
 )
-from pysync.ApplyOperation import (
-
-    run_drive_ops,
-)
-
+from pysync.ApplyOperation import run_drive_ops
 from pysync.Functions import (
     error_report,
     pysyncSilentExit
@@ -33,20 +29,21 @@ def event_flow(path):
     timer = TimeLogger(2)
     try:
         drive = init_drive(timer=timer.user("Initializing drive"))
-    
+
     except Exception as e:
         error_report(e, "during drive initialization:")
 
     try:
         remote_list = list_remote(drive,
                                   timer=timer.load("Listing remote files"))
-    
+
     except Exception as e:
         error_report(e, "while downloading remote files:")
 
     try:
         local_path_dict = get_local_files(path,
                                           timer=timer.comp("Processing local files"))
+
     except Exception as e:
         error_report(e, "while reading local files:")
 
@@ -54,7 +51,8 @@ def event_flow(path):
         remote_path_dict = process_remote(remote_list,
                                           timer=timer.comp("Processing remote files"))
         diff_infos, all_path_dict = get_diff(local_path_dict, remote_path_dict,
-                                                       timer=timer.comp("Comparing local and remote files"))
+                                             timer=timer.comp("Comparing local and remote files"))
+
     except Exception as e:
         error_report(e, "while processing files:")
 
@@ -66,13 +64,14 @@ def event_flow(path):
         apply_forced_and_default(diff_infos)
         user_push_pull(diff_infos,
                        timer=timer.user("Choosing which types to push & pull"))
+
     except pysyncSilentExit:
         raise pysyncSilentExit
     except Exception as e:
-        error_report(e, "while inputting action")
+        error_report(e, "while inputing action")
 
     try:
-        
+
         run_drive_ops(diff_infos, all_path_dict, drive,
                       timer=timer.load("Applying changes"))
     except Exception as e:

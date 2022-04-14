@@ -121,7 +121,7 @@ def determine_paths(folder_dict, file_id, path, modifying_dict):
         titles.append(i.title)
         if i.ignore_me:
             continue
-        # * modifies the out_dict value in process_remote cos it's a dict and its muatble
+        # * modifies the out_dict value in process_remote cos it's a dict and its mutable
         modifying_dict[i.path] = i
         if i.isfolder:
             new_path = os.path.join(path, i.title)
