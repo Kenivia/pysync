@@ -6,7 +6,6 @@ from pysync.Functions import (
     contains_parent,
     match_attr,
     pysyncSilentExit,
-    to_ing,
     num_shorten,
 )
 from pysync.ProcessedOptions import (
@@ -54,6 +53,28 @@ def apply_forced_and_default(diff_infos):
     return diff_infos
 
 
+def num_shorten(num_list):
+    num_list = sorted([int(i) for i in num_list])
+    # * doesn't have to take in string, can take int too
+    all_segments = []
+    cur_segment = []
+    for i in num_list:
+        if not cur_segment or cur_segment[-1] + 1 == i:
+            cur_segment.append(i)
+        else:
+            all_segments.append(cur_segment)
+            cur_segment = [i]
+    all_segments.append(cur_segment)
+
+    out = []
+    for i in all_segments:
+        if len(i) >= 3:
+            out.append(str(i[0]) + "-" + str(i[-1]))
+        else:
+            out.extend([str(i) for i in i])
+    return out
+
+
 def print_half(infos, initing, forced, index):
 
     actions = ["pull", "push", "ignore"]
@@ -80,7 +101,7 @@ def print_change_types(infos, initing=False):
     """Prints the paths in diff_paths, sorted based on the type of their modificaiton
 
     """
-    #todo abbreviate folders where all content are new/deleted
+    # todo abbreviate folders where all content are new/deleted
     normal = match_attr(infos, forced=False,)
     print_half(normal, initing, False, 1)
 

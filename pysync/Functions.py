@@ -17,34 +17,8 @@ This file defines miscellaneous functions that:
 """
 
 
-def num_shorten(num_list):
-    num_list = sorted([int(i) for i in num_list])
-    #* doesn't have to take in string, can take int too
-    all_segments = []
-    cur_segment = []
-    for i in num_list:
-        if not cur_segment or cur_segment[-1] + 1 == i:
-            cur_segment.append(i)
-        else:
-            all_segments.append(cur_segment)
-            cur_segment = [i]
-    all_segments.append(cur_segment)
-    
-    out = []
-    for i in all_segments:
-        if len(i) >= 3:
-            out.append(str(i[0]) + "-" + str(i[-1]))
-        else:
-            out.extend([str(i) for i in i])
-    return out
-
-
 class pysyncSilentExit(Exception):
     pass
-
-
-def to_ing(inp):
-    return inp[0:-1].upper() + "ING" if inp.upper() == "IGNORE" else inp.upper() + "ING"
 
 
 def match_attr(infos, **kwargs):
@@ -180,8 +154,6 @@ def union_dicts(dict1, dict2):
     return all_dict
 
 
-
-
 def abs_path(inp):
     """Converts a path into absolute path
 
@@ -201,27 +173,6 @@ def abs_path(inp):
         return os.getcwd() + "/" + inp
     else:
         return inp
-
-
-def gen_exe(url, signatures):
-    text = f"""xdg-open {url}
-#This file was created by pysync. Do not remove the line below!
-{signatures}"""
-    return text
-
-
-class FileIDNotFoundError(Exception):
-    pass
-
-
-def get_id_exe(text):
-    for line in text.split("\n"):
-        if line.startswith("xdg-open https://docs.google.com/"):
-            split = text.split("/")
-            for index, item in enumerate(split):
-                if item == "d":  # * the id is after a /d/ sequence
-                    return split[index+1]
-    raise FileIDNotFoundError()
 
 
 def assert_start(start, inp_list):

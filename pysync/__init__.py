@@ -1,4 +1,3 @@
-
 from pysync.Functions import init_libraries
 
 
@@ -10,6 +9,7 @@ def main():
 
     try:
         import pysync.ProcessedOptions
+
     except Exception as e:
         from pysync.Functions import error_report
         from pysync.Exit import on_exit
@@ -17,8 +17,8 @@ def main():
         on_exit(failure=True)
         return
 
-    from pysync.EventFlow import (
-        event_flow,
+    from pysync.EventSequence import (
+        event_sequence,
         error_report,
     )
     from pysync.ProcessedOptions import PATH
@@ -31,7 +31,7 @@ def main():
     timer = None
     print("pysync started successfully")
     try:
-        timer = event_flow(PATH)
+        timer = event_sequence(PATH)
         on_exit(timer=timer, failure=False)
 
     except pysyncSilentExit:

@@ -1,8 +1,3 @@
-from pysync.ProcessedOptions import (
-    DEFAULT_IGNORE,
-    DEFAULT_PULL,
-    DEFAULT_PUSH
-)
 
 
 def change_type_to_action(diff_dict, action_dict, change_type, action):
@@ -21,7 +16,8 @@ def replace_numbers(inp, upperbound):
                 if str(item) not in out:
                     out.append(str(item))
             else:
-                message += item + " is out of range, ignored. It must be between 1 and " + str(upperbound) + "\n"
+                message += item + " is out of range, ignored. It must be between 1 and " + \
+                    str(upperbound) + "\n"
 
         elif "-" in item and item.split("-")[0].isnumeric() and item.split("-")[1].isnumeric():
             lower = int(item.split("-")[0])
@@ -33,7 +29,8 @@ def replace_numbers(inp, upperbound):
                         out.append(str(i))
                     temp += 1
             else:
-                message += item + " is out of range, ignored. It must be between 1 and " + str(upperbound) + "\n"
+                message += item + " is out of range, ignored. It must be between 1 and " + \
+                    str(upperbound) + "\n"
         else:
             out.append(item)
             # * doesn't touch non-numerical things

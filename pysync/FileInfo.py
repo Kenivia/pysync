@@ -25,6 +25,27 @@ class OperationNotReadyError(Exception):
     pass
 
 
+class FileIDNotFoundError(Exception):
+    pass
+
+
+def gen_exe(url, signatures):
+    text = f"""xdg-open {url}
+#This file was created by pysync. Do not remove the line below!
+{signatures}"""
+    return text
+
+
+def get_id_exe(text):
+    for line in text.split("\n"):
+        if line.startswith("xdg-open https://docs.google.com/"):
+            split = text.split("/")
+            for index, item in enumerate(split):
+                if item == "d":  # * the id is after a /d/ sequence
+                    return split[index+1]
+    raise FileIDNotFoundError()
+
+
 class FileInfo():
     """Object containing the metadata of either a local or remote file"""
 
@@ -38,8 +59,8 @@ class FileInfo():
         self.link = None  # * checked by check_possible
         self.isremotegdoc = False  # * checked by check_possible
         self.path = None  # * checked by remote_path
-        self.forced = False # * used in UserPushPull
-        self.index = None # * used in UserPushPull
+        self.forced = False  # * used in UserPushPull
+        self.index = None  # * used in UserPushPull
 
         self.location = location  # * whether local or remote
         self.operation_done = False  # * set by drive_op, checked by check_possible

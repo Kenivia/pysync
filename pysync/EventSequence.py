@@ -17,7 +17,7 @@ from pysync.Functions import (
 )
 
 
-def event_flow(path):
+def event_sequence(path):
     """Checks for differences and prompts user to apply updates
 
     path - the directory to update
