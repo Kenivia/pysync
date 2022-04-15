@@ -17,7 +17,12 @@ from pysync.ProcessedOptions import (
 )
 
 
-class OperationNotReadyError(Exception):
+class OperationNotReady(Exception):
+    """Raised by check_possible"""
+    pass
+
+
+class OperationIgnored(Exception):
     """Raised by check_possible"""
     pass
 
@@ -41,6 +46,23 @@ def get_id_exe(text):
                 if item == "d":  # * the id is after a /d/ sequence
                     return split[index+1]
     raise FileIDNotFoundError()
+
+
+def match_attr(infos, **kwargs):
+    # * doesn't support multiple values
+    # * e.g action = push, action = pull because there's no way of knowing
+    # * whether it should be AND or OR or whatever
+    # * should probably do it case by case
+    out = []
+    for i in infos:
+        matched = True
+        for key in kwargs:
+            if getattr(i, key) != kwargs[key]:
+                matched = False
+                break
+        if matched:
+            out.append(i)
+    return out
 
 
 class FileInfo():
@@ -99,6 +121,8 @@ class FileInfo():
         assert self.islocal
         assert self.path == self.partner.path
         if self.islocalgdoc:
+            # * modifying local gdoc will not make a difference
+            # * local gdoc must have a corresponding remote gdoc file
             assert self.partner.isremotegdoc
             return False
 
@@ -121,6 +145,9 @@ class FileInfo():
     def check_possible(self, path_dict):
 
         assert self.action is not None
+        if self.action == "ignore":
+            # * will not  set checked_good to True, running drive_op will fail
+            raise OperationIgnored
         assert self.action == "pull" or self.action == "push"
         assert not self.operation_done
         if self.partner is not None:
@@ -132,14 +159,14 @@ class FileInfo():
             assert os.path.exists(self.path)
             if self.action == "push":
                 if self.parent_path not in path_dict:
-                    raise OperationNotReadyError(
+                    raise OperationNotReady(
                         "remote folder " + self.parent_path + " doesn't exist yet")
                 if isinstance(path_dict[self.parent_path], dict):
                     parent_id = path_dict[self.parent_path]["id"]
                 else:
                     parent_id = path_dict[self.parent_path].id
                 if parent_id is None:
-                    raise OperationNotReadyError(
+                    raise OperationNotReady(
                         "remote folder " + self.parent_path + " doesn't exist yet")
 
             elif self.action == "pull":
@@ -152,7 +179,7 @@ class FileInfo():
                 pass
             elif self.action == "pull":
                 if not os.path.isdir(self.parent_path):
-                    raise OperationNotReadyError(
+                    raise OperationNotReady(
                         "local parent folder "+self.parent_path+" doesn't exist yet")
 
         elif self.change_type == "content_change" or self.change_type == "mtime_change":
@@ -370,7 +397,7 @@ class FileInfo():
 
     @property
     def action_human(self):
-        out = "Forced" if self.forced else ""
+        out = "Forced " if self.forced else ""
         if self.action == "ignore":
             return out + "ignoring"
 

@@ -1,12 +1,13 @@
 from pysync.InputParser import (
     replace_numbers
 )
+from pysync.Options import HIDE_FORCED_IGNORE
 from pysync.Timer import logtime
 from pysync.Functions import (
     contains_parent,
-    match_attr,
     pysyncSilentExit,
 )
+from pysync.FileInfo import match_attr
 from pysync.ProcessedOptions import (
     ALWAYS_PULL,
     ALWAYS_PUSH,
@@ -86,7 +87,10 @@ def print_half(infos, initing, forced, index):
 
         for i in this:
             if forced:
-                print(i.change_type, i.path)
+                if i.action == "ignore" and HIDE_FORCED_IGNORE:
+                    pass
+                else:
+                    print(i.action_human, i.path)
             else:
                 if initing:
                     i.index = index
@@ -96,7 +100,7 @@ def print_half(infos, initing, forced, index):
                 index += 1
 
 
-def print_change_types(infos, initing=False):
+def print_change_types(infos, initing):
     """Prints the paths in diff_paths, sorted based on the type of their modificaiton
 
     """
@@ -117,8 +121,12 @@ def print_status(infos):
             cur_actions[i.action_human].append(i)
 
     for key in cur_actions:
-        short = num_shorten([i.index for i in cur_actions[key]])
-        print(key + "("+str(len(cur_actions[key])) + "):", " ".join(short))
+        if key.startswith("Forced"):
+            print(key + "("+str(len(cur_actions[key])) + ")")
+        else:
+            short = num_shorten([i.index for i in cur_actions[key]])
+            print(key + "("+str(len(cur_actions[key])) + "):", " ".join(short))
+
 
 
 @logtime
@@ -139,7 +147,6 @@ Press Enter or use `apply` to apply the changes."""
         inp = input("\n>>> ").lower()
         inp = inp.strip()
         if inp == "":
-            print("Applying changes")
             return
 
         inp = inp.replace(",", " ")
@@ -148,17 +155,17 @@ Press Enter or use `apply` to apply the changes."""
 
         command = inp[0]
         arguments = inp[1:]
-        if command == "apply":
-            if len(arguments) > 0:
-                print("apply doesn't take arguments, ignored")
-            print("Applying changes")
-            return
 
-        valid_actions = ["push", "pull", "ignore", "restart", "exit"]
+        valid_actions = ["push", "pull", "ignore", "apply", "restart", "exit"]
         if not command in valid_actions:
             text = "Unrecognized action, valid actions are: " + \
                 ", ".join(valid_actions)
             continue
+
+        if command == "apply":
+            if len(arguments) > 0:
+                print("apply doesn't take arguments, ignored")
+            return
 
         if command == "exit":
             print("restart doesn't take arguments, ignored")
@@ -170,7 +177,6 @@ Press Enter or use `apply` to apply the changes."""
             raise pysyncSilentExit
 
         arguments, message = replace_numbers(arguments, len(diff_infos))
-        print(arguments)
         changed = []
         for item in arguments:
             if item == "all":

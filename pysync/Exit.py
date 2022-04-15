@@ -33,11 +33,12 @@ def on_exit(timer=None, failure=False):
 
         user_inp = input(text)
         user_inp = user_inp.lower().strip()
-        if user_inp == "":
+        if user_inp == "" or user_inp == "exit":
             return
-        elif user_inp == "time":
+        elif timer is not None and user_inp == "time":
             timer.print_times()
             text = line_exit + line_restart + line_input
+            timer = None
         elif user_inp == "restart":
             restart()
             return

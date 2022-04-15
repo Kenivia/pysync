@@ -23,10 +23,10 @@ def get_local_info_list(path, out_dict):
         if os.path.islink(new_path):
             print(new_path,"is a symbolic link, ignored")
             continue
-        file_info = FileInfo("local", path=new_path, md5_now=False)
-        if file_info.ignore_me:
-            # * maybe get rid of this
-            continue
+        file_info = FileInfo("local", path=new_path, md5_now=True)
+        # if file_info.ignore_me:
+        #     # * maybe get rid of this
+        #     continue
 
         # * modifies the local_dict in get_local_files
         # * same idea as process_remote

@@ -35,7 +35,7 @@ def event_sequence(path):
 
     try:
         remote_list = list_remote(drive,
-                                  timer=timer.load("Listing remote files"))
+                                  timer=timer.load("Getting remote files"))
 
     except Exception as e:
         error_report(e, "while downloading remote files:")
@@ -56,17 +56,15 @@ def event_sequence(path):
     except Exception as e:
         error_report(e, "while processing files:")
 
-    if not diff_infos:
-        print("Everthing is up to date")
-        return timer
-
     try:
         apply_forced_and_default(diff_infos)
-        user_push_pull(diff_infos,
-                       timer=timer.user("Choosing which types to push & pull"))
+        if diff_infos:
+            user_push_pull(diff_infos,
+                        timer=timer.user("Choosing which types to push & pull"))
 
     except pysyncSilentExit:
         raise pysyncSilentExit
+    
     except Exception as e:
         error_report(e, "while inputing action")
 

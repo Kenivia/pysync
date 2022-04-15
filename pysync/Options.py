@@ -11,6 +11,10 @@ Necessary checks and transformations are performed to the variables
 PATH = "~/gdrive"
 
 ASK_BEFORE_EXIT = True
+# * whether or not to hold the process open until a confirmation
+
+HIDE_FORCED_IGNORE = True
+#* whether or not to display the ignored files in ALWAYS_IGNORE
 
 # * paths to always push
 ALWAYS_PUSH = []

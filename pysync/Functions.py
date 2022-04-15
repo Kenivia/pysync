@@ -21,17 +21,7 @@ class pysyncSilentExit(Exception):
     pass
 
 
-def match_attr(infos, **kwargs):
-    out = []
-    for i in infos:
-        matched = True
-        for key in kwargs:
-            if getattr(i, key) != kwargs[key]:
-                matched = False
-                break
-        if matched:
-            out.append(i)
-    return out
+
 
 
 def raise_this_error(error):

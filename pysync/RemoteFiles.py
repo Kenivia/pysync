@@ -42,7 +42,7 @@ def init_drive():
 @logtime
 def list_remote(drive):
     """Lists remote files that are not in trash"""
-    print("Listing remote files, this should take around 30 seconds")
+    print("Getting remote files, this should take around 30 seconds")
     file_list = drive.ListFile({"q": "trashed=false"}).GetList()
     print(len(file_list), "files listed, processing..")
     out = []
@@ -142,5 +142,5 @@ def process_remote(files):
     root, folder_dict = get_folder_dict(files)
     out_dict = {PATH: root}
     determine_paths(folder_dict, "root", PATH, out_dict)
-    print(old_len - len(list(out_dict)), "files were invalid or ignored")
+    # print(old_len - len(list(out_dict)), "files were invalid or ignored")
     return out_dict
