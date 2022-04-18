@@ -47,6 +47,19 @@ class TimeLogger():
                     len("  - started: " + i.func_title)
                     for i in self.stages.values()])
 
+    
+    def sum_time(self, category):
+        sumtime = sum([
+            i.duration for i in match_attr(self.stages.values(), category=category) if not i.concurrent])
+        for i in self.concurrent:
+            if self.stages[i].category == category:
+                main_time = sum([self.stages[i].duration for i in self.stages]
+                                [self.concurrent[i][0]:self.concurrent[i][1] + 1])
+                thread_time = self.stages[i].duration
+                if thread_time > main_time:
+                    sumtime += thread_time - main_time
+        return sumtime
+
     def print_times(self):
 
         max_len = max(20, self.max_len)
@@ -65,9 +78,9 @@ class TimeLogger():
                     print(("  - joined: " + ctimer.func_title).ljust(max_len),
                           round(ctimer.duration, self.dp))
 
-        usersum = sum([i.duration for i in match_attr(self.stages.values(), category="user")])
-        compsum = sum([i.duration for i in match_attr(self.stages.values(), category="comp")])
-        netsum = sum([i.duration for i in match_attr(self.stages.values(), category="net")])
+        usersum = self.sum_time("user")
+        compsum = self.sum_time("comp")
+        netsum = self.sum_time("net")
         label_str = "Categories"
         label_content = "Times taken"
         usr_str = "User input"
@@ -84,7 +97,7 @@ class TimeLogger():
 
 
 def logtime(func):
-    @wraps(func)
+    @ wraps(func)
     def wrap(*args, **kwargs):
         if "timer" in kwargs:
             timer = kwargs["timer"]

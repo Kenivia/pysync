@@ -379,7 +379,7 @@ class FileInfo():
 
     @property
     def action_human(self):
-        out = "Forced " if self.forced else ""
+        out = "forced " if self.forced else ""
         if self.action == "ignore":
             return out + "ignoring"
 

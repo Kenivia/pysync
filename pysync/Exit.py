@@ -62,4 +62,4 @@ def restart():
                 "Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
             input("Press enter to exit")
             return
-    print("A new instance of pysync has been started, this window should close immediately")
+    print("A new instance of pysync has been started, this process should end immediately")

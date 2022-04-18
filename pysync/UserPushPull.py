@@ -88,7 +88,7 @@ def print_half(infos, initing, forced, index):
     actions = ["pull", "push", "ignore"]
     for action in actions:
         this = match_attr(infos, action=action)
-        if initing:
+        if initing or forced:
             this.sort(key=lambda x: x.action_human)
         else:
             this.sort(key=lambda x: (x.index))
@@ -126,8 +126,8 @@ def print_status(infos):
         else:
             cur_actions[i.action_human].append(i)
 
-    for key in cur_actions:
-        if key.startswith("Forced"):
+    for key in sorted(cur_actions):
+        if key.startswith("forced"):
             print("  -" + key + "(" + str(len(cur_actions[key])) + ")")
         else:
             short = num_shorten([i.index for i in cur_actions[key]])

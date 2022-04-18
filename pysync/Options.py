@@ -21,7 +21,7 @@ ALWAYS_PUSH = []
 # * paths to always pull
 ALWAYS_PULL = ["~/gdrive/Saved", "~/gdrive/Colab Notebooks"]
 # * paths to ignore, applies to both pushing and pulling
-ALWAYS_IGNORE = ["~/gdrive/.gd"]
+ALWAYS_IGNORE = []
 
 
 # * whether or not to print whenever a thread is started
