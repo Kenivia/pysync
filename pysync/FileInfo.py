@@ -98,7 +98,7 @@ class FileInfo():
         mtime_change will only trigger if there is no md5sum change and >3 sec difference
 
         Returns:
-            False, "content_change" or "mtime_change"
+            bool/str: False, "content_change" or "mtime_change"
         """
 
         assert self.islocal

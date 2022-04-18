@@ -101,7 +101,6 @@ class HandledpysyncException(Exception):
 def contains_parent(parents_list, inp):
     """Returns True if parents_list contain a parent of inp
         or if parent_list contains inp
-
     """
     for i in parents_list:
         if pathlib.Path(i) in pathlib.Path(inp).parents or inp == i:

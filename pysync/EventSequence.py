@@ -27,8 +27,7 @@ def event_sequence(path):
               "apply": FuncTimer("net", "Applying changes"),
               }
     # * stages not neccessarily in order
-    sequence = ["init", "load_remote",
-                "comp_remote", "compare", "choose", "apply"]
+    sequence = ["init", "load_remote", "comp_remote", "compare", "choose", "apply"]
     concurrent = {"local": (0, 2)}
     # * the functions that the key overlaps with
     for i in concurrent:

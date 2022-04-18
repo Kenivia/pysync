@@ -22,8 +22,8 @@ def one_diff(args):
         ValueError: if the path is not in either dictionary
 
     Returns:
-        change_type (string): "local_new", "remote_new", "content_change" or "mtime_change"
-        obj (pysync.FileInfo): FileInfo object from either dictionaries, local is preferred
+        str:  change_type - "local_new", "remote_new", "content_change" or "mtime_change"
+        pysync.FileInfo: FileInfo object from either dictionaries, local is preferred
         if the path is PATH, returns False and a dict with information about PATH
     """    
     path, local_data, remote_data = args[0], args[1], args[2]
@@ -61,8 +61,8 @@ def get_diff(local_data, remote_data):
         remote_data (dict): dict of remote FileInfo objects from process_remote
 
     Returns:
-        diff_infos (list): list of FileInfo objects that require change
-        all_data (dict): union of local_data and remote data
+        list: list of FileInfo objects that require change
+        dict: union of local_data and remote data
     """    
 
     diff_infos = []

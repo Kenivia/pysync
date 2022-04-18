@@ -1,6 +1,4 @@
-from pysync.InputParser import (
-    replace_numbers
-)
+from pysync.InputParser import replace_numbers
 from pysync.Options import HIDE_FORCED_IGNORE
 from pysync.Timer import logtime
 from pysync.Functions import (
@@ -15,12 +13,12 @@ from pysync.ProcessedOptions import (
     DEFAULT_PULL,
     DEFAULT_PUSH,
     DEFAULT_IGNORE,
-
 )
 from pysync.Exit import restart
 
 
 def in_override(info):
+
     if contains_parent(ALWAYS_PULL, info):
         return "pull"
     elif contains_parent(ALWAYS_PUSH, info):
@@ -32,12 +30,14 @@ def in_override(info):
 
 
 def get_action(change_type):
+
     if change_type in DEFAULT_IGNORE:
         return "ignore"
     if change_type in DEFAULT_PULL:
         return "pull"
     if change_type in DEFAULT_PUSH:
         return "push"
+
 
 @logtime
 def apply_forced_and_default(diff_infos):
@@ -54,6 +54,14 @@ def apply_forced_and_default(diff_infos):
 
 
 def num_shorten(num_list):
+    """Opposite of replace_numbers
+
+    Args:
+        num_list (list): list of numbers
+
+    Returns:
+        list: abbreviated version of num_list e.g 5,6,7 -> 5-7
+    """
     num_list = sorted([int(i) for i in num_list])
     # * doesn't have to take in string, can take int too
     all_segments = []
@@ -96,14 +104,12 @@ def print_half(infos, initing, forced, index):
                     i.index = index
                     print(index, i.action_human, i.path)
                 else:
-                    print(i.index, i.action_human,  i.path)
+                    print(i.index, i.action_human, i.path)
                 index += 1
 
 
 def print_change_types(infos, initing):
-    """Prints the paths in diff_paths, sorted based on the type of their modificaiton
 
-    """
     # todo abbreviate folders where all content are new/deleted
     normal = match_attr(infos, forced=False,)
     print_half(normal, initing, False, 1)
@@ -122,23 +128,21 @@ def print_status(infos):
 
     for key in cur_actions:
         if key.startswith("Forced"):
-            print(key + "("+str(len(cur_actions[key])) + ")")
+            print("  -" + key + "(" + str(len(cur_actions[key])) + ")")
         else:
             short = num_shorten([i.index for i in cur_actions[key]])
-            print(key + "("+str(len(cur_actions[key])) + "):", " ".join(short))
-
+            print("  -" + key + "(" + str(len(cur_actions[key])) + "):", " ".join(short))
 
 
 @logtime
 def user_push_pull(diff_infos):
     """Prompts the user to change which change types to push/pull
-
     """
     if not diff_infos:
         return
     initing = True
     text = """Use `push a` or `pull a-b` to change the action of files, e.g push 1-5
-Press Enter or use `apply` to apply the changes."""
+Press Enter or use `apply` to apply the following changes:"""
     while True:
         print_change_types(diff_infos, initing)
         initing = False

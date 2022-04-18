@@ -4,17 +4,17 @@ def replace_numbers(inp, upperbound):
     """convert user input into a list of numbers(in strings)
 
     e.g 2-6 -> 2, 3, 4, 5, 6
-    
+
     doesn't change non-numerical items in the list
-    
+
     Args:
         inp (list): list of strings
         upperbound (int): the highest index displayed on screen
 
     Returns:
-        out (list): list of strings
-        message: error/warning messages
-    """    
+        list: list of converted strings 
+        str: error/warning messages
+    """
     message = ""
     out = []
     for item in inp:
@@ -31,7 +31,7 @@ def replace_numbers(inp, upperbound):
             upper = int(item.split("-")[1])
             if lower >= 1 and upper <= upperbound:
                 temp = 0
-                for i in range(lower, upper+1):
+                for i in range(lower, upper + 1):
                     if str(i) not in out:
                         out.append(str(i))
                     temp += 1

@@ -1,5 +1,6 @@
 import os
 from threading import Thread
+
 from pysync.FileInfo import FileInfo
 from pysync.Timer import logtime
 

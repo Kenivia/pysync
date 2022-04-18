@@ -21,8 +21,6 @@ ALWAYS_PUSH = []
 # * paths to always pull
 ALWAYS_PULL = ["~/gdrive/Saved", "~/gdrive/Colab Notebooks"]
 # * paths to ignore, applies to both pushing and pulling
-# should probably include saved_creds.json by default, but expired tokens
-# will just reprompt so it's not really necessary
 ALWAYS_IGNORE = ["~/gdrive/.gd"]
 
 
@@ -38,7 +36,7 @@ CHECK_MD5 = True
 MAX_PUSH_THREADS = 50
 
 # * max number of md5sum being computed simultanously
-# * a value of 0 or less will default to the number of cpu cores available
+# * a value of less than 1 will default to the number of cpu cores available
 MAX_COMPUTE_THREADS = 0
 
 # * the categories to push, pull or ignore at first

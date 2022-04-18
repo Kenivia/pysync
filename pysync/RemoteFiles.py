@@ -130,19 +130,15 @@ def process_remote(raw_files):
 
     Returns a dictionary containing FileInfo with their paths as keys
     """
-
-    # old_len = len(files)
+    
     info_list = []
-
     for i in raw_files:
         _file = FileInfo("remote", **i)
         if not _file.isorphan:
             info_list.append(_file)
     
-    
     root, folder_dict = get_folder_dict(info_list)
     out_dict = {PATH: root}
     determine_paths(folder_dict, "root", PATH, out_dict)
-    
-    # print(old_len - len(list(out_dict)), "files were invalid or ignored")
+
     return out_dict

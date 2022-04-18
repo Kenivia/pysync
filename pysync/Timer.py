@@ -5,7 +5,6 @@ from pysync.Functions import match_attr
 
 
 class FuncTimer():
-
     def __init__(self, category, func_title):
         """Timer for one function
         """

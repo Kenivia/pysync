@@ -3,8 +3,8 @@ from threading import (
     Thread,
     active_count,
 )
-from pysync.Functions import match_attr
 
+from pysync.Functions import match_attr
 from pysync.Timer import logtime
 from pysync.ProcessedOptions import (
     MAX_PUSH_THREADS,
