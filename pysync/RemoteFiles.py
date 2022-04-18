@@ -42,33 +42,10 @@ def init_drive():
 @logtime
 def list_remote(drive):
     """Lists remote files that are not in trash"""
-    print("Getting remote files, this should take around 30 seconds")
+    print("Getting remote files..")
     file_list = drive.ListFile({"q": "trashed=false"}).GetList()
     print(len(file_list), "files listed, processing..")
     return file_list
-
-
-def find_children(info_list, parent_id):
-    """Finds all children of a given folder id
-
-    Ignores orphan files
-    Returns the list of FileInfo and a dictionary representing the root folder
-    """
-    # todo integrate IGNORE lists here so the user don't have to see them
-    out = []
-    root = None
-    for i in info_list:
-        if i.isorphan:
-            continue
-        if parent_id == "root":
-            if i.parent_isroot:
-                root = i.parent  # * conveniently find the root
-                out.append(i)
-        else:
-            if i.parent_id == parent_id:
-                out.append(i)
-
-    return out, root
 
 
 def get_folder_dict(files):
@@ -92,7 +69,7 @@ def get_folder_dict(files):
 
 def determine_paths(folder_dict, file_id, path, modifying_dict):
     """Put files into modifying_dict with its path as the key
-    
+
     runs recursively, orphan files(not under root) will not be included
 
     Args:

@@ -1,3 +1,4 @@
+from pysync.Differ import delete_compression
 from pysync.InputParser import replace_numbers
 from pysync.Options import HIDE_FORCED_IGNORE
 from pysync.Timer import logtime
@@ -89,9 +90,9 @@ def print_half(infos, initing, forced, index):
     for action in actions:
         this = match_attr(infos, action=action)
         if initing or forced:
-            this.sort(key=lambda x: x.action_human)
+            this.sort(key=lambda x: (x.action_human, len(x.path.split("/"))))
         else:
-            this.sort(key=lambda x: (x.index))
+            this.sort(key=lambda x: (x.index, len(x.path.split("/"))))
 
         for i in this:
             if forced:
@@ -106,6 +107,9 @@ def print_half(infos, initing, forced, index):
                 else:
                     print(i.index, i.action_human, i.path)
                 index += 1
+
+
+str
 
 
 def print_change_types(infos, initing):
@@ -144,6 +148,7 @@ def user_push_pull(diff_infos):
     text = """Use `push a` or `pull a-b` to change the action of files, e.g push 1-5
 Press Enter or use `apply` to apply the following changes:"""
     while True:
+        delete_compression(diff_infos)
         print_change_types(diff_infos, initing)
         initing = False
 
@@ -174,12 +179,14 @@ Press Enter or use `apply` to apply the following changes:"""
             return
 
         if command == "exit":
-            print("restart doesn't take arguments, ignored")
+            if len(arguments) > 0:
+                print("exit doesn't take arguments, ignored")
             raise pysyncSilentExit
 
         if command == "restart":
             restart()
-            print("restart doesn't take arguments, ignored")
+            if len(arguments) > 0:
+                print("restart doesn't take arguments, ignored")
             raise pysyncSilentExit
 
         arguments, message = replace_numbers(arguments, len(diff_infos))

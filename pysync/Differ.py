@@ -1,6 +1,7 @@
 import random
 import concurrent.futures as cf
 
+from pysync.Functions import contains_parent, match_attr
 from pysync.ProcessedOptions import (
     MAX_COMPUTE_THREADS,
     PATH,
@@ -12,7 +13,7 @@ def one_diff(args):
     """Determines the change type of one file
 
     intended to be called using concurrent.future
-    
+
     Args:
         args (tuple):   1) path to the file
                         2) dict of local FileInfo objects from get_local_files
@@ -25,7 +26,7 @@ def one_diff(args):
         str:  change_type - "local_new", "remote_new", "content_change" or "mtime_change"
         pysync.FileInfo: FileInfo object from either dictionaries, local is preferred
         if the path is PATH, returns False and a dict with information about PATH
-    """    
+    """
     path, local_data, remote_data = args[0], args[1], args[2]
     if path == PATH:
         return False, remote_data[path]
@@ -63,7 +64,7 @@ def get_diff(local_data, remote_data):
     Returns:
         list: list of FileInfo objects that require change
         dict: union of local_data and remote data
-    """    
+    """
 
     diff_infos = []
     all_keys = set(local_data).union(set(remote_data))
@@ -72,7 +73,7 @@ def get_diff(local_data, remote_data):
     random.shuffle(_map)
     all_data = {}
     with cf.ProcessPoolExecutor(max_workers=MAX_COMPUTE_THREADS) as executor:
-        chunksize = int(len(all_keys)/MAX_COMPUTE_THREADS)
+        chunksize = int(len(all_keys) / MAX_COMPUTE_THREADS)
         for change_type, obj in executor.map(one_diff, _map, chunksize=chunksize):
             if isinstance(obj, dict):
                 all_data[PATH] = obj
@@ -80,5 +81,36 @@ def get_diff(local_data, remote_data):
                 all_data[obj.path] = obj
             if change_type:
                 diff_infos.append(obj)
-    
+
     return diff_infos, all_data
+
+
+def delete_compression(diff_infos):
+    """removes children of folders that are being deleted
+
+    idea being that a deletion of folder would only happen if all children are also being deleted
+    this also metigates issues when applying
+
+    Args:
+        diff_infos (list): list of FileInfo objects
+
+    Returns:
+        list: modified list 
+    """
+    del_folder = []
+    for i in diff_infos:
+        if i.isfolder and "del" in i.action_code:
+            del_folder.append(i.path)
+    
+    indexs = []
+    for index, item in enumerate(diff_infos):
+        if contains_parent(del_folder, item.path, accept_self=False):
+            indexs.append(index)
+    
+    for i in reversed(indexs):
+        del diff_infos[i]
+    
+    return diff_infos
+    
+
+    

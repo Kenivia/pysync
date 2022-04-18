@@ -58,8 +58,7 @@ def run_drive_ops(diff_infos, all_data, drive):
             try:
                 item.check_ready(all_data)
                 if PRINT_PROGRESS:
-                    print(len(infos), item.action +
-                          "ing", item.change_type, item.path)
+                    print(len(infos), item.action + "ing", item.change_type, item.path)
                 t = Thread(target=item.drive_op, args=(all_data, drive))
                 t.start()
                 all_threads.append(t)

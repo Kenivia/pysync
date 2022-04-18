@@ -147,34 +147,31 @@ class FileInfo():
         if self.isremotegdoc:
             assert self.link is not None
 
-        if self.change_type == "local_new":
+        if self.action_code == "up new":
             assert os.path.exists(self.path)
-            if self.action == "push":
-                if self.parent_path not in all_data:
-                    raise OperationNotReady(
-                        "remote folder " + self.parent_path + " doesn't exist yet")
-                if isinstance(all_data[self.parent_path], dict):
-                    parent_id = all_data[self.parent_path]["id"]
-                else:
-                    parent_id = all_data[self.parent_path].id
-                if parent_id is None:
-                    raise OperationNotReady(
-                        "remote folder " + self.parent_path + " doesn't exist yet")
+            if self.parent_path not in all_data:
+                raise OperationNotReady()
+            if isinstance(all_data[self.parent_path], dict):
+                parent_id = all_data[self.parent_path]["id"]
+            else:
+                parent_id = all_data[self.parent_path].id
+            if parent_id is None:
+                raise OperationNotReady()
 
-            elif self.action == "pull":
-                pass
+        elif self.action_code == "del local":
+            assert os.path.exists(self.path)
 
-        elif self.change_type == "remote_new":
+        elif self.action_code == "del remote":
             assert self.id is not None
             assert not os.path.exists(self.path)
-            if self.action == "push":
-                pass
-            elif self.action == "pull":
-                if not os.path.isdir(self.parent_path):
-                    raise OperationNotReady(
-                        "local parent folder " + self.parent_path + " doesn't exist yet")
 
-        elif self.change_type == "content_change" or self.change_type == "mtime_change":
+        elif self.action_code == "down new":
+            assert self.id is not None
+            assert not os.path.exists(self.path)
+            if not os.path.isdir(self.parent_path):
+                raise OperationNotReady()
+
+        elif self.action_code == "up diff" or self.action_code == "down diff":
             assert os.path.exists(self.path)
             assert self.id is not None
         else:
@@ -186,7 +183,7 @@ class FileInfo():
         """Applies the operation specified by self.change_type and self.action
 
         self.checked_possible must be ran before this
-        
+
         There are several scenarios:
         change_type       action      outcome
 
@@ -197,8 +194,8 @@ class FileInfo():
         content_change  push        upload the local file and overwrite the remote copy
         content_change  pull        download the remote file and overwrite the local copy
         mtime_change will yield the same behaviour as content_change
-        
-        for changes, 
+
+        for changes,
 
         if a file/folder was deleted, it will delete its entry in all_data
         if a file is created/updated, it will add `self` to all_data with key `self.path`
@@ -217,84 +214,92 @@ class FileInfo():
             RuntimeError: drive_op has already ran for this file
 
         """
-      
+
         assert self.checked_good
         if self.operation_done:
             raise RuntimeError("already done", self.path)
 
         deletion = False
-        if self.change_type == "local_new":
-            if self.action == "push":
-                if isinstance(all_data[self.parent_path], dict):
-                    parent_id = all_data[self.parent_path]["id"]
-                else:
-                    parent_id = all_data[self.parent_path].id
-                self.parent = {"id": parent_id}
-                args = {"parents": [{"id": self.parent_id}],
-                        "title": os.path.split(self.path)[1],
-                        }
-                if self.isfolder:
-                    args["mimeType"] = 'application/vnd.google-apps.folder'
-                    _file = drive.CreateFile(args)
+        if self.action_code == "up new":
+            if isinstance(all_data[self.parent_path], dict):
+                # * root
+                parent_id = all_data[self.parent_path]["id"]
+            else:
+                parent_id = all_data[self.parent_path].id
+            self.parent = {"id": parent_id}
+            args = {"parents": [{"id": self.parent_id}],
+                    "title": os.path.split(self.path)[1],
+                    }
+            if self.isfolder:
+                args["mimeType"] = 'application/vnd.google-apps.folder'
+                _file = drive.CreateFile(args)
+                _file.Upload()
+                self._id = _file["id"]
+
+            elif self.islocalgdoc:
+
+                args["id"] = get_id_exe(open(self.path, "r").read())
+                _file = drive.CreateFile(args)
+
+                _file.FetchMetadata(fields="labels")
+                if _file["labels"]["trashed"]:
+                    print("was trashed", args["parents"])
+                    _file.UnTrash()
                     _file.Upload()
-                    self._id = _file["id"]
-                elif self.islocalgdoc:
-
-                    args["id"] = get_id_exe(open(self.path, "r").read())
-                    _file = drive.CreateFile(args)
-
-                    _file.FetchMetadata(fields="labels")
-                    if _file["labels"]["trashed"]:
-                        print("was trashed", args["parents"])
-                        _file.UnTrash()
-                        _file.Upload()
                     _file["parents"] = [{"kind": "drive#parentReference",
-                                         "id": args["parents"][0]["id"]}]
+                                        "id": args["parents"][0]["id"]}]
                     _file.Upload()
-
                 else:
-                    _file = drive.CreateFile(args)
-                    _file.SetContentFile(self.path)
-                    _file.Upload()
-            elif self.action == "pull":
-                send2trash(self.path)
-                deletion = True
+                    print(self.path, "is invalid, ignored")
 
-        elif self.change_type == "remote_new":
+            else:
+                # * is an ordinary file
+                _file = drive.CreateFile(args)
+                _file.SetContentFile(self.path)
+                _file.Upload()
+                
+        elif self.action_code == "del local":
+            send2trash(self.path)
+            deletion = True
 
-            if self.action == "push":
-                # * doesn't matter if its folder or file
+        elif self.action_code == "del remote":
+
+            # * doesn't matter if its folder or file
+            _file = drive.CreateFile({"id": self.id, })
+            _file.Trash()
+            deletion = True
+            
+        elif self.action_code == "down new":
+            if self.isfolder:
+                os.mkdir(self.path)
+            else:
                 _file = drive.CreateFile({"id": self.id, })
-                _file.Trash()
-                deletion = True
-            elif self.action == "pull":
-                if self.isfolder:
-                    os.mkdir(self.path)
+
+                if not self.isremotegdoc:
+                    _file.GetContentFile(self.path, remove_bom=True)
                 else:
-                    _file = drive.CreateFile({"id": self.id, })
+                    with open(self.path, "w") as exe_file:
+                        exe_file.write(gen_exe(self.link, EXE_SIGNATURE))
+                        sp.run(["chmod", "+x", self.path])
+                mtime = int(dup.parse(_file["modifiedDate"]).timestamp())
+                os.utime(self.path, (mtime, mtime))
 
-                    if not self.isremotegdoc:
-                        _file.GetContentFile(self.path, remove_bom=True)
-                    else:
-                        with open(self.path, "w") as exe_file:
-                            exe_file.write(gen_exe(self.link, EXE_SIGNATURE))
-                            sp.run(["chmod", "+x", self.path])
-                    mtime = int(dup.parse(_file["modifiedDate"]).timestamp())
-                    os.utime(self.path, (mtime, mtime))
-
-        elif self.change_type == "content_change" or self.change_type == "mtime_change":
+        elif self.action_code == "up diff":
             # * can't be folder
             _file = drive.CreateFile({"id": self.id, })
-
-            if self.action == "push":
-                _file.SetContentFile(self.path)
-            elif self.action == "pull":
-                _file.GetContentFile(self.path, remove_bom=True)
+            _file.SetContentFile(self.path)
             _file.Upload()
             finish_time = time.time()
             os.utime(self.path, (finish_time, finish_time))
             
-
+        elif self.action_code == "down diff":
+            # * can't be folder
+            _file = drive.CreateFile({"id": self.id, })
+            _file.GetContentFile(self.path, remove_bom=True)
+            _file.Upload()
+            finish_time = time.time()
+            os.utime(self.path, (finish_time, finish_time))
+            
         self.operation_done = True
         if deletion:
             del all_data[self.path]
@@ -387,11 +392,17 @@ class FileInfo():
             if self.action == "push":
                 return out + "uploading new"
             elif self.action == "pull":
-                return out + "deleting local file"
+                if self.isfolder:
+                    return out + "deleting local folder and ALL its content"
+                else:
+                    return out + "deleting local file"
 
         elif self.change_type == "remote_new":
             if self.action == "push":
-                return out + "deleting remote file"
+                if self.isfolder:
+                    return out + "deleting remote folder and ALL its content"
+                else:
+                    return out + "deleting remote file"
             elif self.action == "pull":
                 return out + "downloading new"
 
@@ -400,3 +411,27 @@ class FileInfo():
                 return out + "uploading difference"
             elif self.action == "pull":
                 return out + "downloading difference"
+
+    @property
+    def action_code(self):
+
+        if self.action == "ignore":
+            return "ignore"
+
+        if self.change_type == "local_new":
+            if self.action == "push":
+                return "up new"
+            elif self.action == "pull":
+                return "del local"
+
+        elif self.change_type == "remote_new":
+            if self.action == "push":
+                return "del remote"
+            elif self.action == "pull":
+                return "down new"
+
+        elif self.change_type == "content_change" or self.change_type == "mtime_change":
+            if self.action == "push":
+                return "up diff"
+            elif self.action == "pull":
+                return "down diff"

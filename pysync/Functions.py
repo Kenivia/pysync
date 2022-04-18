@@ -66,7 +66,7 @@ def init_libraries(required):
 
     Returns:
         bool: if things are installed properly
-    """    
+    """
     required = {'pydrive2', 'send2trash', }
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing = list(required - installed)
@@ -98,14 +98,24 @@ class HandledpysyncException(Exception):
     pass
 
 
-def contains_parent(parents_list, inp):
+def contains_parent(parents_list, inp, accept_self=True):
     """Returns True if parents_list contain a parent of inp
         or if parent_list contains inp
+        or if parent_list is a str and is a parent of inp
     """
-    for i in parents_list:
-        if pathlib.Path(i) in pathlib.Path(inp).parents or inp == i:
+    if isinstance(parents_list, str):
+        if pathlib.Path(parents_list) in pathlib.Path(inp).parents:
             return True
-    return False
+        if accept_self and inp == parents_list:
+            return True
+        return False
+    else:
+        for i in parents_list:
+            if pathlib.Path(i) in pathlib.Path(inp).parents:
+                return True
+            if accept_self and inp == i:
+                return True
+        return False
 
 
 def human_time(start, now=None):
