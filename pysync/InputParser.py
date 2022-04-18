@@ -1,13 +1,20 @@
 
 
-def change_type_to_action(diff_dict, action_dict, change_type, action):
-    """give the Info the appropriate action based on the change_type"""
-    action_dict[action].extend(diff_dict[change_type])
-    for i in diff_dict[change_type]:
-        i.action = action
-
-
 def replace_numbers(inp, upperbound):
+    """convert user input into a list of numbers(in strings)
+
+    e.g 2-6 -> 2, 3, 4, 5, 6
+    
+    doesn't change non-numerical items in the list
+    
+    Args:
+        inp (list): list of strings
+        upperbound (int): the highest index displayed on screen
+
+    Returns:
+        out (list): list of strings
+        message: error/warning messages
+    """    
     message = ""
     out = []
     for item in inp:

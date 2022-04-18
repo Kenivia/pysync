@@ -7,7 +7,7 @@ from pysync.Functions import (
     contains_parent,
     pysyncSilentExit,
 )
-from pysync.FileInfo import match_attr
+from pysync.Functions import match_attr
 from pysync.ProcessedOptions import (
     ALWAYS_PULL,
     ALWAYS_PUSH,
@@ -39,7 +39,7 @@ def get_action(change_type):
     if change_type in DEFAULT_PUSH:
         return "push"
 
-
+@logtime
 def apply_forced_and_default(diff_infos):
 
     for info in diff_infos:
@@ -134,6 +134,8 @@ def user_push_pull(diff_infos):
     """Prompts the user to change which change types to push/pull
 
     """
+    if not diff_infos:
+        return
     initing = True
     text = """Use `push a` or `pull a-b` to change the action of files, e.g push 1-5
 Press Enter or use `apply` to apply the changes."""

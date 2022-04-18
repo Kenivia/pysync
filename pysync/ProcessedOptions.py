@@ -17,6 +17,8 @@ also defines some constants that are not intended to be modified.
 
 THIS IS THE ONLY FILE THAT CAN IMPORT DIRECTLY FROM Options.py
 Other files should import from this file
+
+ideally only __init__ should import from this, but it leads to long chains of args being passed down
 """
 
 
@@ -44,9 +46,9 @@ PATH = remove_slash(abs_path(PATH))
 ALWAYS_PUSH = [remove_slash(abs_path(i)) for i in ALWAYS_PUSH]
 ALWAYS_PULL = [remove_slash(abs_path(i)) for i in ALWAYS_PULL]
 ALWAYS_IGNORE = [remove_slash(abs_path(i)) for i in ALWAYS_IGNORE]
-#todo add a check to make sure that a file can't be in more than of them
+# todo add a check to make sure that a file can't be in more than of them
 
-assert os.path.isdir(PATH)
+assert os.path.isdir(PATH) # * makes sure PATH is there
 assert_start(PATH, ALWAYS_PULL)
 assert_start(PATH, ALWAYS_PUSH)
 

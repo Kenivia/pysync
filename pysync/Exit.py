@@ -12,7 +12,7 @@ def on_exit(timer=None, failure=False):
     if not ASK_BEFORE_EXIT:
         print("pysync will now exit")
         return
-    
+
     line_input = "\n\n>>> "
     line_exit = "\nPress enter to exit"
     line_restart = "\nType \"restart\" to sync again"
@@ -51,12 +51,12 @@ def restart():
     retval = sp.run(["dpkg", "-s", "gnome-terminal"],
                     stdout=sp.DEVNULL, stderr=sp.DEVNULL)
     if retval.returncode == 0:
-        sp.call(["gnome-terminal", "--", thispython,  str(ROOTPATH)+"/pysync"])
+        sp.call(["gnome-terminal", "--", thispython, str(ROOTPATH) + "/pysync"])
     else:
         retval = sp.run(["dpkg", "-s", "xfce4-terminal"],
                         stdout=sp.DEVNULL, stderr=sp.DEVNULL)
         if retval.returncode == 0:
-            sp.call(["xfce4-terminal", "-x", thispython, str(ROOTPATH)+"/pysync"])
+            sp.call(["xfce4-terminal", "-x", thispython, str(ROOTPATH) + "/pysync"])
         else:
             print(
                 "Neither gnome-terminal nor xfce4-terminal is available, unable to restart")

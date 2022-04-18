@@ -45,14 +45,8 @@ def list_remote(drive):
     print("Getting remote files, this should take around 30 seconds")
     file_list = drive.ListFile({"q": "trashed=false"}).GetList()
     print(len(file_list), "files listed, processing..")
-    out = []
-
-    for i in file_list:
-        _file = FileInfo("remote", **i)
-        if not _file.isorphan:
-            out.append(_file)
+    return file_list
     
-    return out
 
 
 def find_children(info_list, parent_id):
@@ -129,7 +123,7 @@ def determine_paths(folder_dict, file_id, path, modifying_dict):
 
 
 @logtime
-def process_remote(files):
+def process_remote(raw_files):
     """Lists the remote files and process them
 
     determines the local path of every file recursively 
@@ -137,10 +131,18 @@ def process_remote(files):
     Returns a dictionary containing FileInfo with their paths as keys
     """
 
-    old_len = len(files)
+    # old_len = len(files)
+    info_list = []
 
-    root, folder_dict = get_folder_dict(files)
+    for i in raw_files:
+        _file = FileInfo("remote", **i)
+        if not _file.isorphan:
+            info_list.append(_file)
+    
+    
+    root, folder_dict = get_folder_dict(info_list)
     out_dict = {PATH: root}
     determine_paths(folder_dict, "root", PATH, out_dict)
+    
     # print(old_len - len(list(out_dict)), "files were invalid or ignored")
     return out_dict

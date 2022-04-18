@@ -2,10 +2,10 @@
 """
 This file defines constants that changes some behaviours of the program
 
-NO FILES SHOULD IMPORT DIRECTLY FROM THIS FILE OTHER THAN ProcessedOptions.py
-Necessary checks and transformations are performed to the variables
 """
 
+# * NO FILES SHOULD IMPORT DIRECTLY FROM THIS FILE OTHER THAN ProcessedOptions.py
+# * Necessary checks and transformations are performed to the variables
 
 # * path to the local copy of the gdrive
 PATH = "~/gdrive"
@@ -14,21 +14,23 @@ ASK_BEFORE_EXIT = True
 # * whether or not to hold the process open until a confirmation
 
 HIDE_FORCED_IGNORE = True
-#* whether or not to display the ignored files in ALWAYS_IGNORE
+# * whether or not to display the ignored files in ALWAYS_IGNORE
 
 # * paths to always push
 ALWAYS_PUSH = []
 # * paths to always pull
 ALWAYS_PULL = ["~/gdrive/Saved", "~/gdrive/Colab Notebooks"]
 # * paths to ignore, applies to both pushing and pulling
-ALWAYS_IGNORE = ["~/gdrive/.gd"]# should probably include saved_creds.json by default, but expired tokens will just reprompt so it's not really necessary
+# should probably include saved_creds.json by default, but expired tokens
+# will just reprompt so it's not really necessary
+ALWAYS_IGNORE = ["~/gdrive/.gd"]
 
 
 # * whether or not to print whenever a thread is started
 PRINT_PROGRESS = False
 
 # * if True(recommended), content of the files will be compared(slower)
-# * otherwise only the modification time will be compared. 
+# * otherwise only the modification time will be compared.
 CHECK_MD5 = True
 
 # * max number of files pushed simultanously, limited by google api limits
@@ -52,4 +54,4 @@ DEFAULT_IGNORE = []
 # * the signature is designed to be present only in the local gdoc files so that pysync can recognize them
 # * it is a hash of the word "pysync" with the word itself inserted arbituarily in it
 # * it is written separately like this to prevent FileInfo.islocalgdoc from recognizing this file as a local gdoc file
-EXE_SIGNATURE = "#da84f858e8104ca0534138cfa2ea"+ "pysync" + "2ccf69e6a9d2b7481882ff1a651ad177a108"
+EXE_SIGNATURE = "#da84f858e8104ca0534138cfa2ea" + "pysync" + "2ccf69e6a9d2b7481882ff1a651ad177a108"

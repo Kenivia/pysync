@@ -1,4 +1,7 @@
-from pysync.Timer import TimeLogger
+from pysync.Timer import (
+    TimeLogger,
+    FuncTimer,
+)
 from pysync.UserPushPull import (
     apply_forced_and_default,
     user_push_pull,
@@ -11,69 +14,44 @@ from pysync.RemoteFiles import (
     process_remote
 )
 from pysync.ApplyOperation import run_drive_ops
-from pysync.Functions import (
-    error_report,
-    pysyncSilentExit
-)
 
 
 def event_sequence(path):
-    """Checks for differences and prompts user to apply updates
 
-    path - the directory to update
+    stages = {"local": FuncTimer("comp", "Processing local files"),
+              "init": FuncTimer("user", "Initializing drive"),
+              "load_remote": FuncTimer("net", "Getting remote files"),
+              "comp_remote": FuncTimer("comp", "Processing remote files"),
+              "compare": FuncTimer("comp", "Comparing local and remote files"),
+              "choose": FuncTimer("user", "Choosing which types to push & pull"),
+              "apply": FuncTimer("net", "Applying changes"),
+              }
+    # * stages not neccessarily in order
+    sequence = ["init", "load_remote",
+                "comp_remote", "compare", "choose", "apply"]
+    concurrent = {"local": (0, 2)}
+    # * the functions that the key overlaps with
+    for i in concurrent:
+        stages[i].concurrent = True
 
-    prompts the user to modify which keys to push and pull
-    outputs the computation time(excludes time waiting for user input)
-    """
+    timer = TimeLogger(stages, sequence, concurrent, decimal_points=3)
 
-    timer = TimeLogger(2)
-    try:
-        drive = init_drive(timer=timer.user("Initializing drive"))
+    local_data = {}
+    thread = get_local_files(path, output_dict=local_data, timer=timer.time("local"))
 
-    except Exception as e:
-        error_report(e, "during drive initialization:")
+    drive = init_drive(timer=timer.time("init"))
 
-    try:
-        remote_list = list_remote(drive,
-                                  timer=timer.load("Getting remote files"))
+    remote_raw_data = list_remote(drive, timer=timer.time("load_remote"))
 
-    except Exception as e:
-        error_report(e, "while downloading remote files:")
+    remote_data = process_remote(remote_raw_data, timer=timer.time("comp_remote"))
 
-    try:
-        local_path_dict = get_local_files(path,
-                                          timer=timer.comp("Processing local files"))
+    thread.join()
 
-    except Exception as e:
-        error_report(e, "while reading local files:")
+    diff_infos, all_data = get_diff(local_data, remote_data, timer=timer.time("compare"))
+    apply_forced_and_default(diff_infos, timer=timer.time("compare"))
 
-    try:
-        remote_path_dict = process_remote(remote_list,
-                                          timer=timer.comp("Processing remote files"))
-        diff_infos, all_path_dict = get_diff(local_path_dict, remote_path_dict,
-                                             timer=timer.comp("Comparing local and remote files"))
+    user_push_pull(diff_infos, timer=timer.time("choose"))
 
-    except Exception as e:
-        error_report(e, "while processing files:")
-
-    try:
-        apply_forced_and_default(diff_infos)
-        if diff_infos:
-            user_push_pull(diff_infos,
-                        timer=timer.user("Choosing which types to push & pull"))
-
-    except pysyncSilentExit:
-        raise pysyncSilentExit
-    
-    except Exception as e:
-        error_report(e, "while inputing action")
-
-    try:
-
-        run_drive_ops(diff_infos, all_path_dict, drive,
-                      timer=timer.load("Applying changes"))
-    except Exception as e:
-        error_report(
-            e, "The following error occured, in the main thread, while applying the sync:", True)
+    run_drive_ops(diff_infos, all_data, drive, timer=timer.time("apply"))
 
     return timer

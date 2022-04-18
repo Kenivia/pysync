@@ -1,17 +1,20 @@
 import time
 from functools import wraps
 
+from pysync.Functions import match_attr
+
 
 class FuncTimer():
 
-    def __init__(self,  func_title, time_type):
+    def __init__(self, category, func_title):
         """Timer for one function
         """
 
         self.reset()
         self.usertime = None
         self.func_title = func_title
-        self.time_type = time_type
+        self.category = category
+        self.concurrent = False
 
     def reset(self):
         self.start_time = None
@@ -30,53 +33,55 @@ class FuncTimer():
 
 
 class TimeLogger():
-    def __init__(self, decimal=2):
-        self.dp = decimal
-        self.times = []
+    def __init__(self, stages, sequence, concurrent, decimal_points=2):
+        self.dp = decimal_points
+        self.sequence = sequence
+        self.concurrent = concurrent
+        self.stages = stages
 
-    def comp(self, func_title=None):
-        self.times.append(FuncTimer(func_title, "comp"))
-        return self
+    def time(self, event):
+        return self.stages[event]
 
-    def user(self, func_title=None):
-        self.times.append(FuncTimer(func_title, "user"))
-        return self
-
-    def load(self, func_title=None):
-        self.times.append(FuncTimer(func_title, "load"))
-        return self
+    @property
+    def max_len(self):
+        return max([len(i.func_title) if not i.concurrent else
+                    len("  - started: " + i.func_title)
+                    for i in self.stages.values()])
 
     def print_times(self):
-        usersum, compsum, loadsum = 0, 0, 0
-        label_str = "Stages"
-        usr_str = "User inputs"
-        comp_str = "Computations"
-        load_str = "Uploads & downloads"
-        total_str = "Total time"
-        all_len = [len(i.func_title if i.func_title is not None else "")
-                   for i in self.times]
-        all_len.extend([len(i)
-                        for i in [usr_str, comp_str, load_str, total_str, label_str]])
-        max_len = max(all_len) + 3
-        print()
-        for i in self.times:
-            if i.func_title is not None:
-                print(i.func_title.ljust(max_len, " "),
-                      round(i.duration, self.dp))
-            if i.time_type == "user":
-                usersum += i.duration
-            elif i.time_type == "comp":
-                compsum += i.duration
-            elif i.time_type == "load":
-                loadsum += i.duration
 
-        total = usersum + compsum + loadsum
-        print("-"*(max_len+12))
-        print(label_str.ljust(max_len, " "), "Time taken")
-        print(usr_str.ljust(max_len, " "), round(usersum, self.dp))
-        print(comp_str.ljust(max_len, " "), round(compsum, self.dp))
-        print(load_str.ljust(max_len, " "), round(loadsum, self.dp))
-        print(total_str.ljust(max_len, " "), round(total, self.dp))
+        max_len = max(20, self.max_len)
+        max_len += 5
+        for index, event in enumerate(self.sequence):
+            timer = self.stages[event]
+            print(timer.func_title.ljust(max_len), round(timer.duration, self.dp))
+            for key in self.concurrent:
+                if index == self.concurrent[key][0]:
+                    ctimer = self.stages[key]
+                    print(("  - started: " + ctimer.func_title).ljust(max_len),
+                          round(ctimer.duration, self.dp))
+
+                elif index == self.concurrent[key][1]:
+                    ctimer = self.stages[key]
+                    print(("  - joined: " + ctimer.func_title).ljust(max_len),
+                          round(ctimer.duration, self.dp))
+
+        usersum = sum([i.duration for i in match_attr(self.stages.values(), category="user")])
+        compsum = sum([i.duration for i in match_attr(self.stages.values(), category="comp")])
+        netsum = sum([i.duration for i in match_attr(self.stages.values(), category="net")])
+        label_str = "Categories"
+        label_content = "Times taken"
+        usr_str = "User input"
+        comp_str = "Computations"
+        net_str = "Uploads & downloads"
+        total_str = "Total time"
+        total = usersum + compsum + netsum
+        print("\n" + "-" * (max_len + 20))
+        print(label_str.ljust(max_len), label_content)
+        print(usr_str.ljust(max_len), round(usersum, self.dp))
+        print(comp_str.ljust(max_len), round(compsum, self.dp))
+        print(net_str.ljust(max_len), round(netsum, self.dp))
+        print(total_str.ljust(max_len), round(total, self.dp))
 
 
 def logtime(func):
@@ -85,10 +90,10 @@ def logtime(func):
         if "timer" in kwargs:
             timer = kwargs["timer"]
             del kwargs["timer"]
-            timer.times[-1].start()
-
+            timer.start()
             result = func(*args, **kwargs)
-            timer.times[-1].stop()
+            timer.stop()
+
         else:
             result = func(*args, **kwargs)
         return result

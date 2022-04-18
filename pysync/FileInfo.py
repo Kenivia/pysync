@@ -18,12 +18,12 @@ from pysync.ProcessedOptions import (
 
 
 class OperationNotReady(Exception):
-    """Raised by check_possible"""
+    """Raised by check_ready"""
     pass
 
 
 class OperationIgnored(Exception):
-    """Raised by check_possible"""
+    """Raised by check_ready"""
     pass
 
 
@@ -44,46 +44,30 @@ def get_id_exe(text):
             split = text.split("/")
             for index, item in enumerate(split):
                 if item == "d":  # * the id is after a /d/ sequence
-                    return split[index+1]
+                    return split[index + 1]
     raise FileIDNotFoundError()
 
 
-def match_attr(infos, **kwargs):
-    # * doesn't support multiple values
-    # * e.g action = push, action = pull because there's no way of knowing
-    # * whether it should be AND or OR or whatever
-    # * should probably do it case by case
-    out = []
-    for i in infos:
-        matched = True
-        for key in kwargs:
-            if getattr(i, key) != kwargs[key]:
-                matched = False
-                break
-        if matched:
-            out.append(i)
-    return out
-
-
 class FileInfo():
+
     """Object containing the metadata of either a local or remote file"""
 
     def __init__(self, location, **kwargs):
         self.parent = None  # * checked by isorphan
-        self.action = None  # * checked  by check_possible
+        self.action = None  # * checked  by check_ready
         self.partner = None  # * checked by id and parent_id
-        self.change_type = None  # * checked by check_possible
+        self.change_type = None  # * checked by check_ready
         self._md5sum = None  # * checked by md5sum
         self._id = None  # * checked by id
-        self.link = None  # * checked by check_possible
-        self.isremotegdoc = False  # * checked by check_possible
+        self.link = None  # * checked by check_ready
+        self.isremotegdoc = False  # * checked by check_ready
         self.path = None  # * checked by remote_path
         self.forced = False  # * used in UserPushPull
         self.index = None  # * used in UserPushPull
 
-        self.location = location  # * whether local or remote
-        self.operation_done = False  # * set by drive_op, checked by check_possible
-        self.checked_good = False  # * set by check_possible, checked by drive_op
+        self._location = location  # * whether local or remote
+        self.operation_done = False  # * set by drive_op, checked by check_ready
+        self.checked_good = False  # * set by check_ready, checked by drive_op
 
         if self.islocal:
             self.path = kwargs["path"]
@@ -111,13 +95,12 @@ class FileInfo():
     def compare_info(self):
         """Checks if there are differences between self and self.partner
 
-        returns:
-        `content_change` if the md5sums differ
-        otherwise `mtime_change` if the modification date differ by more than 3 seconds(see drive_op)
-        False if there appears to be no change
+        mtime_change will only trigger if there is no md5sum change and >3 sec difference
 
-
+        Returns:
+            False, "content_change" or "mtime_change"
         """
+
         assert self.islocal
         assert self.path == self.partner.path
         if self.islocalgdoc:
@@ -142,8 +125,17 @@ class FileInfo():
 
         return False
 
-    def check_possible(self, path_dict):
+    def check_ready(self, all_data):
+        """performs various checks before applying
 
+        Args:
+            all_data (dict): FileInfo objects from  get_diff
+
+        Raises:
+            OperationIgnored: the action is "ignore
+            OperationNotReady: a file's parent directory doesn't exist yet(remote or local)
+            AssertionError: something went wrong
+        """
         assert self.action is not None
         if self.action == "ignore":
             # * will not  set checked_good to True, running drive_op will fail
@@ -158,13 +150,13 @@ class FileInfo():
         if self.change_type == "local_new":
             assert os.path.exists(self.path)
             if self.action == "push":
-                if self.parent_path not in path_dict:
+                if self.parent_path not in all_data:
                     raise OperationNotReady(
                         "remote folder " + self.parent_path + " doesn't exist yet")
-                if isinstance(path_dict[self.parent_path], dict):
-                    parent_id = path_dict[self.parent_path]["id"]
+                if isinstance(all_data[self.parent_path], dict):
+                    parent_id = all_data[self.parent_path]["id"]
                 else:
-                    parent_id = path_dict[self.parent_path].id
+                    parent_id = all_data[self.parent_path].id
                 if parent_id is None:
                     raise OperationNotReady(
                         "remote folder " + self.parent_path + " doesn't exist yet")
@@ -180,7 +172,7 @@ class FileInfo():
             elif self.action == "pull":
                 if not os.path.isdir(self.parent_path):
                     raise OperationNotReady(
-                        "local parent folder "+self.parent_path+" doesn't exist yet")
+                        "local parent folder " + self.parent_path + " doesn't exist yet")
 
         elif self.change_type == "content_change" or self.change_type == "mtime_change":
             assert os.path.exists(self.path)
@@ -190,13 +182,11 @@ class FileInfo():
 
         self.checked_good = True
 
-    def drive_op(self, path_dict, drive):
-        """Applies the  operation specified by self.change_type and self.action
+    def drive_op(self, all_data, drive):
+        """Applies the operation specified by self.change_type and self.action
 
-        self.checked_possible must be run before this to ensure a proper operation
-
-        path_dict - a dictionary containing all the FileInfo, probably returned by combine_dict
-
+        self.checked_possible must be ran before this
+        
         There are several scenarios:
         change_type       action      outcome
 
@@ -207,20 +197,27 @@ class FileInfo():
         content_change  push        upload the local file and overwrite the remote copy
         content_change  pull        download the remote file and overwrite the local copy
         mtime_change will yield the same behaviour as content_change
+        
+        for changes, 
 
-        for changes, will set the modification time of local file to the finish time of _file.upload()
-            this is around 1 second later than what will Google will say, hence the 3 seconds leeway in compare_info
+        if a file/folder was deleted, it will delete its entry in all_data
+        if a file is created/updated, it will add `self` to all_data with key `self.path`
 
-        if a file/folder was deleted, it will delete its entry in path_dict
-        if a file is created/updated, it will add `self` to path_dict with key `self.path`
+        if a new remote file is a google document e.g. google sheets, google docs
+        then an executable text file will be created in the local copy that opens the document in a browser
 
-        if a new remote file is a google application e.g. google sheets, google docs
-            then an executable text file will be created in the local copy that opens the document in a browser
+        the modification time of the local file will be set when the upload finishes
+            - this is around 1 second later than what will Google will say, hence the 3 seconds leeway in compare_info
 
-        after the operation finishes, it will set self.operation_done to True
-            - future calls of drive_op will raise RuntimeError
+        Args:
+            all_info (dict): FileInfo objects from  get_diff
+            drive (pydrive2.drive.GoogleDrive): drive object from init_drive
+
+        Raises:
+            RuntimeError: drive_op has already ran for this file
 
         """
+      
         assert self.checked_good
         if self.operation_done:
             raise RuntimeError("already done", self.path)
@@ -228,10 +225,10 @@ class FileInfo():
         deletion = False
         if self.change_type == "local_new":
             if self.action == "push":
-                if isinstance(path_dict[self.parent_path], dict):
-                    parent_id = path_dict[self.parent_path]["id"]
+                if isinstance(all_data[self.parent_path], dict):
+                    parent_id = all_data[self.parent_path]["id"]
                 else:
-                    parent_id = path_dict[self.parent_path].id
+                    parent_id = all_data[self.parent_path].id
                 self.parent = {"id": parent_id}
                 args = {"parents": [{"id": self.parent_id}],
                         "title": os.path.split(self.path)[1],
@@ -242,15 +239,8 @@ class FileInfo():
                     _file.Upload()
                     self._id = _file["id"]
                 elif self.islocalgdoc:
-                    #! thIS WORKS
-                    try:
-                        args["id"] = get_id_exe(open(self.path, "r").read())
-                    except FileIDNotFoundError:
-                        print(
-                            "parsing "+self.path+" failed, couldn't find the file id for the google doc")
-                        raise ValueError(
-                            "Google doc file-id not in executable file")
-                    # print(args)
+
+                    args["id"] = get_id_exe(open(self.path, "r").read())
                     _file = drive.CreateFile(args)
 
                     _file.FetchMetadata(fields="labels")
@@ -258,10 +248,8 @@ class FileInfo():
                         print("was trashed", args["parents"])
                         _file.UnTrash()
                         _file.Upload()
-                    # else:
                     _file["parents"] = [{"kind": "drive#parentReference",
                                          "id": args["parents"][0]["id"]}]
-                    # print(_file)
                     _file.Upload()
 
                 else:
@@ -305,16 +293,16 @@ class FileInfo():
             _file.Upload()
             finish_time = time.time()
             os.utime(self.path, (finish_time, finish_time))
+            
 
         self.operation_done = True
         if deletion:
-            del path_dict[self.path]
+            del all_data[self.path]
         else:
-            path_dict[self.path] = self
+            all_data[self.path] = self
 
     @property
     def md5sum(self):
-        """Returns the md5sum of the file, calculates it if that hasn't been done"""
         assert not self.isfolder
         if not self.islocal:
             return self._md5sum
@@ -324,10 +312,6 @@ class FileInfo():
 
     @property
     def id(self):
-        """Returns the remote id of the file
-
-        local files will attempts to read the id of self.partner
-        """
         if self._id is not None:
             return self._id
         if self.partner is not None:
@@ -341,8 +325,8 @@ class FileInfo():
 
     @property
     def islocal(self):
-        assert self.location == "local" or self.location == "remote"
-        return self.location == "local"
+        assert self._location == "local" or self._location == "remote"
+        return self._location == "local"
 
     @property
     def isorphan(self):
@@ -376,12 +360,10 @@ class FileInfo():
 
     @property
     def ignore_me(self):
-        # if self.islocal and is_desktop(self.path):
-        #     return True
         return contains_parent(ALWAYS_IGNORE, self.path)
 
     def get_path(self, path):
-        assert self.location == "remote"
+        assert self._location == "remote"
         self.path = os.path.join(path, self.title)
 
     def calculate_md5(self):
@@ -390,7 +372,7 @@ class FileInfo():
 
     @property
     def remote_path(self):
-        """returns its path in the google docs folder(without PATH in front of it)"""
+        """returns its path as it would appear in gdrive(without PATH in front of it)"""
         assert self.path is not None
         assert self.path.startswith(PATH)
         return self.path[len(PATH):]

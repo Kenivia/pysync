@@ -3,7 +3,7 @@ from pysync.Functions import init_libraries
 
 def main():
 
-    if not init_libraries():
+    if not init_libraries({"pydrive2", "send2trash"}):
         print("pysync will now exit")
         return
 
@@ -17,13 +17,10 @@ def main():
         on_exit(failure=True)
         return
 
-    from pysync.EventSequence import (
-        event_sequence,
-        error_report,
-    )
+    from pysync.EventSequence import event_sequence
     from pysync.ProcessedOptions import PATH
     from pysync.Functions import (
-        HandledpysyncException,
+        error_report,
         pysyncSilentExit,
     )
     from pysync.Exit import on_exit
@@ -38,11 +35,7 @@ def main():
         pass
     except KeyboardInterrupt:
         on_exit(failure=False)
-
-    except HandledpysyncException:
-        on_exit(failure=True)
-
     except Exception as e:
-        error_report(e, "The following error occured unexpectedly:",
+        error_report(e, "The following error occured:",
                      full_text=True, raise_exception=False)
         on_exit(failure=True)

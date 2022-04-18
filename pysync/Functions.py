@@ -11,17 +11,14 @@ from threading import Thread
 """
 This file defines miscellaneous functions that:
     - don't depend on any other files in pysync
-    - complete a standalone task            
+    - complete a standalone task
     - are flexible for use in a variety of situations
-    
+
 """
 
 
 class pysyncSilentExit(Exception):
     pass
-
-
-
 
 
 def raise_this_error(error):
@@ -44,12 +41,32 @@ def error_report(exception_object, text, full_text=False, raise_exception=True):
             raise HandledpysyncException()
 
 
-# def cancel_report():
-#     raise KeyboardInterrupt
+def match_attr(infos, **kwargs):
+    # * doesn't support multiple values
+    # * e.g action = push, action = pull because there's no way of knowing
+    # * whether it should be AND or OR or whatever
+    # * should probably do it case by case
+    out = []
+    for i in infos:
+        matched = True
+        for key in kwargs:
+            if getattr(i, key) != kwargs[key]:
+                matched = False
+                break
+        if matched:
+            out.append(i)
+    return out
 
 
-def init_libraries():
+def init_libraries(required):
+    """installs required packages, if not present
 
+    Args:
+        required (set): a set containing the packages in string
+
+    Returns:
+        bool: if things are installed properly
+    """    
     required = {'pydrive2', 'send2trash', }
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing = list(required - installed)
@@ -82,8 +99,10 @@ class HandledpysyncException(Exception):
 
 
 def contains_parent(parents_list, inp):
-    """Returns True if parents_list contain(or equal to) a parent of inp
-    designed for use with ALWAYS_PULL etc"""
+    """Returns True if parents_list contain a parent of inp
+        or if parent_list contains inp
+
+    """
     for i in parents_list:
         if pathlib.Path(i) in pathlib.Path(inp).parents or inp == i:
             return True
@@ -91,7 +110,9 @@ def contains_parent(parents_list, inp):
 
 
 def human_time(start, now=None):
-    """Calculates the difference between two times or changes one into human readable"""
+    """Calculates the difference between two times in human readable form
+        if there is only one input, convert it into human readable form
+    """
     if now is not None:
         value = dt.datetime.fromtimestamp(now)\
             - dt.datetime.fromtimestamp(start)
@@ -106,7 +127,6 @@ def human_time(start, now=None):
 
 
 def flatten_dict(inp):
-    """Flattens a dictionary of lists into a 1 dimensional list"""
     out = []
     for i in sorted(list(inp)):
         out.extend(inp[i])
@@ -131,23 +151,10 @@ def relative_depth(parent_path, child_path):
     return len(child_path.split("/")) - len(parent_path.split("/"))
 
 
-def union_dicts(dict1, dict2):
-    """Unions two dictionaries like a set
-
-    WARNING this modifies dict1 into the new, combined dictionary
-    also returns that dictionary 
-    """
-    all_dict = dict1
-    for i in dict2:
-        if i not in all_dict:
-            all_dict[i] = dict2[i]
-    return all_dict
-
-
 def abs_path(inp):
-    """Converts a path into absolute path
+    """Converts inp into an absolute path
 
-    takes care of: "..", ".", "~" and no prefix
+    takes care of: "..", ".", "~" and when there's no prefix
     the path will behave just like in terminals
     This is different to os.path.abspath, which just adds cwd to the front
     """
