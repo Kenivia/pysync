@@ -10,7 +10,7 @@ from pysync.FileInfo import FileInfo
 
 def write_yaml():
     """This is probably unncessesary but might be useful just in case"""
-    yamlpath = ROOTPATH.joinpath("settings.yaml")
+    yamlpath = ROOTPATH + "/settings.yaml"
     content = """client_config_backend: file
 client_config_file: {0}/data/client_secrets.json
 
@@ -32,7 +32,7 @@ def init_drive():
 
     os.chdir(ROOTPATH)
     # * pydrive seems to only read settings.yaml if it's located at cwd
-    write_yaml()  # * optional
+    write_yaml()  # * optional?
 
     gauth = GoogleAuth()
     gauth.LocalWebserverAuth()
@@ -44,8 +44,9 @@ def list_remote(drive):
     """Lists remote files that are not in trash"""
     print("Getting remote files..")
     file_list = drive.ListFile({"q": "trashed=false"}).GetList()
+    file_list = [dict(i) for i in file_list]
     print(len(file_list), "files listed, processing..")
-    return file_list
+    return list(file_list)
 
 
 def get_folder_dict(files):
@@ -56,6 +57,7 @@ def get_folder_dict(files):
 
     root = None
     for i in files:
+        print(i.title)
         for _id in folder_dict:
             if i.parent_isroot:
                 root = i.parent
@@ -70,7 +72,7 @@ def get_folder_dict(files):
 def determine_paths(folder_dict, file_id, path, modifying_dict):
     """Put files into modifying_dict with its path as the key
 
-    runs recursively, orphan files(not under root) will not be included
+    runs recursively
 
     Args:
         folder_dict (dict): dict with id of folders as key, list of dict(files) as value

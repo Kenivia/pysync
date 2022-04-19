@@ -1,4 +1,3 @@
-from pysync.Differ import delete_compression
 from pysync.InputParser import replace_numbers
 from pysync.Options import HIDE_FORCED_IGNORE
 from pysync.Timer import logtime
@@ -136,6 +135,34 @@ def print_status(infos):
         else:
             short = num_shorten([i.index for i in cur_actions[key]])
             print("  -" + key + "(" + str(len(cur_actions[key])) + "):", " ".join(short))
+
+
+def delete_compression(diff_infos):
+    """removes children of folders that are being deleted
+
+    idea being that a deletion of folder would only happen if all children are also being deleted
+    this also metigates issues when applying
+
+    Args:
+        diff_infos (list): list of FileInfo objects
+
+    Returns:
+        list: modified list
+    """
+    del_folder = []
+    for i in diff_infos:
+        if i.isfolder and "del" in i.action_code:
+            del_folder.append(i.path)
+
+    indexs = []
+    for index, item in enumerate(diff_infos):
+        if contains_parent(del_folder, item.path, accept_self=False):
+            indexs.append(index)
+
+    for i in reversed(indexs):
+        del diff_infos[i]
+
+    return diff_infos
 
 
 @logtime

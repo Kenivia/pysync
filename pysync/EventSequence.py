@@ -8,7 +8,6 @@ from pysync.UserPushPull import (
 )
 from pysync.Differ import (
     get_diff,
-    delete_compression,
 )
 from pysync.LocalFiles import get_local_files
 from pysync.RemoteFiles import (
@@ -50,8 +49,9 @@ def event_sequence(path):
     thread.join()
 
     diff_infos, all_data = get_diff(local_data, remote_data, timer=timer.time("compare"))
+
     apply_forced_and_default(diff_infos, timer=timer.time("compare"))
-    
+
     user_push_pull(diff_infos, timer=timer.time("choose"))
 
     run_drive_ops(diff_infos, all_data, drive, timer=timer.time("apply"))

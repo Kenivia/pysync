@@ -257,7 +257,7 @@ class FileInfo():
                 _file = drive.CreateFile(args)
                 _file.SetContentFile(self.path)
                 _file.Upload()
-                
+
         elif self.action_code == "del local":
             send2trash(self.path)
             deletion = True
@@ -268,7 +268,7 @@ class FileInfo():
             _file = drive.CreateFile({"id": self.id, })
             _file.Trash()
             deletion = True
-            
+
         elif self.action_code == "down new":
             if self.isfolder:
                 os.mkdir(self.path)
@@ -291,7 +291,7 @@ class FileInfo():
             _file.Upload()
             finish_time = time.time()
             os.utime(self.path, (finish_time, finish_time))
-            
+
         elif self.action_code == "down diff":
             # * can't be folder
             _file = drive.CreateFile({"id": self.id, })
@@ -299,7 +299,7 @@ class FileInfo():
             _file.Upload()
             finish_time = time.time()
             os.utime(self.path, (finish_time, finish_time))
-            
+
         self.operation_done = True
         if deletion:
             del all_data[self.path]
@@ -435,3 +435,19 @@ class FileInfo():
                 return "up diff"
             elif self.action == "pull":
                 return "down diff"
+
+    def __hash__(self):
+        out = {}
+        for key in self.__dict__:
+            if key == "partner":
+                continue
+            item = self.__dict__[key]
+            if isinstance(item, dict):
+                out[key] = frozenset(item)
+            elif isinstance(item, list):
+                out[key] = tuple(item)
+            else:
+                out[key] = item
+            
+        
+        return hash(frozenset(out))

@@ -32,8 +32,8 @@ assert isinstance(PRINT_PROGRESS, bool)
 assert EXE_SIGNATURE.startswith("#")
 
 # * root as in the directory containing pysync, not the actual root
-# * ends with no slah
-ROOTPATH = PurePath(__file__).parent.parent
+# * ends with no slash
+ROOTPATH = str(PurePath(__file__).parent.parent)
 
 if MAX_PUSH_THREADS > 50:
     print("Warning! MAX_PUSH_THREADS was set to a value higher than 50. This may cause upload to fail")

@@ -1,7 +1,6 @@
 import random
 import concurrent.futures as cf
 
-from pysync.Functions import contains_parent, match_attr
 from pysync.ProcessedOptions import (
     MAX_COMPUTE_THREADS,
     PATH,
@@ -55,7 +54,7 @@ def one_diff(args):
 
 @logtime
 def get_diff(local_data, remote_data):
-    """_summary_
+    """Determines the difference between the two
 
     Args:
         local_data (dict): dict of local FileInfo objects from get_local_files
@@ -85,32 +84,6 @@ def get_diff(local_data, remote_data):
     return diff_infos, all_data
 
 
-def delete_compression(diff_infos):
-    """removes children of folders that are being deleted
 
-    idea being that a deletion of folder would only happen if all children are also being deleted
-    this also metigates issues when applying
-
-    Args:
-        diff_infos (list): list of FileInfo objects
-
-    Returns:
-        list: modified list 
-    """
-    del_folder = []
-    for i in diff_infos:
-        if i.isfolder and "del" in i.action_code:
-            del_folder.append(i.path)
-    
-    indexs = []
-    for index, item in enumerate(diff_infos):
-        if contains_parent(del_folder, item.path, accept_self=False):
-            indexs.append(index)
-    
-    for i in reversed(indexs):
-        del diff_infos[i]
-    
-    return diff_infos
-    
 
     

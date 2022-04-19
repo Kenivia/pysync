@@ -8,3 +8,4 @@ pysync/*test*
 data/client_secrets.json
 test_pkl/*
 CreateTestpkl.py
+*test*

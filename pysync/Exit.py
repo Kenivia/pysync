@@ -51,12 +51,12 @@ def restart():
     retval = sp.run(["dpkg", "-s", "gnome-terminal"],
                     stdout=sp.DEVNULL, stderr=sp.DEVNULL)
     if retval.returncode == 0:
-        sp.call(["gnome-terminal", "--", thispython, str(ROOTPATH) + "/pysync"])
+        sp.call(["gnome-terminal", "--", thispython, ROOTPATH + "/pysync"])
     else:
         retval = sp.run(["dpkg", "-s", "xfce4-terminal"],
                         stdout=sp.DEVNULL, stderr=sp.DEVNULL)
         if retval.returncode == 0:
-            sp.call(["xfce4-terminal", "-x", thispython, str(ROOTPATH) + "/pysync"])
+            sp.call(["xfce4-terminal", "-x", thispython, ROOTPATH + "/pysync"])
         else:
             print(
                 "Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
