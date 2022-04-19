@@ -52,14 +52,16 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
 
 - `python3`: `sudo apt install python3`
 
-- `pydrive2`, `send2trash`: `pip install pydrive2 send2trash`
+- `pydrive2`, `send2trash`: `pip3 install pydrive2 send2trash`
   
-- `xdg-open`: present on most Linux desktop environments(used for opening gdoc files by double clicking, other than that everything will work fine)
-   
-- Either `gnome-terminal` or `xfce4-terminal` for a quick restart of the syncing process
-
 - a folder at `~/gdrive` to sync with (you can change the location in `./pysync/options.py`)
 
+- `client_secret.json` placed in `./pysync-master/data/`
+
+- Either `gnome-terminal` or `xfce4-terminal` for a quick restart of the syncing process
+- 
+- `xdg-open`: present on most Linux desktop environments(used for opening gdoc files by double clicking, other than that everything will work fine)
+   
 This is tested on Linux Mint with python3.8.10 and Cinnamon 5.0. 
 
 ## Usage
@@ -67,16 +69,17 @@ This is tested on Linux Mint with python3.8.10 and Cinnamon 5.0.
 MAKE A BACKUP OF YOUR GOOGLE DRIVE FOLDER BEFORE YOU RUN THIS!
 - `python3 ./pysync-master/pysync`  
 
-You'll(hopefully) be prompted by a google page asking for permission to your google files
+You will be prompted by a google page asking for permission to your google files
 
 
 ## Current features
 
-- Compares the remote google drive with the local drive
+- Detect differences quickly, depending mostly on the size of the google drive and the disk read speed
 - The user can then choose whether to push or pull which files to push/pull(upload/download)
 - Applies the chosen operations
 - For Google Docs, Google Sheets and Google Slides files, download an executable text file that links to the file
 - Ext3/4 don't allow folders and files with the same name but it's fine on Google drive. This is checked and prevented by the script. You can avoid this problem with Capitalizations.
+- Keeps track of how long each stage of the program took
 
 
 ## Known issues/plans
