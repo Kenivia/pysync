@@ -57,7 +57,6 @@ def get_folder_dict(files):
 
     root = None
     for i in files:
-        print(i.title)
         for _id in folder_dict:
             if i.parent_isroot:
                 root = i.parent

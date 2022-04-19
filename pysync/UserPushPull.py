@@ -108,9 +108,6 @@ def print_half(infos, initing, forced, index):
                 index += 1
 
 
-str
-
-
 def print_change_types(infos, initing):
 
     # todo abbreviate folders where all content are new/deleted
