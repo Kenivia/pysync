@@ -47,7 +47,6 @@ class TimeLogger():
                     len("  - started: " + i.func_title)
                     for i in self.stages.values()])
 
-    
     def sum_time(self, category):
         sumtime = sum([
             i.duration for i in match_attr(self.stages.values(), category=category) if not i.concurrent])

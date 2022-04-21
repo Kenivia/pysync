@@ -4,23 +4,24 @@ from pydrive2.drive import GoogleDrive
 from send2trash import send2trash
 
 from pysync.Timer import logtime
-from pysync.ProcessedOptions import PATH, ROOTPATH
+from pysync.Options_parser import load_options
 from pysync.FileInfo import FileInfo
 
 
 def write_yaml():
     """This is probably unncessesary but might be useful just in case"""
-    yamlpath = ROOTPATH + "/settings.yaml"
+    yamlpath = load_options("ROOT") + "/settings.yaml"
     content = """client_config_backend: file
 client_config_file: {0}/data/client_secrets.json
 
 
 save_credentials: True
 save_credentials_backend: file
-save_credentials_file: {0}/data/saved_creds.json""".format(ROOTPATH)
+save_credentials_file: {0}/data/saved_creds.json""".format(load_options("ROOT"))
 
     if os.path.isfile(yamlpath):
         send2trash(str(yamlpath))
+        # * act as a backup instead of overwriting, just in case
 
     with open(yamlpath, "w") as f:
         f.write(content)
@@ -30,7 +31,7 @@ save_credentials_file: {0}/data/saved_creds.json""".format(ROOTPATH)
 def init_drive():
     """Initializes the google drive and returns an UNPICKLABLE object"""
 
-    os.chdir(ROOTPATH)
+    os.chdir(load_options("ROOT"))
     # * pydrive seems to only read settings.yaml if it's located at cwd
     write_yaml()  # * optional?
 
@@ -119,7 +120,8 @@ def process_remote(raw_files):
             info_list.append(_file)
 
     root, folder_dict = get_folder_dict(info_list)
-    out_dict = {PATH: root}
-    determine_paths(folder_dict, "root", PATH, out_dict)
+    path = load_options("PATH")
+    out_dict = {path: root}
+    determine_paths(folder_dict, "root", path, out_dict)
 
     return out_dict

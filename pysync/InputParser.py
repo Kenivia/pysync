@@ -12,7 +12,7 @@ def replace_numbers(inp, upperbound):
         upperbound (int): the highest index displayed on screen
 
     Returns:
-        list: list of converted strings 
+        list: list of converted strings
         str: error/warning messages
     """
     message = ""

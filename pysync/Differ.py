@@ -1,16 +1,14 @@
 import random
 import concurrent.futures as cf
 
-from pysync.ProcessedOptions import (
-    MAX_COMPUTE_THREADS,
-    PATH,
-)
+from pysync.Options_parser import load_options
 from pysync.Timer import logtime
 
 
 def one_diff(args):
     """Determines the change type of one file
 
+    This is implemented this way to allow files to be compared in parallel
     intended to be called using concurrent.future
 
     Args:
@@ -27,7 +25,7 @@ def one_diff(args):
         if the path is PATH, returns False and a dict with information about PATH
     """
     path, local_data, remote_data = args[0], args[1], args[2]
-    if path == PATH:
+    if path == load_options("PATH"):
         return False, remote_data[path]
 
     in_local = path in local_data
@@ -71,19 +69,15 @@ def get_diff(local_data, remote_data):
             for path in all_keys]
     random.shuffle(_map)
     all_data = {}
-    with cf.ProcessPoolExecutor(max_workers=MAX_COMPUTE_THREADS) as executor:
-        chunksize = int(len(all_keys) / MAX_COMPUTE_THREADS)
+    max_threads = load_options("MAX_COMPUTE")
+    with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
+        chunksize = int(len(all_keys) / max_threads)
         for change_type, obj in executor.map(one_diff, _map, chunksize=chunksize):
             if isinstance(obj, dict):
-                all_data[PATH] = obj
+                all_data[load_options("PATH")] = obj
             else:
                 all_data[obj.path] = obj
             if change_type:
                 diff_infos.append(obj)
 
     return diff_infos, all_data
-
-
-
-
-    

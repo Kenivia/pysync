@@ -1,54 +1,48 @@
 from pysync.InputParser import replace_numbers
-from pysync.Options import HIDE_FORCED_IGNORE
 from pysync.Timer import logtime
 from pysync.Functions import (
     contains_parent,
     pysyncSilentExit,
 )
 from pysync.Functions import match_attr
-from pysync.ProcessedOptions import (
-    ALWAYS_PULL,
-    ALWAYS_PUSH,
-    ALWAYS_IGNORE,
-    DEFAULT_PULL,
-    DEFAULT_PUSH,
-    DEFAULT_IGNORE,
-)
+from pysync.Options_parser import load_options
 from pysync.Exit import restart
 
 
-def in_override(info):
-
-    if contains_parent(ALWAYS_PULL, info):
+def isin_override(info):
+    apull, apush, aignore = load_options("APULL", "APUSH", "AIGNORE")
+    if contains_parent(apull, info):
         return "pull"
-    elif contains_parent(ALWAYS_PUSH, info):
+    elif contains_parent(apush, info):
         return "push"
-    elif contains_parent(ALWAYS_IGNORE, info):
+    elif contains_parent(aignore, info):
         return "ignore"
     else:
         return False
 
 
-def get_action(change_type):
-
-    if change_type in DEFAULT_IGNORE:
-        return "ignore"
-    if change_type in DEFAULT_PULL:
+def get_default_action(change_type):
+    dpull, dpush, dignore = load_options("DPULL", "DPUSH", "DIGNORE")
+    if change_type in dpull:
         return "pull"
-    if change_type in DEFAULT_PUSH:
+    elif change_type in dpush:
         return "push"
+    elif change_type in dignore:
+        return "ignore"
+    else:
+        raise ValueError
 
 
 @logtime
 def apply_forced_and_default(diff_infos):
 
     for info in diff_infos:
-        forced_action = in_override(info.path)
+        forced_action = isin_override(info.path)
         if forced_action:
             info.action = forced_action
             info.forced = True
         else:
-            info.action = get_action(info.change_type)
+            info.action = get_default_action(info.change_type)
 
     return diff_infos
 
@@ -95,7 +89,7 @@ def print_half(infos, initing, forced, index):
 
         for i in this:
             if forced:
-                if i.action == "ignore" and HIDE_FORCED_IGNORE:
+                if i.action == "ignore" and load_options("HIDE_FIGNORE"):
                     pass
                 else:
                     print(i.action_human, i.path)

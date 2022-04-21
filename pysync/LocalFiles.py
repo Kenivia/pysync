@@ -5,7 +5,7 @@ from pysync.FileInfo import FileInfo
 from pysync.Timer import logtime
 
 
-def get_local_files(path,  output_dict=None, timer=None):
+def get_local_files(path, output_dict=None, timer=None):
 
     if output_dict is None:
         output_dict = {}
@@ -31,7 +31,7 @@ def get_local_info_list(path, out_dict):
             print(new_path, "is a symbolic link, ignored")
             continue
         file_info = FileInfo("local", path=new_path, md5_now=True)
-        
+
         # * modifies the local_dict in get_local_files
         # * same idea as process_remote
         out_dict[file_info.path] = file_info

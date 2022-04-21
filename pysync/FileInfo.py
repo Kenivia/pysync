@@ -9,12 +9,7 @@ from pysync.Functions import (
     hex_md5_file,
     contains_parent,
 )
-from pysync.ProcessedOptions import (
-    CHECK_MD5,
-    EXE_SIGNATURE,
-    ALWAYS_IGNORE,
-    PATH,
-)
+from pysync.Options_parser import load_options
 
 
 class OperationNotReady(Exception):
@@ -112,7 +107,7 @@ class FileInfo():
         if self.isfolder:
             return False
 
-        if CHECK_MD5:
+        if load_options("CHECK_SUM"):
             # assert self.md5sum is not None and self.partner.md5sum is not None
             content_diff = self.md5sum != self.partner.md5sum
             if content_diff:
@@ -240,17 +235,16 @@ class FileInfo():
 
                 args["id"] = get_id_exe(open(self.path, "r").read())
                 _file = drive.CreateFile(args)
-
                 _file.FetchMetadata(fields="labels")
                 if _file["labels"]["trashed"]:
-                    print("was trashed", args["parents"])
+                    print(self.path, "is untrashed")
                     _file.UnTrash()
                     _file.Upload()
                     _file["parents"] = [{"kind": "drive#parentReference",
                                         "id": args["parents"][0]["id"]}]
                     _file.Upload()
                 else:
-                    print(self.path, "is invalid, ignored")
+                    print(self.path, "is a local google doc file but doesn't exist remotely, ignored")
 
             else:
                 # * is an ordinary file
@@ -279,7 +273,7 @@ class FileInfo():
                     _file.GetContentFile(self.path, remove_bom=True)
                 else:
                     with open(self.path, "w") as exe_file:
-                        exe_file.write(gen_exe(self.link, EXE_SIGNATURE))
+                        exe_file.write(gen_exe(self.link, load_options("SIGNATURE")))
                         sp.run(["chmod", "+x", self.path])
                 mtime = int(dup.parse(_file["modifiedDate"]).timestamp())
                 os.utime(self.path, (mtime, mtime))
@@ -356,7 +350,7 @@ class FileInfo():
         if self.islocal and not self.isfolder:
             try:
                 with open(self.path, "r") as _file:
-                    if EXE_SIGNATURE in _file.read():
+                    if load_options("SIGNATURE") in _file.read():
                         return True
             except UnicodeDecodeError:
                 return False
@@ -365,7 +359,7 @@ class FileInfo():
 
     @property
     def ignore_me(self):
-        return contains_parent(ALWAYS_IGNORE, self.path)
+        return contains_parent(load_options("AIGNORE"), self.path)
 
     def get_path(self, path):
         assert self._location == "remote"
@@ -378,9 +372,10 @@ class FileInfo():
     @property
     def remote_path(self):
         """returns its path as it would appear in gdrive(without PATH in front of it)"""
+        local_path = load_options("PATH")
         assert self.path is not None
-        assert self.path.startswith(PATH)
-        return self.path[len(PATH):]
+        assert self.path.startswith(local_path)
+        return self.path[len(local_path):]
 
     @property
     def action_human(self):
@@ -391,6 +386,7 @@ class FileInfo():
         if self.change_type == "local_new":
             if self.action == "push":
                 return out + "uploading new"
+
             elif self.action == "pull":
                 if self.isfolder:
                     return out + "deleting local folder and ALL its content"
@@ -403,12 +399,14 @@ class FileInfo():
                     return out + "deleting remote folder and ALL its content"
                 else:
                     return out + "deleting remote file"
+
             elif self.action == "pull":
                 return out + "downloading new"
 
         elif self.change_type == "content_change" or self.change_type == "mtime_change":
             if self.action == "push":
                 return out + "uploading difference"
+
             elif self.action == "pull":
                 return out + "downloading difference"
 
@@ -437,6 +435,7 @@ class FileInfo():
                 return "down diff"
 
     def __hash__(self):
+
         out = {}
         for key in self.__dict__:
             if key == "partner":
@@ -448,6 +447,5 @@ class FileInfo():
                 out[key] = tuple(item)
             else:
                 out[key] = item
-            
-        
+
         return hash(frozenset(out))

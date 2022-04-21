@@ -1,4 +1,5 @@
 from pysync.Functions import init_libraries
+from pysync.Options_parser import check_options
 
 
 def main():
@@ -7,18 +8,10 @@ def main():
         print("pysync will now exit")
         return
 
-    try:
-        import pysync.ProcessedOptions
-
-    except Exception as e:
-        from pysync.Functions import error_report
-        from pysync.Exit import on_exit
-        error_report(e, "while parsing Options.py:", raise_exception=False)
-        on_exit(failure=True)
-        return
+    check_options()
 
     from pysync.EventSequence import event_sequence
-    from pysync.ProcessedOptions import PATH
+    from pysync.Options_parser import load_options
     from pysync.Functions import (
         error_report,
         pysyncSilentExit,
@@ -28,7 +21,7 @@ def main():
     timer = None
     print("pysync started successfully")
     try:
-        timer = event_sequence(PATH)
+        timer = event_sequence(load_options("PATH"))
         on_exit(timer=timer, failure=False)
 
     except pysyncSilentExit:

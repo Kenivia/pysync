@@ -10,7 +10,7 @@ from threading import Thread
 
 """
 This file defines miscellaneous functions that:
-    - don't depend on any other files in pysync
+    - don't depend on ANY other files in pysync
     - complete a standalone task
     - are flexible for use in a variety of situations
 

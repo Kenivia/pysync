@@ -6,9 +6,7 @@ from pysync.UserPushPull import (
     apply_forced_and_default,
     user_push_pull,
 )
-from pysync.Differ import (
-    get_diff,
-)
+from pysync.Differ import get_diff
 from pysync.LocalFiles import get_local_files
 from pysync.RemoteFiles import (
     init_drive,

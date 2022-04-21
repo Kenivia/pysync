@@ -6,12 +6,7 @@ from threading import (
 
 from pysync.Functions import match_attr
 from pysync.Timer import logtime
-from pysync.ProcessedOptions import (
-    MAX_PUSH_THREADS,
-    RECHECK_INTERVAL,
-    PRINT_PROGRESS,
-)
-
+from pysync.Options_parser import load_options
 from pysync.FileInfo import (
     OperationIgnored,
     OperationNotReady,
@@ -22,7 +17,7 @@ from pysync.FileInfo import (
 def run_drive_ops(diff_infos, all_data, drive):
     """Run drive_op for each push/pull operation using many threads
 
-    Will not exceed MAX_PUSH_THREADS at any given time
+    Will not exceed MAX_UPLOAD_THREADS at any given time
 
     Applies the changes to folders first, then files with least depth
 
@@ -50,14 +45,14 @@ def run_drive_ops(diff_infos, all_data, drive):
         index = len(infos) - 1
 
         for _ in range(len(infos)):
-            if active_count() - intial_thread_count >= MAX_PUSH_THREADS:
-                time.sleep(RECHECK_INTERVAL)
+            if active_count() - intial_thread_count >= load_options("MAX_UPLOAD"):
+                time.sleep(load_options("RECHECK_TIME"))
                 break
 
             item = infos[index]
             try:
                 item.check_ready(all_data)
-                if PRINT_PROGRESS:
+                if load_options("PRINT_UPLOAD"):
                     print(len(infos), item.action + "ing", item.change_type, item.path)
                 t = Thread(target=item.drive_op, args=(all_data, drive))
                 t.start()

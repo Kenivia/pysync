@@ -1,15 +1,12 @@
 import sys
 import subprocess as sp
 
-from pysync.ProcessedOptions import (
-    ROOTPATH,
-    ASK_BEFORE_EXIT,
-)
+from pysync.Options_parser import load_options
 
 
 def on_exit(timer=None, failure=False):
 
-    if not ASK_BEFORE_EXIT:
+    if not load_options("ASK_AT_EXIT"):
         print("pysync will now exit")
         return
 
@@ -47,16 +44,17 @@ def on_exit(timer=None, failure=False):
 
 
 def restart():
+    root_path = load_options("ROOT")
     thispython = sys.executable
     retval = sp.run(["dpkg", "-s", "gnome-terminal"],
                     stdout=sp.DEVNULL, stderr=sp.DEVNULL)
     if retval.returncode == 0:
-        sp.call(["gnome-terminal", "--", thispython, ROOTPATH + "/pysync"])
+        sp.call(["gnome-terminal", "--", thispython, root_path + "/pysync"])
     else:
         retval = sp.run(["dpkg", "-s", "xfce4-terminal"],
                         stdout=sp.DEVNULL, stderr=sp.DEVNULL)
         if retval.returncode == 0:
-            sp.call(["xfce4-terminal", "-x", thispython, ROOTPATH + "/pysync"])
+            sp.call(["xfce4-terminal", "-x", thispython, root_path + "/pysync"])
         else:
             print(
                 "Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
