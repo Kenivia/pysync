@@ -43,10 +43,10 @@ def init_drive():
 @logtime
 def list_remote(drive):
     """Lists remote files that are not in trash"""
-    print("Getting remote files..")
+    
     file_list = drive.ListFile({"q": "trashed=false"}).GetList()
     file_list = [dict(i) for i in file_list]
-    print(len(file_list), "files listed, processing..")
+    
     return list(file_list)
 
 

@@ -36,8 +36,8 @@ def run_drive_ops(diff_infos, all_data, drive):
     else:
         print("No available changes")
 
+    # * Ideally this would also use concurrent.future but 
     while infos:
-
         infos.sort(key=lambda x: (  # * folders first, then less depth first
             not x.isfolder, len(x.path.split("/"))), reverse=True)
         # * I go from the back cos i'm removing it 1 by 1, thats why its reversed

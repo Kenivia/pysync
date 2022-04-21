@@ -70,7 +70,7 @@ def get_diff(local_data, remote_data):
     random.shuffle(_map)
     all_data = {}
     max_threads = load_options("MAX_COMPUTE")
-    with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
+    with cf.ThreadPoolExecutor(max_workers=max_threads) as executor:
         chunksize = int(len(all_keys) / max_threads)
         for change_type, obj in executor.map(one_diff, _map, chunksize=chunksize):
             if isinstance(obj, dict):
@@ -78,6 +78,7 @@ def get_diff(local_data, remote_data):
             else:
                 all_data[obj.path] = obj
             if change_type:
+                
                 diff_infos.append(obj)
 
     return diff_infos, all_data
