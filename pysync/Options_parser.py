@@ -12,6 +12,50 @@ from pysync.Functions import (
 )
 
 
+def code_to_alias(alias, inp):
+    for i in alias:
+        if alias[i] == inp:
+            return i
+    raise ValueError
+
+
+def alias_to_code(raw_options):
+    alias = {
+        "Local path": "PATH",
+        "Ask before exit": "ASK_AT_EXIT",
+        "Hide forced ignore": "HIDE_FIGNORE",
+        "Print upload progress": "PRINT_UPLOAD",
+        "Compare md5sum": "CHECK_MD5",
+
+        "Max upload threads": "MAX_UPLOAD",
+        "Max compute threads": "MAX_COMPUTE",
+
+        "Always pull": "APULL",
+        "Always push": "APUSH",
+        "Always ignore": "AIGNORE",
+
+        "Default pull": "DPULL",
+        "Default push": "DPUSH",
+        "Default ignore": "DIGNORE",
+
+    }
+    options = {}
+    for raw_key in raw_options:
+        options[alias[raw_key]] = raw_options[raw_key]
+    return options
+
+
+def cache_options():
+    all_available_code = [
+        "PATH", "ASK_AT_EXIT", "HIDE_FIGNORE", "PRINT_UPLOAD", "CHECK_MD5",
+        "MAX_UPLOAD", "MAX_COMPUTE",
+        "APULL", "APUSH", "AIGNORE",
+        "DPULL", "DPUSH", "DIGNORE",
+        "ROOT", "RECHECK_TIME", "SIGNATURE",
+    ]
+    load_options(*all_available_code)  # * to load all the cache
+
+
 def check_options():
 
     expected_types = {
@@ -34,33 +78,37 @@ def check_options():
     }
 
     with open(str(PurePath(__file__).parent.parent) + "/data/Options.json", "r") as f:
-        options = json.load(f)
+        raw_options = json.load(f)
+        seen_keys = []
 
-    seen_keys = []
+        for raw_key in raw_options:
+            if raw_key not in expected_types:
 
-    for key in options:
-        if key not in expected_types:
-            print("Unknown key: \"{}\" in Options.json, ignored".format(key))
+                print("Unknown key: \"{}\" in Options.json, ignored".format(raw_key))
 
-        assert isinstance(options[key], expected_types[key])
-        seen_keys.append(key)
+            assert isinstance(raw_options[raw_key], expected_types[raw_key])
+            seen_keys.append(raw_key)
 
-    if len(seen_keys) < len(options):
-        missing = options.keys() - seen_keys
-        raise ValueError("The following keys are missing from Options.json: " + ", ".join(missing))
+        if len(seen_keys) < len(raw_options):
+            missing = raw_options.keys() - seen_keys
+            raise ValueError(
+                "The following keys are missing from Options.json: " +
+                ", ".join(missing))
 
-    if options["Max upload threads"] > 50:
+    options = alias_to_code(raw_options)
+
+    if options["MAX_UPLOAD"] > 50:
         print("Warning! \"Max upload threads\" was set to a value higher than 50. This may cause upload to fail")
 
-    assert os.path.isdir(remove_slash(abs_path(options["Local path"])))
+    assert os.path.isdir(remove_slash(abs_path(options["PATH"])))
 
-    assert_start(options["Local path"], options["Always pull"])
-    assert_start(options["Local path"], options["Always push"])
-    assert_start(options["Local path"], options["Always ignore"])
+    assert_start(options["PATH"], options["APULL"])
+    assert_start(options["PATH"], options["APUSH"])
+    assert_start(options["PATH"], options["AIGNORE"])
 
-    dpull = options["Default pull"]
-    dpush = options["Default push"]
-    dignore = options["Default ignore"]
+    dpull = options["DPULL"]
+    dpush = options["DPUSH"]
+    dignore = options["DIGNORE"]
     temp = copy.deepcopy(dpull)
     temp.extend(dpush)
     temp.extend(dignore)
@@ -75,44 +123,7 @@ def check_options():
 Each of the following must be included exactly once:
 \t\"local_new\", \"content_change\", \"mtime_change\", \"remote_new\"""")
 
-    for i in expected_types:
-        load_options(i)
-
-
-def replace_alias(inp):
-    """The purpose of these aliases are to make Option.json more readable,
-    so only keys in present in Options.json will have aliases
-
-    Args:
-        inp (str): input key
-
-    Returns:
-        str: if it matches an alias, return the human readable version, otherwise don't touch it
-    """
-    alias = {
-        "Local path": ["PATH"],
-        "Ask before exit": ["ASK_AT_EXIT"],
-        "Hide forced ignore": ["HIDE_FIGNORE"],
-        "Print upload progress": ["PRINT_UPLOAD"],
-        "Compare md5sum": ["CHECK_SUM", "CHECK_MD5", "CHECKSUM"],
-
-        "Max upload threads": ["MAX_UPLOAD"],
-        "Max compute threads": ["MAX_COMPUTE"],
-
-        "Always pull": ["APULL"],
-        "Always push": ["APUSH"],
-        "Always ignore": ["AIGNORE"],
-
-        "Default pull": ["DPULL"],
-        "Default push": ["DPUSH"],
-        "Default ignore": ["DIGNORE"],
-
-    }
-
-    for key in alias:
-        if inp == key or inp in alias[key]:
-            return key
-    return inp
+    cache_options()  # * optional
 
 
 @lru_cache
@@ -124,18 +135,18 @@ def load_options(*keys):
     else:
         root_path = str(PurePath(__file__).parent.parent)
         with open(root_path + "/data/Options.json", "r") as f:
-            options = json.load(f)
-
-        key = replace_alias(keys[0])
-        if key == "Max compute threads":
+            raw_options = json.load(f)
+        options = alias_to_code(raw_options)
+        key = keys[0]
+        if key == "MAX_COMPUTE":
             temp = options[key]
             return psutil.cpu_count() if temp < 1 else temp
 
-        elif key == "Local path":
+        elif key == "PATH":
             # * slash removal is vital for a lot of the program
             return remove_slash(abs_path(options[key]))
 
-        elif key == "Always push" or key == "Always pull" or key == "Always ignore":
+        elif key == "APUSH" or key == "APULL" or key == "AIGNORE":
             return [remove_slash(abs_path(i)) for i in options[key]]
 
         elif key == "RECHECK_TIME":

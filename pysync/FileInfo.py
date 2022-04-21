@@ -107,7 +107,7 @@ class FileInfo():
         if self.isfolder:
             return False
 
-        if load_options("CHECK_SUM"):
+        if load_options("CHECK_MD5"):
             # assert self.md5sum is not None and self.partner.md5sum is not None
             content_diff = self.md5sum != self.partner.md5sum
             if content_diff:
