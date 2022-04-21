@@ -1,5 +1,14 @@
-from pysync.Functions import init_libraries
 from pysync.Options_parser import check_options
+from pysync.EventSequence import (
+    event_sequence,
+    init_libraries,
+)
+from pysync.Options_parser import load_options
+from pysync.Functions import (
+    error_report,
+    pysyncSilentExit,
+)
+from pysync.Exit import on_exit
 
 
 def main():
@@ -9,14 +18,6 @@ def main():
         return
 
     check_options()
-
-    from pysync.EventSequence import event_sequence
-    from pysync.Options_parser import load_options
-    from pysync.Functions import (
-        error_report,
-        pysyncSilentExit,
-    )
-    from pysync.Exit import on_exit
 
     timer = None
     print("pysync started successfully")
