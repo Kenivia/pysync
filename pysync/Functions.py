@@ -10,7 +10,7 @@ from threading import Thread
 
 """
 This file defines miscellaneous functions that:
-    - don't depend on ANY other files in pysync
+    - don't depend on ANY other files or functions in pysync
     - complete a standalone task
     - are flexible for use in a variety of situations
 
@@ -21,12 +21,11 @@ class pysyncSilentExit(Exception):
     pass
 
 
-def raise_this_error(error):
-    # * for use as the target for Thread
-    raise error
-
-
-def error_report(exception_object, text, full_text=False, raise_exception=True):
+def error_report(exception_object, text, full_text=False):
+    """raises the error(prints the traceback) without exiting"""
+    def raise_this_error(error):
+        # * for use as the target for Thread
+        raise error
     try:
         if full_text:
             print(text)
@@ -37,8 +36,6 @@ def error_report(exception_object, text, full_text=False, raise_exception=True):
 
     finally:
         t.join()
-        if raise_exception:
-            raise HandledpysyncException()
 
 
 def match_attr(infos, **kwargs):
@@ -59,7 +56,7 @@ def match_attr(infos, **kwargs):
 
 
 def init_libraries(required):
-    """installs required packages, if not present
+    """installs required packages using pip if they are not present
 
     Args:
         required (set): a set containing the packages in string
@@ -94,14 +91,13 @@ def init_libraries(required):
         return True
 
 
-class HandledpysyncException(Exception):
-    pass
-
-
 def contains_parent(parents_list, inp, accept_self=True):
-    """Returns True if parents_list contain a parent of inp
-        or if parent_list contains inp
-        or if parent_list is a str and is a parent of inp
+    """Returns True if:
+    - parents_list is a list and contain a parent of inp
+    - OR parent_list is a str and is a parent of inp
+
+    if accept_self is true, inp itself is considered a parent of itself
+
     """
     if isinstance(parents_list, str):
         if pathlib.Path(parents_list) in pathlib.Path(inp).parents:
@@ -118,30 +114,6 @@ def contains_parent(parents_list, inp, accept_self=True):
         return False
 
 
-def human_time(start, now=None):
-    """Calculates the difference between two times in human readable form
-        if there is only one input, convert it into human readable form
-    """
-    if now is not None:
-        value = dt.datetime.fromtimestamp(now)\
-            - dt.datetime.fromtimestamp(start)
-    else:
-        if start >= 0:
-            value = dt.datetime.fromtimestamp(start)\
-                - dt.datetime.fromtimestamp(0)
-
-    value = str(value)
-    value = value.split(".")[0]
-    return value
-
-
-def flatten_dict(inp):
-    out = []
-    for i in sorted(list(inp)):
-        out.extend(inp[i])
-    return out
-
-
 def hex_md5_file(path):
     return hl.md5(open(path, 'rb').read()).hexdigest()
 
@@ -152,12 +124,6 @@ def append_slash(path):
 
 def remove_slash(path):
     return path[:-1] if path.endswith("/") else path
-
-
-def relative_depth(parent_path, child_path):
-    child_path = append_slash(child_path)
-    parent_path = append_slash(parent_path)
-    return len(child_path.split("/")) - len(parent_path.split("/"))
 
 
 def abs_path(inp):

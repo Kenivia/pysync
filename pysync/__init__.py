@@ -30,5 +30,5 @@ def main():
         on_exit(failure=False)
     except Exception as e:
         error_report(e, "The following error occured:",
-                     full_text=True, raise_exception=False)
+                     full_text=True)
         on_exit(failure=True)
