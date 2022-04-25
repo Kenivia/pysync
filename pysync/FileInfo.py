@@ -1,5 +1,6 @@
 import os
 import dateutil.parser as dup
+from rsa import find_signature_hash
 from send2trash import send2trash
 import time
 import subprocess as sp
@@ -49,6 +50,7 @@ class FileInfo():
         self.path = None  # * checked by remote_path
         self.forced = False  # * used in UserPushPull
         self.index = None  # * used in UserPushPull
+        self.islocal_gdoc = False  # * used in compare_info
 
         self._location = location  # * whether local or remote
         self.operation_done = False  # * set by drive_op, checked by check_ready
@@ -61,6 +63,7 @@ class FileInfo():
                 if kwargs["md5_now"]:
                     self.calculate_md5()
                 self.mtime = int(os.stat(self.path).st_mtime)
+            self.islocal_gdoc = self.find_signature()
 
         else:
             self._id = kwargs["id"]
@@ -89,7 +92,7 @@ class FileInfo():
 
         assert self.islocal
         assert self.path == self.partner.path
-        if self.islocalgdoc:
+        if self.islocal_gdoc:
             # * modifying local gdoc will not make a difference
             # * local gdoc must have a corresponding remote gdoc file
             assert self.partner.isremotegdoc
@@ -225,7 +228,7 @@ class FileInfo():
                 _file.Upload()
                 self._id = _file["id"]
 
-            elif self.islocalgdoc:
+            elif self.islocal_gdoc:
 
                 args["id"] = get_id_exe(open(self.path, "r").read())
                 _file = drive.CreateFile(args)
@@ -340,7 +343,7 @@ class FileInfo():
         return self.parent["id"]
 
     @property
-    def islocalgdoc(self):
+    def find_signature(self):
         if self.islocal and not self.isfolder:
             try:
                 with open(self.path, "r") as _file:
