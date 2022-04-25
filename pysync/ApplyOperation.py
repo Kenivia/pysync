@@ -36,36 +36,36 @@ def run_drive_ops(diff_infos, all_data, drive):
     else:
         print("No available changes")
 
-    # * Ideally this would also use concurrent.future but 
+    # * Ideally this would also use concurrent.future but
     while infos:
         infos.sort(key=lambda x: (  # * folders first, then less depth first
             not x.isfolder, len(x.path.split("/"))), reverse=True)
         # * I go from the back cos i'm removing it 1 by 1, thats why its reversed
         # * sorta like a queue?
+        
         index = len(infos) - 1
-
         for _ in range(len(infos)):
             if active_count() - intial_thread_count >= load_options("MAX_UPLOAD"):
                 time.sleep(load_options("RECHECK_TIME"))
                 break
 
             item = infos[index]
-            try:
-                item.check_ready(all_data)
+            ret_code = item.check_ready(all_data)
+            if ret_code == "ready":
                 if load_options("PRINT_UPLOAD"):
                     print(len(infos), item.action + "ing", item.change_type, item.path)
                 t = Thread(target=item.drive_op, args=(all_data, drive))
                 t.start()
                 all_threads.append(t)
                 infos.remove(item)
-
-            except OperationIgnored:
+                
+            elif ret_code == "ignored":
                 infos.remove(item)
-            except OperationNotReady:
+                
+            elif ret_code == "not ready":
                 pass
-
-            finally:
-                index -= 1
+            index -= 1
             # * after each iteration, the leftovers are sorted and ran again
+
     [i.join() for i in all_threads]
     print("All done")

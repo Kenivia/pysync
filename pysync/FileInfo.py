@@ -90,8 +90,9 @@ class FileInfo():
     def compare_info(self):
         """Checks if there are differences between self and self.partner
 
-        mtime_change will only trigger if there is no md5sum change and >3 sec difference
-
+        mtime_change will only trigger if there is >3 sec difference
+        md5sum won't be checked if mtime_change is already triggered
+        
         Returns:
             bool/str: False, "content_change" or "mtime_change"
         """
@@ -106,17 +107,16 @@ class FileInfo():
 
         if self.isfolder:
             return False
-
-        if load_options("CHECK_MD5"):
-            # assert self.md5sum is not None and self.partner.md5sum is not None
-            content_diff = self.md5sum != self.partner.md5sum
-            if content_diff:
-                self.change_type = "content_change"
-                return self.change_type
-
+        
         if (self.mtime - self.partner.mtime) >= 3:
             self.change_type = "mtime_change"
             return self.change_type
+
+        if load_options("CHECK_MD5"):
+            # assert self.md5sum is not None and self.partner.md5sum is not None
+            if self.md5sum != self.partner.md5sum:
+                self.change_type = "content_change"
+                return self.change_type
 
         return False
 
@@ -124,17 +124,19 @@ class FileInfo():
         """performs various checks before applying
 
         Args:
-            all_data (dict): FileInfo objects from  get_diff
+            all_data (dict): FileInfo objects from get_diff
 
         Raises:
-            OperationIgnored: the action is "ignore
-            OperationNotReady: a file's parent directory doesn't exist yet(remote or local)
             AssertionError: something went wrong
+
+        Returns:
+            str: "not_ready", "ignored" or "ready"
         """
+
         assert self.action is not None
         if self.action == "ignore":
             # * will not  set checked_good to True, running drive_op will fail
-            raise OperationIgnored
+            return "ignored"
         assert self.action == "pull" or self.action == "push"
         assert not self.operation_done
         if self.partner is not None:
@@ -145,13 +147,14 @@ class FileInfo():
         if self.action_code == "up new":
             assert os.path.exists(self.path)
             if self.parent_path not in all_data:
-                raise OperationNotReady()
+                return "not_ready"
+
             if isinstance(all_data[self.parent_path], dict):
                 parent_id = all_data[self.parent_path]["id"]
             else:
                 parent_id = all_data[self.parent_path].id
             if parent_id is None:
-                raise OperationNotReady()
+                return "not_ready"
 
         elif self.action_code == "del local":
             assert os.path.exists(self.path)
@@ -164,15 +167,16 @@ class FileInfo():
             assert self.id is not None
             assert not os.path.exists(self.path)
             if not os.path.isdir(self.parent_path):
-                raise OperationNotReady()
+                return "not_ready"
 
         elif self.action_code == "up diff" or self.action_code == "down diff":
             assert os.path.exists(self.path)
             assert self.id is not None
         else:
-            raise AssertionError
+            raise AssertionError("action_code was invalid(" + str(self.action_code), ")")
 
         self.checked_good = True
+        return "ready"
 
     def drive_op(self, all_data, drive):
         """Applies the operation specified by self.change_type and self.action
