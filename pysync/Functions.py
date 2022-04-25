@@ -1,6 +1,5 @@
 import os
 import pathlib
-import datetime as dt
 import hashlib as hl
 
 from threading import Thread

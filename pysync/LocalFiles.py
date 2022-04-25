@@ -7,24 +7,30 @@ from pysync.Timer import logtime
 from pysync.Options_parser import load_options
 
 
-def get_local_files(path, output_dict=None, timer=None):
+def get_local_files(path, output_dict, timer=None):
+    """put FileInfo objects into output_dict, then calculate their md5sum.
     
-    if output_dict is None:
-        output_dict = {}
-        _get_local(path, output_dict)
-        return output_dict
-    else:
-        t = Thread(target=_get_local,
-                   args=(path, output_dict,),
-                   kwargs={"timer": timer})
-        t.start()
-        return t
+    there was a conscious decision to classify this function as "comp" in the timer.
+    this function involves 1) constructing FileInfo objects and 2) calculating md5sum
+    both 1) and 2) may be cpu bound OR io bound, depending on the system,
+    so it isn't fair to say that it's one or the other.
+    
+    so end of the day i can't be bothered making a new category for something so murky
+    """
+
+    t = Thread(target=_get_local,
+               args=(path, output_dict,),
+               kwargs={"timer": timer})
+    t.start()
+    return t
+
 
 @logtime
 def _get_local(path, out_dict):
-    
+
     get_local_info_list(path, out_dict)
     
+    print("Processing local files..")
     # * This calculates md5sum using many threads
     max_threads = load_options("MAX_COMPUTE")
     with cf.ThreadPoolExecutor(max_workers=max_threads) as executor:
@@ -32,7 +38,6 @@ def _get_local(path, out_dict):
             if not out_dict[key].isfolder:
                 executor.submit(out_dict[key].calculate_md5)
     print("Local files done")
-
 
 
 def get_local_info_list(path, out_dict):

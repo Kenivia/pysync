@@ -78,7 +78,7 @@ def event_sequence(path):
 
     local_data = {}
     print("Started loading local files..")
-    thread = get_local_files(path, output_dict=local_data, timer=timer.time("local"))
+    thread = get_local_files(path, local_data, timer=timer.time("local"))
 
     drive = init_drive(timer=timer.time("init"))
 

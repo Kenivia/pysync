@@ -12,16 +12,6 @@ from pysync.Functions import (
 from pysync.Options_parser import load_options
 
 
-class OperationNotReady(Exception):
-    """Raised by check_ready"""
-    pass
-
-
-class OperationIgnored(Exception):
-    """Raised by check_ready"""
-    pass
-
-
 class FileIDNotFoundError(Exception):
     pass
 
@@ -92,7 +82,7 @@ class FileInfo():
 
         mtime_change will only trigger if there is >3 sec difference
         md5sum won't be checked if mtime_change is already triggered
-        
+
         Returns:
             bool/str: False, "content_change" or "mtime_change"
         """
@@ -107,7 +97,7 @@ class FileInfo():
 
         if self.isfolder:
             return False
-        
+
         if (self.mtime - self.partner.mtime) >= 3:
             self.change_type = "mtime_change"
             return self.change_type

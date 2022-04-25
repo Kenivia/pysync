@@ -7,10 +7,6 @@ from threading import (
 from pysync.Functions import match_attr
 from pysync.Timer import logtime
 from pysync.Options_parser import load_options
-from pysync.FileInfo import (
-    OperationIgnored,
-    OperationNotReady,
-)
 
 
 @logtime
@@ -42,7 +38,7 @@ def run_drive_ops(diff_infos, all_data, drive):
             not x.isfolder, len(x.path.split("/"))), reverse=True)
         # * I go from the back cos i'm removing it 1 by 1, thats why its reversed
         # * sorta like a queue?
-        
+
         index = len(infos) - 1
         for _ in range(len(infos)):
             if active_count() - intial_thread_count >= load_options("MAX_UPLOAD"):
@@ -58,10 +54,10 @@ def run_drive_ops(diff_infos, all_data, drive):
                 t.start()
                 all_threads.append(t)
                 infos.remove(item)
-                
+
             elif ret_code == "ignored":
                 infos.remove(item)
-                
+
             elif ret_code == "not ready":
                 pass
             index -= 1
