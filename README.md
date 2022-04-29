@@ -50,7 +50,7 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
   
 ## Requirements:
 
-- `python3`: `sudo apt install python3`
+- `python3.6+`
 
 - `pydrive2`, `send2trash`: `pip3 install pydrive2 send2trash`
   

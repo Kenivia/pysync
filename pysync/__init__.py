@@ -1,3 +1,6 @@
+import sys
+import traceback
+
 from pysync.Options_parser import check_options
 from pysync.EventSequence import (
     event_sequence,
@@ -5,7 +8,6 @@ from pysync.EventSequence import (
 )
 from pysync.Options_parser import load_options
 from pysync.Functions import (
-    error_report,
     pysyncSilentExit,
 )
 from pysync.Exit import on_exit
@@ -23,13 +25,12 @@ def main():
     print("pysync started successfully")
     try:
         timer = event_sequence(load_options("PATH"))
-        on_exit(timer=timer, failure=False)
+        on_exit(False, timer=timer)
 
     except pysyncSilentExit:
         pass
     except KeyboardInterrupt:
-        on_exit(failure=False)
-    except Exception as e:
-        error_report(e, "The following error occured:",
-                     full_text=True)
-        on_exit(failure=True)
+        on_exit(False)
+    except Exception:
+        traceback.print_exc(file=sys.stdout)
+        on_exit(True)

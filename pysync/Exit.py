@@ -1,14 +1,29 @@
 import sys
 import subprocess as sp
-
+from threading import Thread
 from pysync.Options_parser import load_options
 
 
-def on_exit(timer=None, failure=False):
+def on_exit(failure, timer=None):
+    """starts on_exit_thread if needed, then the main thread should exit
 
+    this function should be called as the last thing before the main thread exits
+    this is to ensure that threading.main_thread().is_alive() returns False
+
+    Args:
+        failure (bool): whether or not pysync completed successfully
+        timer (pysync.TimeLogger, optional): TimeLogger object from event_sequence. Defaults to None.
+    """
     if not load_options("ASK_AT_EXIT"):
         print("pysync will now exit")
         return
+
+    t = Thread(target=on_exit_thread, args=(timer, failure,), daemon=False)
+    # * very important that daemon=False
+    t.start()
+
+
+def on_exit_thread(timer=None, failure=False):
 
     line_input = "\n\n>>> "
     line_exit = "\nPress enter to exit"
@@ -24,8 +39,7 @@ def on_exit(timer=None, failure=False):
     handled_error_text = "\nThe error above has occurred " + \
         line_exit + line_restart + line_input
 
-    text = handled_error_text if failure else (
-        cancel_text if timer is None else complete_text)
+    text = handled_error_text if failure else (cancel_text if timer is None else complete_text)
     while True:
 
         user_inp = input(text)

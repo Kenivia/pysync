@@ -2,8 +2,7 @@ import os
 import pathlib
 import hashlib as hl
 
-from threading import Thread
-
+from datetime import timezone
 
 """
 This file defines miscellaneous functions that:
@@ -14,25 +13,12 @@ This file defines miscellaneous functions that:
 """
 
 
+def utc_to_local(utc_dt):
+    return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
+
+
 class pysyncSilentExit(Exception):
     pass
-
-
-def error_report(exception_object, text, full_text=False):
-    """raises the error(prints the traceback) without exiting"""
-    def raise_this_error(error):
-        # * for use as the target for Thread
-        raise error
-    try:
-        if full_text:
-            print(text)
-        else:
-            print("The following error occured " + text)
-        t = Thread(target=raise_this_error, args=(exception_object,))
-        t.start()
-
-    finally:
-        t.join()
 
 
 def match_attr(infos, **kwargs):
@@ -50,8 +36,6 @@ def match_attr(infos, **kwargs):
         if matched:
             out.append(i)
     return out
-
-
 
 
 def contains_parent(parents_list, inp, accept_self=True):

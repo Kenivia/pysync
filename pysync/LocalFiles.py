@@ -1,5 +1,8 @@
 import os
-from threading import Thread
+from threading import (
+    Thread,
+    main_thread,
+)
 import concurrent.futures as cf
 
 from pysync.FileInfo import FileInfo
@@ -9,17 +12,16 @@ from pysync.Options_parser import load_options
 
 def get_local_files(path, output_dict, timer=None):
     """put FileInfo objects into output_dict, then calculate their md5sum.
-    
+
     there was a conscious decision to classify this function as "comp" in the timer.
     this function involves 1) constructing FileInfo objects and 2) calculating md5sum
     both 1) and 2) may be cpu bound OR io bound, depending on the system,
     so it isn't fair to say that it's one or the other.
-    
+
     so end of the day i can't be bothered making a new category for something so murky
     """
 
-    t = Thread(target=_get_local,
-               args=(path, output_dict,),
+    t = Thread(target=_get_local, args=(path, output_dict,),
                kwargs={"timer": timer})
     t.start()
     return t
@@ -29,7 +31,9 @@ def get_local_files(path, output_dict, timer=None):
 def _get_local(path, out_dict):
 
     get_local_info_list(path, out_dict)
-    
+    if not main_thread().is_alive():
+        # * there's no easy way to interrupt either stages, so here i'll just stop the 2nd stage
+        return
     print("Processing local files..")
     # * This calculates md5sum using many threads
     max_threads = load_options("MAX_COMPUTE")

@@ -1,6 +1,5 @@
 import os
 import dateutil.parser as dup
-from rsa import find_signature_hash
 from send2trash import send2trash
 import time
 import subprocess as sp
@@ -63,22 +62,23 @@ class FileInfo():
                 if kwargs["md5_now"]:
                     self.calculate_md5()
                 self.mtime = int(os.stat(self.path).st_mtime)
-            self.islocal_gdoc = self.find_signature()
+            self.islocal_gdoc = self.signature_present()
 
         else:
             self._id = kwargs["id"]
-            self._title = kwargs["title"]
+            self._name = kwargs["name"]
             self.type = "folder" if kwargs["mimeType"] == "application/vnd.google-apps.folder" else "file"
-            if kwargs["parents"]:
+            self.mtime = int(dup.parse(kwargs["modifiedTime"]).timestamp())
+            if "parents" in kwargs:
                 assert len(kwargs["parents"]) == 1
                 self.parent = kwargs["parents"][0]
-                self.parent_isroot = self.parent["isRoot"]
+            # TODO make a "shared" folder for orphans(because they're all shared files i think)
+            
             if not self.isfolder:
                 self._md5sum = kwargs["md5Checksum"] if "md5Checksum" in kwargs else None
-                self.mtime = int(dup.parse(kwargs["modifiedDate"]).timestamp())
                 if "application/vnd.google-apps." in kwargs["mimeType"]:
                     self.isremotegdoc = True
-                    self.link = kwargs["alternateLink"]
+                    self.link = kwargs["webViewLink"]
 
     def compare_info(self):
         """Checks if there are differences between self and self.partner
@@ -220,7 +220,7 @@ class FileInfo():
                 parent_id = all_data[self.parent_path].id
             self.parent = {"id": parent_id}
             args = {"parents": [{"id": self.parent_id}],
-                    "title": os.path.split(self.path)[1],
+                    "name": os.path.split(self.path)[1],
                     }
             if self.isfolder:
                 args["mimeType"] = 'application/vnd.google-apps.folder'
@@ -272,7 +272,7 @@ class FileInfo():
                     with open(self.path, "w") as exe_file:
                         exe_file.write(gen_exe(self.link, load_options("SIGNATURE")))
                         sp.run(["chmod", "+x", self.path])
-                mtime = int(dup.parse(_file["modifiedDate"]).timestamp())
+                mtime = int(dup.parse(_file["modifiedTime"]).timestamp())
                 os.utime(self.path, (mtime, mtime))
 
         elif self.action_code == "up diff":
@@ -333,8 +333,8 @@ class FileInfo():
         return os.path.split(self.path)[0]
 
     @property
-    def title(self):
-        return self._title if not self.islocal else os.path.split(self.path)[1]
+    def name(self):
+        return self._name if not self.islocal else os.path.split(self.path)[1]
 
     @property
     def parent_id(self):
@@ -342,8 +342,7 @@ class FileInfo():
             self.parent = self.partner.parent
         return self.parent["id"]
 
-    @property
-    def find_signature(self):
+    def signature_present(self):
         if self.islocal and not self.isfolder:
             try:
                 with open(self.path, "r") as _file:
@@ -360,7 +359,7 @@ class FileInfo():
 
     def get_path(self, path):
         assert self._location == "remote"
-        self.path = os.path.join(path, self.title)
+        self.path = os.path.join(path, self.name)
 
     def calculate_md5(self):
         assert self._md5sum is None and self.islocal

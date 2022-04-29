@@ -28,7 +28,7 @@ def run_drive_ops(diff_infos, all_data, drive):
     infos = match_attr(diff_infos, action="push") + \
         match_attr(diff_infos, action="pull")
     if infos:
-        print("Applying {} changes..".format(str(len(infos))))
+        print(f"Applying {str(len(infos))} changes..")
     else:
         print("No available changes")
 

@@ -84,7 +84,7 @@ def check_options():
         for raw_key in raw_options:
             if raw_key not in expected_types:
 
-                print("Unknown key: \"{}\" in Options.json, ignored".format(raw_key))
+                print(f"Unknown key: \"{raw_key}\" in Options.json, ignored")
 
             assert isinstance(raw_options[raw_key], expected_types[raw_key])
             seen_keys.append(raw_key)

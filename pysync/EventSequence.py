@@ -20,6 +20,14 @@ from pysync.RemoteFiles import (
 from pysync.ApplyOperation import run_drive_ops
 
 
+
+
+
+
+
+from pysync.pklFunctions import pload
+
+
 def init_libraries(required):
     """installs required packages using pip if they are not present
 
@@ -83,6 +91,8 @@ def event_sequence(path):
     drive = init_drive(timer=timer.time("init"))
 
     print("Started getting remote files..")
+    # remote_raw_data = pload(
+    #     "/home/kenivia/gdrive/Python/Projects/pysync/test_pkl/2022.04.28-22.42.36/remote")
     remote_raw_data = list_remote(drive, timer=timer.time("load_remote"))
     remote_data = process_remote(remote_raw_data, timer=timer.time("comp_remote"))
     print("Remote files done")

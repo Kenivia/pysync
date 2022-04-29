@@ -71,9 +71,9 @@ def get_diff(local_data, remote_data):
     all_data = {}
     max_threads = load_options("MAX_COMPUTE")
     with cf.ThreadPoolExecutor(max_workers=max_threads) as executor:
-        chunksize = int(len(all_keys) / max_threads)
+        chunksize = int(len(_map) / max_threads)
         for change_type, obj in executor.map(one_diff, _map, chunksize=chunksize):
-            if isinstance(obj, dict):
+            if isinstance(obj, str):
                 all_data[load_options("PATH")] = obj
             else:
                 all_data[obj.path] = obj
