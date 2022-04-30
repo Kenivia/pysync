@@ -128,11 +128,13 @@ def print_status(infos):
             print("  -" + key + "(" + str(len(cur_actions[key])) + "):", " ".join(short))
 
 
-def delete_compression(diff_infos):
+def deletion_compression(diff_infos):
     """removes children of folders that are being deleted
 
     idea being that a deletion of folder would only happen if all children are also being deleted
     this also metigates issues when applying
+
+    this isn't done for creating new files/modifying files for user clarity
 
     Args:
         diff_infos (list): list of FileInfo objects
@@ -166,7 +168,7 @@ def user_push_pull(diff_infos):
     text = """Use `push a` or `pull a-b` to change the action of files, e.g push 1-5
 Press Enter or use `apply` to apply the following changes:"""
     while True:
-        delete_compression(diff_infos)
+        deletion_compression(diff_infos)
         print_change_types(diff_infos, initing)
         initing = False
 
@@ -209,6 +211,7 @@ Press Enter or use `apply` to apply the following changes:"""
 
         arguments, message = replace_numbers(arguments, len(diff_infos))
         changed = []
+        all_index = {}
         for item in arguments:
             if item == "all":
                 for i in match_attr(diff_infos, forced=False):
@@ -217,9 +220,11 @@ Press Enter or use `apply` to apply the following changes:"""
 
             elif item.isnumeric():
                 # * shouldn't need to check for forced here since forced don't get an index
-                infos = match_attr(diff_infos, index=int(item))
-                assert len(infos) == 1
-                info = infos[0]
+                if item not in all_index:
+                    for i in diff_infos:
+                        if i.index is not None:
+                            all_index[item] = i
+                info = all_index[item]
                 info.action = command
                 changed.append(str(info.index))
             else:
@@ -228,7 +233,6 @@ Press Enter or use `apply` to apply the following changes:"""
         changed = num_shorten(changed)
         text = message
         if changed:
-            text += "Command interpreted as: " + \
-                command + " " + " ".join(changed)
+            text += "Input interpreted as: " + command + " " + " ".join(changed)
         else:
-            text += "Command was not valid, nothing has been changed"
+            text += "Input was not valid, nothing has been changed"

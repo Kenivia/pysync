@@ -23,9 +23,11 @@ def process_creds(creds, scopes):
             creds.refresh(Request())
             print("Old token refreshed successfully")
             return creds
+
         except RefreshError:
             print("Couldn't refresh old token")
             pass
+
         except TransportError:
             exc_with_message(
                 "pysync couldn't refresh your token, please check your internet connectio")
@@ -48,13 +50,9 @@ def init_drive():
     if os.path.exists(token_path):
         creds = Credentials.from_authorized_user_file(token_path, scopes)
 
-    # If there are no (valid) credentials available, let the user log in.
-
     creds = process_creds(creds, scopes)
     with open(token_path, 'w') as f:
         f.write(creds.to_json())
-
-    # print("The current token will expire at:", str(utc_to_local(creds.expiry)).split(".")[0])
 
     service = build('drive', 'v3', credentials=creds)
     return service.files()
@@ -71,9 +69,7 @@ def kws_to_query(kws_list, equals, operator, exclude_list=[]):
 
 @logtime
 def list_remote(drive):
-    """Lists remote files that are not in trash"""
-    all_args = []
-
+    """Lists remote files that are not in trash and are owned by me"""
     folder_kws = ["application/vnd.google-apps.folder"]
     gdoc_kws = [
         'application/vnd.google-apps.document',
@@ -90,7 +86,6 @@ def list_remote(drive):
         'mimeType',
         'parents',
         'modifiedTime',
-        'owners',
     ], kws_to_query(folder_kws, True, "N/A")
     )
     gdoc_args = (drive, [
@@ -101,7 +96,6 @@ def list_remote(drive):
         'md5Checksum',
         'webViewLink',
         'modifiedTime',
-        'owners',
     ], kws_to_query(gdoc_kws, True, "or")
     )
 
@@ -112,10 +106,9 @@ def list_remote(drive):
         'parents',
         'md5Checksum',
         'modifiedTime',
-        'owners',
     ], kws_to_query(gdoc_kws + folder_kws, False, "and")
     )
-
+    all_args = []
     all_args.append(folder_args)
     all_args.append(gdoc_args)
     all_args.append(file_args)
@@ -193,7 +186,9 @@ def get_one_path(folders, root, info, out_dict, mapping):
             path = parent.name + "/" + path
 
     except AssertionError:
-        exc_with_message("A remote name is occupied by multiple files and folders: " + info.remote_path)
+        exc_with_message(
+            "A remote name is occupied by multiple files and folders: " +
+            info.remote_path)
 
 
 def init_one_fileinfo(args):
@@ -203,8 +198,6 @@ def init_one_fileinfo(args):
 @logtime
 def process_remote(raw_files):
     """Lists the remote files and process them
-
-    determines the local path of every file recursively
 
     Returns a dictionary containings FileInfo with their paths as keys
     """
@@ -228,5 +221,5 @@ def process_remote(raw_files):
     mapping = {}
     for i in folder_list + file_list:
         get_one_path(folder_list, root, i, out_dict, mapping)
-        
+
     return out_dict
