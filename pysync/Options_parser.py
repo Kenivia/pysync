@@ -122,9 +122,11 @@ def check_options():
     dpull = options["DPULL"]
     dpush = options["DPUSH"]
     dignore = options["DIGNORE"]
+
     temp = copy.deepcopy(dpull)
     temp.extend(dpush)
     temp.extend(dignore)
+
     if len(dpull) + len(dpush) + len(dignore) != 4:
         raise AssertionError(
             "The options: Default pull, Default push Default ignore must contain exactly 4 items between them")

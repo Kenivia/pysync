@@ -305,7 +305,7 @@ class FileInfo():
             drive (googleapiclient.discovery.Resource): Resource object from service.files() in init_drive
 
         Raises:
-            RuntimeError: drive_op has already ran for this file
+            RuntimeError: drive_op has already ran for this file, or max retry count has been exceeded
 
         """
 
@@ -351,23 +351,22 @@ class FileInfo():
 
             except Exception as e:
                 def retry_text(_count, _max_count):
-                    if _count >= _max_count:
+                    if _max_count > 0 and _count >= _max_count:
                         return ", " + f"tried {_max_count} times, giving up" + ": "
                     else:
                         return ", " + f"retrying({_count}/{_max_count})" + ": "
+                
                 count += 1
                 message = None
                 reason = repr(e)
                 if isinstance(e, timeout):
                     message = "This file timed out"
+                    
                 elif isinstance(e, ServerNotFoundError):
                     message = "Couldn't connect to server"
+                    
                 elif isinstance(e, HttpError):
-
                     reason = e.response.reason
-
-                    print(reason)
-
                     if "User rate limit exceeded" in reason:
                         message = "This file failed, rate of requests too high"
 
@@ -380,7 +379,7 @@ class FileInfo():
                 time.sleep(1)
 
             finally:
-                if count >= max_count:
+                if max_count > 0 and count >= max_count:
                     raise RuntimeError("Max retry count exceeded")
 
     @property

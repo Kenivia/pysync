@@ -26,8 +26,10 @@ def main():
         on_exit(False, timer=timer)
 
     except SilentExit:
-        pass
+        return 0
     except KeyboardInterrupt:
         on_exit(False)
+        return 130
     except Exception:
         exc_with_message()
+        
