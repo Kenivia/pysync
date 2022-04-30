@@ -7,14 +7,19 @@ from threading import Thread
 from pysync.Options_parser import load_options
 from pysync.Functions import SilentExit
 
-def exc_with_message(message=None):
-    
-    traceback.print_exc(file=sys.stdout)
+
+def exc_with_message(message=None, exception=None, raise_silent=True):
+    if exception is None:
+        traceback.print_exc(file=sys.stdout)
+    else:
+        traceback.print_exception(exception, None, None)
     if message is not None:
-        print("\n"+message)
+        print("\n" + message)
     on_exit(True)
-    raise SilentExit
-    
+    if raise_silent:
+        raise SilentExit
+
+
 def on_exit(failure, timer=None):
     """starts on_exit_thread if needed, then the main thread should exit
 
@@ -23,7 +28,7 @@ def on_exit(failure, timer=None):
 
     Args:
         failure (bool): whether or not pysync completed successfully
-        timer (pysync.TimeLogger, optional): TimeLogger object from event_sequence. Defaults to None.
+        timer (pysync.TimeLogger, optional): TimeLogger object from event_sequence
     """
     if not load_options("ASK_AT_EXIT"):
         print("pysync will now exit")

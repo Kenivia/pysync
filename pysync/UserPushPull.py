@@ -83,9 +83,9 @@ def print_half(infos, initing, forced, index):
     for action in actions:
         this = match_attr(infos, action=action)
         if initing or forced:
-            this.sort(key=lambda x: (x.action_human, len(x.path.split("/")), x.path))
+            this.sort(key=lambda x: (x.action_human, x.path))
         else:
-            this.sort(key=lambda x: (x.index, len(x.path.split("/")), x.path))
+            this.sort(key=lambda x: (x.index, x.path))
 
         for i in this:
             if forced:

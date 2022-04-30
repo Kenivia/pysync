@@ -20,7 +20,8 @@ from pysync.Options_parser import load_options
 
 class FileIDNotFoundError(Exception):
     pass
-
+class GDriveQuotaExceeded(Exception):
+    pass
 
 def gen_exe(url, signatures):
     text = f"""xdg-open {url}
@@ -45,21 +46,21 @@ class FileInfo():
 
     def __init__(self, location, **kwargs):
         self.parentID = None  # * checked by isorphan
-        self.action = None  # * checked  by check_ready
+        self.action = None  # * checked  by op_checks
         self.partner = None  # * checked by id and parent_id
-        self.change_type = None  # * checked by check_ready
+        self.change_type = None  # * checked by op_checks
         self._md5sum = None  # * checked by md5sum
         self._id = None  # * checked by id
-        self.link = None  # * checked by check_ready
-        self.isremotegdoc = False  # * checked by check_ready
+        self.link = None  # * checked by op_checks
+        self.isremotegdoc = False  # * checked by op_checks
         self.path = None  # * checked by remote_path
         self.forced = False  # * used in UserPushPull
         self.index = None  # * used in UserPushPull
         self.islocal_gdoc = False  # * used in compare_info
 
         self._location = location  # * whether local or remote
-        self.operation_done = False  # * set by drive_op, checked by check_ready
-        self.checked_good = False  # * set by check_ready, checked by drive_op
+        self.op_already_done = False  # * set by drive_op, checked by op_checks
+        self.checked_good = False  # * set by op_checks, checked by drive_op
 
         if self.islocal:
             self.path = kwargs["path"]
@@ -119,7 +120,7 @@ class FileInfo():
 
         return False
 
-    def check_ready(self, all_data):
+    def op_checks(self):
         """performs various checks before applying
 
         Args:
@@ -133,11 +134,8 @@ class FileInfo():
         """
 
         assert self.action is not None
-        if self.action == "ignore":
-            # * will not  set checked_good to True, running drive_op will fail
-            return "ignored"
         assert self.action == "pull" or self.action == "push"
-        assert not self.operation_done
+        assert not self.op_already_done
         if self.partner is not None:
             assert not self.partner.islocal
         if self.isremotegdoc:
@@ -145,15 +143,7 @@ class FileInfo():
 
         if self.action_code == "up new":
             assert os.path.exists(self.path)
-            if self.parent_path not in all_data:
-                return "not_ready"
-
-            if isinstance(all_data[self.parent_path], str):
-                parent_id = all_data[self.parent_path]
-            else:
-                parent_id = all_data[self.parent_path].id
-            if parent_id is None:
-                return "not_ready"
+            assert self.parentID is not None
 
         elif self.action_code == "del local":
             assert os.path.exists(self.path)
@@ -165,8 +155,7 @@ class FileInfo():
         elif self.action_code == "down new":
             assert self.id is not None
             assert not os.path.exists(self.path)
-            if not os.path.isdir(self.parent_path):
-                return "not_ready"
+            assert os.path.isdir(self.parent_path)
 
         elif self.action_code == "up diff" or self.action_code == "down diff":
             assert os.path.exists(self.path)
@@ -174,20 +163,16 @@ class FileInfo():
         else:
             raise AssertionError("action_code was invalid(" + str(self.action_code), ")")
 
-        self.checked_good = True
-        return "ready"
-
-    def del_remote_drive_op(self, drive):
-        # ? works!
+    def del_remote(self, drive):
         # * doesn't matter if its folder or file
         drive.update(body={"trashed": True},
                      fileId=self.id).execute()
 
-    def del_local_drive_op(self):
-        # ? works
+    def del_local(self):
         send2trash(self.path)
 
-    def up_new_drive_op(self, parent, drive):
+    def up_new(self, parent, drive):
+
         if isinstance(parent, str):
             # * this is for when new folders are created so parentID might be empty
             # * root
@@ -197,13 +182,11 @@ class FileInfo():
         self.parentID = parent_id
 
         if self.isfolder:
-            # ? works!!
             body = {"parents": [self.parentID],
                     "name": self.name,
-                    "mimeType": 'application/vnd.google-apps.folder',
-                    }  # "modifiedTime": self.get_formatted_mtime(), }
+                    "mimeType": 'application/vnd.google-apps.folder', }
             _file = drive.create(body=body, fields="id").execute()
-            self._id = _file["id"]  # * for other check_ready & other drive_ops
+            self._id = _file["id"]  # * for other op_checks & other drive_ops
 
         elif self.islocal_gdoc:
 
@@ -213,8 +196,7 @@ class FileInfo():
 
             if _file["trashed"]:
                 print(self.path, "is untrashed")
-                body = {"trashed": False,
-                        }  # "modifiedTime": self.get_formatted_mtime(), }
+                body = {"trashed": False, }
                 old_parent = _file["parents"][0]
                 drive.update(
                     body=body,
@@ -227,16 +209,16 @@ class FileInfo():
                     self.path,
                 )
         else:
-            # ? works!!
             # * is an ordinary file
             body = {"parents": [self.parentID],
                     "name": self.name,
                     "modifiedTime": self.get_formatted_mtime(), }
-            media = MediaFileUpload(self.path)
+            media = MediaFileUpload(self.path, chunksize=-1, resumable=True)
             drive.create(body=body,
                          media_body=media).execute()
 
-    def down_new_drive_op(self, drive):
+    def down_new(self, drive):
+
         if self.isfolder:
             os.mkdir(self.path)
         else:
@@ -248,25 +230,22 @@ class FileInfo():
                     f.write(response)
                 self.write_remote_mtime()
             else:
-                # ? works!
                 with open(self.path, "w") as exe_file:
                     exe_file.write(gen_exe(self.link, load_options("SIGNATURE")))
                     sp.run(["chmod", "+x", self.path])
                 self.write_remote_mtime()
 
-    def up_diff_drive_up(self, drive):
-        # ? works!
+    def up_diff(self, drive):
         # * can't be folder
         # * uploadType is automatically media/multipart, no need for resumable
 
         body = {"modifiedTime": self.get_formatted_mtime()}
-        media = MediaFileUpload(self.path)
+        media = MediaFileUpload(self.path, chunksize=-1, resumable=True)
         drive.update(fileId=self.id,
                      body=body,
                      media_body=media).execute()
 
-    def down_diff_drive_op(self, drive):
-        # ? works!!
+    def down_diff(self, drive):
         # * can't be folder
         response = drive.get_media(fileId=self.id).execute()
         with open(self.path, "wb") as f:
@@ -276,7 +255,7 @@ class FileInfo():
     def drive_op(self, parent, drive):
         """Applies the operation specified by self.change_type and self.action
 
-        self.checked_possible must be ran before this
+        self.op_checks must be ran before this
 
         There are several scenarios:
         change_type       action      outcome
@@ -305,44 +284,40 @@ class FileInfo():
             drive (googleapiclient.discovery.Resource): Resource object from service.files() in init_drive
 
         Raises:
-            RuntimeError: drive_op has already ran for this file, or max retry count has been exceeded
+            RuntimeError: max retry count has been exceeded
 
         """
-
-        assert self.checked_good
-        if self.operation_done:
-            raise RuntimeError("already done", self.path)
+        self.op_checks()
 
         deletion = False
-
         count = 0
         max_count = load_options("MAX_RETRY")
         while True:
             try:
                 if self.action_code == "del remote":
-                    self.del_remote_drive_op(drive)
+                    self.del_remote(drive)
                     deletion = True
 
                 elif self.action_code == "del local":
-                    self.del_local_drive_op()
+                    self.del_local()
                     deletion = True
 
                 elif self.action_code == "up new":
-                    self.up_new_drive_op(parent, drive)
+                    self.up_new(parent, drive)
 
                 elif self.action_code == "down new":
-                    self.up_new_drive_op(drive)
+                    self.down_new(drive)
 
                 elif self.action_code == "up diff":
-                    self.up_diff_drive_up(drive)
+                    self.up_diff(drive)
 
                 elif self.action_code == "down diff":
-                    self.down_diff_drive_op(drive)
+                    self.down_diff(drive)
 
                 if count > 0:
                     print(f"Retry #" + str(count) + " was successful: " + self.path)
 
-                self.operation_done = True
+                self.op_already_done = True
 
                 if deletion:
                     return self.path
@@ -355,20 +330,21 @@ class FileInfo():
                         return ", " + f"tried {_max_count} times, giving up" + ": "
                     else:
                         return ", " + f"retrying({_count}/{_max_count})" + ": "
-                
+
                 count += 1
                 message = None
                 reason = repr(e)
                 if isinstance(e, timeout):
                     message = "This file timed out"
-                    
+
                 elif isinstance(e, ServerNotFoundError):
                     message = "Couldn't connect to server"
-                    
+
                 elif isinstance(e, HttpError):
-                    reason = e.response.reason
-                    if "User rate limit exceeded" in reason:
+                    if "userRateLimitExceeded" in repr(e):
                         message = "This file failed, rate of requests too high"
+                    elif "storageQuotaExceeded" in repr(e):
+                        raise GDriveQuotaExceeded(self.path)
 
                 if message is not None:
                     print("\t" + message + retry_text(count, max_count) + self.path + "\n")
@@ -376,7 +352,7 @@ class FileInfo():
                     print(
                         "\tThis file failed with the following error" + retry_text(count, max_count) + self.path +
                         "\n\t\t" + reason + "\n")
-                time.sleep(1)
+                time.sleep(0.5)
 
             finally:
                 if max_count > 0 and count >= max_count:

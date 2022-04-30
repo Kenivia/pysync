@@ -1,8 +1,21 @@
 import concurrent.futures as cf
+import os
+from pysync.Exit import exc_with_message
+from pysync.FileInfo import GDriveQuotaExceeded
 
 from pysync.Functions import match_attr
 from pysync.Timer import logtime
 from pysync.Options_parser import load_options
+
+
+def assign_parent(info, all_data):
+
+    if info.parentID is None and info.parent_path in all_data:
+        # * this doesn't consider whether or not `info` has parentID already but thats fine
+        if isinstance(all_data[info.parent_path], str):
+            info.parentID = all_data[info.parent_path]
+        else:
+            info.parentID = all_data[info.parent_path].id
 
 
 @logtime
@@ -21,51 +34,64 @@ def run_drive_ops(diff_infos, all_data, drive):
 
     pending = match_attr(diff_infos, action="push") + \
         match_attr(diff_infos, action="pull")
+    before_paths = [i.path for i in pending]
     if pending:
         print(f"Applying {str(len(pending))} changes..")
     else:
         print("No available changes")
 
-    # * Ideally this would also use concurrent.future but
+    interrupt_key = "uniqueKey//"
     max_threads = load_options("MAX_UPLOAD")
-    # max_threads = 1
     # * must be processpool, threadpool runs into memory issue with python
     with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
         while pending:
-            pending.sort(key=lambda x: (  # * folders first, then less depth first
-                not x.isfolder, len(x.path.split("/"))), reverse=True)
-            # * going from the back cos i'm removing it 1 by 1, thats why its reversed
+            pending.sort(key=lambda x: (  # * folders first, then less depth first, then alphabetitc
+                not x.isfolder, len(x.path.split("/")), x.path), reverse=True)
+            # * important to sort by depth first, contrary to other sorts for printing
+            # * the items are removed, thats why its reversed
             # * sorta like a queue?
 
             index = len(pending) - 1
             for _ in range(len(pending)):
 
+                if interrupt_key in all_data:
+                    raise all_data[interrupt_key]
+
                 info = pending[index]
-                ret_code = info.check_ready(all_data)
-                if ret_code == "ready":
-                    if load_options("PRINT_UPLOAD"):
-                        print(len(pending), info.action + "ing", info.change_type, info.path)
-
-                    future = executor.submit(info.drive_op, all_data[info.parent_path], drive)
-
-                    def add_all_data(fut):
-
-                        result = fut.result()
-                        if isinstance(result, str):
-                            del all_data[result]
-                        else:
-                            all_data[result.path] = result
-
-                    future.add_done_callback(add_all_data)
+                assign_parent(info, all_data)
+                if info.action == "ignore":
                     pending.remove(info)
+                    continue
+                elif info.parentID is None or not os.path.isdir(info.parent_path):
+                    continue
 
-                elif ret_code == "ignored":
-                    pending.remove(info)
+                future = executor.submit(info.drive_op, all_data[info.parent_path], drive)
+                pending.remove(info)
 
-                elif ret_code == "not ready":
-                    pass
+                def add_all_data(fut):
+                    exception = fut.exception()
+                    if isinstance(exception, GDriveQuotaExceeded):
+                        # * not very clean way to do this but works
+                        all_data[interrupt_key] = exception
+                        return
 
+                    result = fut.result()
+                    if isinstance(result, str):
+                        del all_data[result]
+                    else:
+                        all_data[result.path] = result
+
+                future.add_done_callback(add_all_data)
                 index -= 1
             # * after each iteration, the leftovers are sorted and ran again
 
+    if interrupt_key in all_data:
+        after_paths = [i.path for i in pending]
+        done_paths = [i for i in before_paths if i not in after_paths and
+                      i != all_data[interrupt_key].args[0]]
+        done_text = "\n".join(sorted(done_paths, key=lambda x: (len(x.split("/")), x)))
+        exc_with_message("The following files were done before running out of space on Google drive:\n" +
+                         done_text + "\n\n" +
+                         f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space",
+                         exception=all_data[interrupt_key])
     print("All done")

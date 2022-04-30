@@ -31,5 +31,5 @@ def main():
         on_exit(False)
         return 130
     except Exception:
-        exc_with_message()
+        exc_with_message(message=None, raise_silent=False)
         
