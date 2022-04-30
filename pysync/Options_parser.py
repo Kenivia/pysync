@@ -29,6 +29,7 @@ def alias_to_code(raw_options):
 
         "Max upload threads": "MAX_UPLOAD",
         "Max compute threads": "MAX_COMPUTE",
+        "Max retry count": "MAX_RETRY",
 
         "Always pull": "APULL",
         "Always push": "APUSH",
@@ -51,9 +52,17 @@ def cache_options():
         "MAX_UPLOAD", "MAX_COMPUTE",
         "APULL", "APUSH", "AIGNORE",
         "DPULL", "DPUSH", "DIGNORE",
-        "ROOT", "RECHECK_TIME", "SIGNATURE",
+        "ROOT", "RECHECK_TIME", "SIGNATURE", "MAX_RETRY"
     ]
     load_options(*all_available_code)  # * to load all the cache
+
+
+def get_active_path():
+
+    options_path = str(PurePath(__file__).parent.parent) + "/data/Options.json"
+    default_options_path = str(PurePath(__file__).parent.parent) + "/data/Default Options.json"
+
+    return options_path if os.path.exists(options_path) else default_options_path
 
 
 def check_options():
@@ -67,6 +76,7 @@ def check_options():
 
         "Max upload threads": int,
         "Max compute threads": int,
+        "Max retry count": int,
 
         "Always pull": list,
         "Always push": list,
@@ -77,14 +87,17 @@ def check_options():
         "Default ignore": list,
     }
 
-    with open(str(PurePath(__file__).parent.parent) + "/data/Options.json", "r") as f:
+    active_path = get_active_path()
+    active_name = active_path.split("/"[-1])
+
+    with open(active_path, "r") as f:
         raw_options = json.load(f)
         seen_keys = []
 
         for raw_key in raw_options:
             if raw_key not in expected_types:
 
-                print(f"Unknown key: \"{raw_key}\" in Options.json, ignored")
+                print(f"Unknown key: \"{raw_key}\" in {active_name}, ignored")
 
             assert isinstance(raw_options[raw_key], expected_types[raw_key])
             seen_keys.append(raw_key)
@@ -92,7 +105,7 @@ def check_options():
         if len(seen_keys) < len(raw_options):
             missing = raw_options.keys() - seen_keys
             raise ValueError(
-                "The following keys are missing from Options.json: " +
+                f"The following keys are missing from {active_name}: " +
                 ", ".join(missing))
 
     options = alias_to_code(raw_options)
@@ -114,16 +127,16 @@ def check_options():
     temp.extend(dignore)
     if len(dpull) + len(dpush) + len(dignore) != 4:
         raise AssertionError(
-            "Options Default pull, Default push Default ignore must contain exactly 4 items between them")
+            "The options: Default pull, Default push Default ignore must contain exactly 4 items between them")
 
     needed = ["local_new", "content_change", "mtime_change", "remote_new"]
     for i in needed:
         if temp.count(i) != 1:
-            raise AssertionError("""Options DEFAULT_PUSH, DEFAULT_PULL and DEFAULT_IGNORE are not set correctly.
+            raise AssertionError("""The options: DEFAULT_PUSH, DEFAULT_PULL and DEFAULT_IGNORE are not set correctly.
 Each of the following must be included exactly once:
 \t\"local_new\", \"content_change\", \"mtime_change\", \"remote_new\"""")
 
-    cache_options()  # * optional
+    cache_options()
 
 
 @lru_cache
@@ -134,7 +147,8 @@ def load_options(*keys):
         return tuple([load_options(i) for i in keys])
     else:
         root_path = str(PurePath(__file__).parent.parent)
-        with open(root_path + "/data/Options.json", "r") as f:
+        active_path = get_active_path()
+        with open(active_path, "r") as f:
             raw_options = json.load(f)
         options = alias_to_code(raw_options)
         key = keys[0]

@@ -1,20 +1,17 @@
-from threading import Thread, active_count
-import time
-import traceback
-import sys
 import os.path
 
+from socket import timeout
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.auth.exceptions import RefreshError, TransportError
 
-from pysync.Functions import pysyncSilentExit, utc_to_local
+
 from pysync.Timer import logtime
 from pysync.Options_parser import load_options
 from pysync.FileInfo import FileInfo
-from pysync.Exit import on_exit
+from pysync.Exit import exc_with_message
 
 
 def process_creds(creds, scopes):
@@ -24,16 +21,14 @@ def process_creds(creds, scopes):
     if creds and creds.refresh_token:  # * this was bugged from the tutorial..
         try:
             creds.refresh(Request())
-            print("Old token refreshed")
+            print("Old token refreshed successfully")
             return creds
         except RefreshError:
             print("Couldn't refresh old token")
             pass
         except TransportError:
-            traceback.print_exc(file=sys.stdout)
-            print("\npysync couldn't refresh your token, please check your internet connection")
-            on_exit(True)
-            raise pysyncSilentExit
+            exc_with_message(
+                "pysync couldn't refresh your token, please check your internet connectio")
 
     print("Requesting a new token")
     flow = InstalledAppFlow.from_client_secrets_file(
@@ -59,20 +54,10 @@ def init_drive():
     with open(token_path, 'w') as f:
         f.write(creds.to_json())
 
-    print("The current token will expire at:", str(utc_to_local(creds.expiry)).split(".")[0])
+    # print("The current token will expire at:", str(utc_to_local(creds.expiry)).split(".")[0])
 
     service = build('drive', 'v3', credentials=creds)
     return service.files()
-
-
-def one_type_query(all_types, args, exclude_types=[]):
-
-    out_args = []
-    for i in all_types:
-        if i not in exclude_types:
-            out = (args[0], args[1], f"mimeType = \'{i}\' and trashed = false")
-            out_args.append(out)
-    return out_args
 
 
 def kws_to_query(kws_list, equals, operator, exclude_list=[]):
@@ -81,7 +66,7 @@ def kws_to_query(kws_list, equals, operator, exclude_list=[]):
     else:
         mimetype = ["mimeType != '" + i + "'" for i in kws_list if i not in exclude_list]
 
-    return f"{(' '+operator+' ').join(mimetype)} and trashed = false"
+    return f"({(' '+operator+' ').join(mimetype)}) and trashed = false and 'me' in owners"
 
 
 @logtime
@@ -105,6 +90,7 @@ def list_remote(drive):
         'mimeType',
         'parents',
         'modifiedTime',
+        'owners',
     ], kws_to_query(folder_kws, True, "N/A")
     )
     gdoc_args = (drive, [
@@ -115,6 +101,7 @@ def list_remote(drive):
         'md5Checksum',
         'webViewLink',
         'modifiedTime',
+        'owners',
     ], kws_to_query(gdoc_kws, True, "or")
     )
 
@@ -125,6 +112,7 @@ def list_remote(drive):
         'parents',
         'md5Checksum',
         'modifiedTime',
+        'owners',
     ], kws_to_query(gdoc_kws + folder_kws, False, "and")
     )
 
@@ -136,7 +124,10 @@ def list_remote(drive):
     for i in all_args:
         results.extend(list_drive_thread(i))
 
-    # dump_test_pkl(results, "remote")
+    root = drive.get(fileId="root",
+                     fields="id").execute()
+    results.append(root["id"])
+
     return results
 
 
@@ -147,14 +138,19 @@ def list_drive_thread(args):
 
     page_token = None
     while True:
-        response = drive.list(
-            spaces="drive",
-            q=query,
-            pageSize=1000,
-            # fields="*",
-            fields=f"nextPageToken, files({','.join(fields)})",
-            pageToken=page_token,
-        ).execute()
+        try:
+            response = drive.list(
+                spaces="drive",
+                q=query,
+                pageSize=1000,
+                # fields="*",
+                fields=f"nextPageToken, files({','.join(fields)})",
+                pageToken=page_token,
+            ).execute()
+        except timeout:
+            # ? i can probably make it so that you resume the listing after internet is back? thats kinda confusing tho
+            exc_with_message(
+                "Timed out while listing remote files, please check your internet connection")
 
         page_token = response.get('nextPageToken', None)
         out.extend(response.get("files", []))
@@ -163,92 +159,41 @@ def list_drive_thread(args):
     return out
 
 
-def get_folder_dict(files):
+def get_one_parent(folders, root, info):
 
-    folder_dict = {"root": []}
-    for i in files:
-        if i.isfolder:
-            folder_dict[i.id] = []
-
-    for i in files:
-        found = False
-        for _id in folder_dict:
-            if i.parent == _id:
-                folder_dict[_id]. append(i)
-                found = True
-                break
-        if not found:
-            folder_dict["root"].append(i)
-    return folder_dict
-
-
-def determine_paths(folder_dict, file_id, path, modifying_dict):
-    """Put files into modifying_dict with its path as the key
-
-    runs recursively
-
-    Args:
-        folder_dict (dict): dict with id of folders as key, list of dict(files) as value
-        file_id (str): id of the file in question, "root" for the root folder
-        path (str): the path to start at
-        modifying_dict (dict): a dictionary to put the
-
-    Raises:
-        AssertionError: if a remote file and folder share the same name
-    """
-
-    file_list = folder_dict[file_id]
-    seen_names = []
-    for i in file_list:
-        i.get_path(path)
-        if i.name in seen_names:
-            print("A file and a folder share the same name in the remote folder at " +
-                  i.remote_path +
-                  ", please rename one of them.(Capitalization may help)")
-            input("press enter to exit")
-            raise AssertionError("Remote file & folder same name")
-        seen_names.append(i.name)
-        if i.ignore_me:
-            continue
-        # * modifies the out_dict value in process_remote cos it's a dict and its mutable
-        modifying_dict[i.path] = i
-        if i.isfolder:
-            new_path = os.path.join(path, i.name)
-            determine_paths(folder_dict, i.id, new_path, modifying_dict)
-
-
-def get_one_parent(folders, info):
-
-    parent = "root"
+    parent = root
     for i in folders:
-        if info.parent == i.id:
+        if info.parentID == i.id:
             parent = i
             break
     return parent
 
 
-def get_one_path(folders, info, out_dict, mapping):
+def get_one_path(folders, root, info, out_dict, mapping):
 
     path = info.name
     parent = info
+    try:
+        while True:
+            _id = parent.id
+            if _id in mapping:
+                parent = mapping[_id]
 
-    while True:
-        _id = parent.id
-        if _id in mapping:
-            parent = mapping[_id]
-            access = True
+            else:
+                parent = get_one_parent(folders, root, parent)
+                mapping[_id] = parent
 
-        else:
-            parent = get_one_parent(folders, parent)
-            mapping[_id] = parent
-            access = False
+            if parent == root:
+                info.path = load_options("PATH") + "/" + path
 
-        if parent == "root":
-            info.path = load_options("PATH") + "/" + path
-            out_dict[info.path] = info
-            return access
+                assert info.path not in out_dict  # * duplicated name
 
-        path = parent.name + "/" + path
+                out_dict[info.path] = info
+                return info.parentID
+            path = parent.name + "/" + path
+
+    except AssertionError:
+        exc_with_message("A remote name is occupied by multiple files and folders: " + info.remote_path)
 
 
 def init_one_fileinfo(args):
@@ -266,16 +211,22 @@ def process_remote(raw_files):
 
     folder_list = []
     file_list = []
-    for i in raw_files:
+    root = raw_files[-1]
+
+    for i in raw_files[0:-1]:
         file_info = init_one_fileinfo(i)
         if not file_info.isorphan:
             if file_info.isfolder:
                 folder_list.append(file_info)
             else:
                 file_list.append(file_info)
+        else:
+            # TODO handle orphan files, which are all sharedWithMe
+            pass
 
-    out_dict = {load_options("PATH"): "root"}
+    out_dict = {load_options("PATH"): root}
     mapping = {}
     for i in folder_list + file_list:
-        get_one_path(folder_list, i, out_dict, mapping)
+        get_one_path(folder_list, root, i, out_dict, mapping)
+        
     return out_dict

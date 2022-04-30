@@ -2,7 +2,7 @@ from pysync.InputParser import replace_numbers
 from pysync.Timer import logtime
 from pysync.Functions import (
     contains_parent,
-    pysyncSilentExit,
+    SilentExit,
 )
 from pysync.Functions import match_attr
 from pysync.Options_parser import load_options
@@ -83,9 +83,9 @@ def print_half(infos, initing, forced, index):
     for action in actions:
         this = match_attr(infos, action=action)
         if initing or forced:
-            this.sort(key=lambda x: (x.action_human, len(x.path.split("/"))))
+            this.sort(key=lambda x: (x.action_human, len(x.path.split("/")), x.path))
         else:
-            this.sort(key=lambda x: (x.index, len(x.path.split("/"))))
+            this.sort(key=lambda x: (x.index, len(x.path.split("/")), x.path))
 
         for i in this:
             if forced:
@@ -199,13 +199,13 @@ Press Enter or use `apply` to apply the following changes:"""
         if command == "exit":
             if len(arguments) > 0:
                 print("exit doesn't take arguments, ignored")
-            raise pysyncSilentExit
+            raise SilentExit
 
         if command == "restart":
             restart()
             if len(arguments) > 0:
                 print("restart doesn't take arguments, ignored")
-            raise pysyncSilentExit
+            raise SilentExit
 
         arguments, message = replace_numbers(arguments, len(diff_infos))
         changed = []

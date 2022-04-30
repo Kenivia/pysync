@@ -9,3 +9,5 @@ data/client_secrets.json
 test_pkl/*
 CreateTestpkl.py
 *test*
+.pytest_cache/*
+data/Options.json

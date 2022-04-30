@@ -2,22 +2,25 @@ import os
 import pathlib
 import hashlib as hl
 
-from datetime import timezone
+from datetime import datetime, timezone
 
 """
 This file defines miscellaneous functions that:
-    - don't depend on ANY other files or functions in pysync
+    - don't depend on ANY files or functions in pysync other than this file
     - complete a standalone task
     - are flexible for use in a variety of situations
 
 """
 
+def local_to_utc(utc_dt):
+    LOCAL_TIMEZONE = datetime.now(timezone.utc).astimezone().tzinfo
+    return utc_dt.replace(tzinfo=LOCAL_TIMEZONE).astimezone(tz=timezone.utc)
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
 
 
-class pysyncSilentExit(Exception):
+class SilentExit(Exception):
     pass
 
 

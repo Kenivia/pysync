@@ -1,13 +1,19 @@
 import os
-import dateutil.parser as dup
-from send2trash import send2trash
 import time
+from googleapiclient.errors import HttpError
+import dateutil.parser as dup
+from httplib2 import ServerNotFoundError
+from send2trash import send2trash
 import subprocess as sp
 
+from datetime import datetime
+from socket import timeout
+from googleapiclient.http import MediaFileUpload
 
 from pysync.Functions import (
     hex_md5_file,
     contains_parent,
+    local_to_utc,
 )
 from pysync.Options_parser import load_options
 
@@ -18,7 +24,7 @@ class FileIDNotFoundError(Exception):
 
 def gen_exe(url, signatures):
     text = f"""xdg-open {url}
-#This file was created by pysync. Do not remove the line below!
+# This file was created by pysync. Do not remove the line below!
 {signatures}"""
     return text
 
@@ -38,7 +44,7 @@ class FileInfo():
     """Object containing the metadata of either a local or remote file"""
 
     def __init__(self, location, **kwargs):
-        self.parent = None  # * checked by isorphan
+        self.parentID = None  # * checked by isorphan
         self.action = None  # * checked  by check_ready
         self.partner = None  # * checked by id and parent_id
         self.change_type = None  # * checked by check_ready
@@ -71,9 +77,9 @@ class FileInfo():
             self.mtime = int(dup.parse(kwargs["modifiedTime"]).timestamp())
             if "parents" in kwargs:
                 assert len(kwargs["parents"]) == 1
-                self.parent = kwargs["parents"][0]
+                self.parentID = kwargs["parents"][0]
             # TODO make a "shared" folder for orphans(because they're all shared files i think)
-            
+
             if not self.isfolder:
                 self._md5sum = kwargs["md5Checksum"] if "md5Checksum" in kwargs else None
                 if "application/vnd.google-apps." in kwargs["mimeType"]:
@@ -142,8 +148,8 @@ class FileInfo():
             if self.parent_path not in all_data:
                 return "not_ready"
 
-            if isinstance(all_data[self.parent_path], dict):
-                parent_id = all_data[self.parent_path]["id"]
+            if isinstance(all_data[self.parent_path], str):
+                parent_id = all_data[self.parent_path]
             else:
                 parent_id = all_data[self.parent_path].id
             if parent_id is None:
@@ -171,7 +177,103 @@ class FileInfo():
         self.checked_good = True
         return "ready"
 
-    def drive_op(self, all_data, drive):
+    def del_remote_drive_op(self, drive):
+        # ? works!
+        # * doesn't matter if its folder or file
+        drive.update(body={"trashed": True},
+                     fileId=self.id).execute()
+
+    def del_local_drive_op(self):
+        # ? works
+        send2trash(self.path)
+
+    def up_new_drive_op(self, parent, drive):
+        if isinstance(parent, str):
+            # * this is for when new folders are created so parentID might be empty
+            # * root
+            parent_id = parent
+        else:
+            parent_id = parent.id
+        self.parentID = parent_id
+
+        if self.isfolder:
+            # ? works!!
+            body = {"parents": [self.parentID],
+                    "name": self.name,
+                    "mimeType": 'application/vnd.google-apps.folder',
+                    }  # "modifiedTime": self.get_formatted_mtime(), }
+            _file = drive.create(body=body, fields="id").execute()
+            self._id = _file["id"]  # * for other check_ready & other drive_ops
+
+        elif self.islocal_gdoc:
+
+            file_id = get_id_exe(open(self.path, "r").read())
+            _file = drive.get(fileId=file_id,
+                              fields="trashed, parents").execute()
+
+            if _file["trashed"]:
+                print(self.path, "is untrashed")
+                body = {"trashed": False,
+                        }  # "modifiedTime": self.get_formatted_mtime(), }
+                old_parent = _file["parents"][0]
+                drive.update(
+                    body=body,
+                    fileId=file_id,
+                    addParents=self.parentID,
+                    removeParents=old_parent).execute()
+            else:
+                print(
+                    "\tThis local pysync gdoc file was invalid: " +
+                    self.path,
+                )
+        else:
+            # ? works!!
+            # * is an ordinary file
+            body = {"parents": [self.parentID],
+                    "name": self.name,
+                    "modifiedTime": self.get_formatted_mtime(), }
+            media = MediaFileUpload(self.path)
+            drive.create(body=body,
+                         media_body=media).execute()
+
+    def down_new_drive_op(self, drive):
+        if self.isfolder:
+            os.mkdir(self.path)
+        else:
+            if not self.isremotegdoc:
+                # TODO abuse? but otherwise works
+                response = drive.get_media(fileId=self.id,  # acknowledgeAbuse=True
+                                           ).execute()
+                with open(self.path, "wb") as f:
+                    f.write(response)
+                self.write_remote_mtime()
+            else:
+                # ? works!
+                with open(self.path, "w") as exe_file:
+                    exe_file.write(gen_exe(self.link, load_options("SIGNATURE")))
+                    sp.run(["chmod", "+x", self.path])
+                self.write_remote_mtime()
+
+    def up_diff_drive_up(self, drive):
+        # ? works!
+        # * can't be folder
+        # * uploadType is automatically media/multipart, no need for resumable
+
+        body = {"modifiedTime": self.get_formatted_mtime()}
+        media = MediaFileUpload(self.path)
+        drive.update(fileId=self.id,
+                     body=body,
+                     media_body=media).execute()
+
+    def down_diff_drive_op(self, drive):
+        # ? works!!
+        # * can't be folder
+        response = drive.get_media(fileId=self.id).execute()
+        with open(self.path, "wb") as f:
+            f.write(response)
+        self.write_remote_mtime()
+
+    def drive_op(self, parent, drive):
         """Applies the operation specified by self.change_type and self.action
 
         self.checked_possible must be ran before this
@@ -196,11 +298,11 @@ class FileInfo():
         then an executable text file will be created in the local copy that opens the document in a browser
 
         the modification time of the local file will be set when the upload finishes
-            - this is around 1 second later than what will Google will say, hence the 3 seconds leeway in compare_info
+            - this is around 1 second later than what Google will say, hence the 3 seconds leeway in compare_info
 
         Args:
-            all_info (dict): FileInfo objects from  get_diff
-            drive (pydrive2.drive.GoogleDrive): drive object from init_drive
+            parent (str/pysync.FileInfo.FileInfo): the parent FileInfo or id of root folder
+            drive (googleapiclient.discovery.Resource): Resource object from service.files() in init_drive
 
         Raises:
             RuntimeError: drive_op has already ran for this file
@@ -212,90 +314,74 @@ class FileInfo():
             raise RuntimeError("already done", self.path)
 
         deletion = False
-        if self.action_code == "up new":
-            if isinstance(all_data[self.parent_path], dict):
-                # * root
-                parent_id = all_data[self.parent_path]["id"]
-            else:
-                parent_id = all_data[self.parent_path].id
-            self.parent = {"id": parent_id}
-            args = {"parents": [{"id": self.parent_id}],
-                    "name": os.path.split(self.path)[1],
-                    }
-            if self.isfolder:
-                args["mimeType"] = 'application/vnd.google-apps.folder'
-                _file = drive.CreateFile(args)
-                _file.Upload()
-                self._id = _file["id"]
 
-            elif self.islocal_gdoc:
+        count = 0
+        max_count = load_options("MAX_RETRY")
+        while True:
+            try:
+                if self.action_code == "del remote":
+                    self.del_remote_drive_op(drive)
+                    deletion = True
 
-                args["id"] = get_id_exe(open(self.path, "r").read())
-                _file = drive.CreateFile(args)
-                _file.FetchMetadata(fields="labels")
-                if _file["labels"]["trashed"]:
-                    print(self.path, "is untrashed")
-                    _file.UnTrash()
-                    _file.Upload()
-                    _file["parents"] = [{"kind": "drive#parentReference",
-                                        "id": args["parents"][0]["id"]}]
-                    _file.Upload()
+                elif self.action_code == "del local":
+                    self.del_local_drive_op()
+                    deletion = True
+
+                elif self.action_code == "up new":
+                    self.up_new_drive_op(parent, drive)
+
+                elif self.action_code == "down new":
+                    self.up_new_drive_op(drive)
+
+                elif self.action_code == "up diff":
+                    self.up_diff_drive_up(drive)
+
+                elif self.action_code == "down diff":
+                    self.down_diff_drive_op(drive)
+
+                if count > 0:
+                    print(f"Retry #" + str(count) + " was successful: " + self.path)
+
+                self.operation_done = True
+
+                if deletion:
+                    return self.path
                 else:
-                    print(self.path, "is a local google doc file but doesn't exist remotely, ignored")
+                    return self
 
-            else:
-                # * is an ordinary file
-                _file = drive.CreateFile(args)
-                _file.SetContentFile(self.path)
-                _file.Upload()
+            except Exception as e:
+                def retry_text(_count, _max_count):
+                    if _count >= _max_count:
+                        return ", " + f"tried {_max_count} times, giving up" + ": "
+                    else:
+                        return ", " + f"retrying({_count}/{_max_count})" + ": "
+                count += 1
+                message = None
+                reason = repr(e)
+                if isinstance(e, timeout):
+                    message = "This file timed out"
+                elif isinstance(e, ServerNotFoundError):
+                    message = "Couldn't connect to server"
+                elif isinstance(e, HttpError):
 
-        elif self.action_code == "del local":
-            send2trash(self.path)
-            deletion = True
+                    reason = e.response.reason
 
-        elif self.action_code == "del remote":
+                    print(reason)
 
-            # * doesn't matter if its folder or file
-            _file = drive.CreateFile({"id": self.id, })
-            _file.Trash()
-            deletion = True
+                    if "User rate limit exceeded" in reason:
+                        message = "This file failed, rate of requests too high"
 
-        elif self.action_code == "down new":
-            if self.isfolder:
-                os.mkdir(self.path)
-            else:
-                _file = drive.CreateFile({"id": self.id, })
-
-                if not self.isremotegdoc:
-                    _file.GetContentFile(self.path, remove_bom=True)
+                if message is not None:
+                    print("\t" + message + retry_text(count, max_count) + self.path + "\n")
                 else:
-                    with open(self.path, "w") as exe_file:
-                        exe_file.write(gen_exe(self.link, load_options("SIGNATURE")))
-                        sp.run(["chmod", "+x", self.path])
-                mtime = int(dup.parse(_file["modifiedTime"]).timestamp())
-                os.utime(self.path, (mtime, mtime))
+                    print(
+                        "\tThis file failed with the following error" + retry_text(count, max_count) + self.path +
+                        "\n\t\t" + reason + "\n")
+                time.sleep(1)
 
-        elif self.action_code == "up diff":
-            # * can't be folder
-            _file = drive.CreateFile({"id": self.id, })
-            _file.SetContentFile(self.path)
-            _file.Upload()
-            finish_time = time.time()
-            os.utime(self.path, (finish_time, finish_time))
-
-        elif self.action_code == "down diff":
-            # * can't be folder
-            _file = drive.CreateFile({"id": self.id, })
-            _file.GetContentFile(self.path, remove_bom=True)
-            _file.Upload()
-            finish_time = time.time()
-            os.utime(self.path, (finish_time, finish_time))
-
-        self.operation_done = True
-        if deletion:
-            del all_data[self.path]
-        else:
-            all_data[self.path] = self
+            finally:
+                if count >= max_count:
+                    raise RuntimeError("Max retry count exceeded")
 
     @property
     def md5sum(self):
@@ -326,7 +412,7 @@ class FileInfo():
 
     @property
     def isorphan(self):
-        return self.parent is None
+        return self.parentID is None
 
     @property
     def parent_path(self):
@@ -338,11 +424,13 @@ class FileInfo():
 
     @property
     def parent_id(self):
-        if self.partner is not None and self.parent is None:
-            self.parent = self.partner.parent
-        return self.parent["id"]
+
+        if self.partner is not None and self.parentID is None:
+            self.parentID = self.partner.parentID
+        return self.parentID
 
     def signature_present(self):
+
         if self.islocal and not self.isfolder:
             try:
                 with open(self.path, "r") as _file:
@@ -375,6 +463,7 @@ class FileInfo():
 
     @property
     def action_human(self):
+
         out = "forced " if self.forced else ""
         if self.action == "ignore":
             return out + "ignoring"
@@ -430,12 +519,14 @@ class FileInfo():
             elif self.action == "pull":
                 return "down diff"
 
+        raise ValueError
+
     def __hash__(self):
 
         out = {}
         for key in self.__dict__:
             if key == "partner":
-                continue
+                out[key] = self.partner.id
             item = self.__dict__[key]
             if isinstance(item, dict):
                 out[key] = frozenset(item)
@@ -445,3 +536,22 @@ class FileInfo():
                 out[key] = item
 
         return hash(frozenset(out))
+
+    def get_posix_mtime(self):
+
+        assert self.path is not None
+        return os.path.getmtime(self.path)
+
+    def get_formatted_mtime(self):
+
+        assert self.path is not None
+        mtime = self.get_posix_mtime()
+        dt = datetime.fromtimestamp(mtime)
+        return local_to_utc(dt).isoformat()
+
+    def write_remote_mtime(self, drive):
+
+        assert self.path is not None
+        _file = drive.get(fileId=self.id, fields="modifiedTime",).execute()
+        mtime = int(dup.parse(_file["modifiedTime"]).timestamp())
+        os.utime(self.path, (mtime, mtime))
