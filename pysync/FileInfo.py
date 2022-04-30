@@ -1,14 +1,16 @@
 import os
 import time
-from googleapiclient.errors import HttpError
-import dateutil.parser as dup
-from httplib2 import ServerNotFoundError
-from send2trash import send2trash
 import subprocess as sp
+import dateutil.parser as dup
+
 
 from datetime import datetime
-from socket import timeout
+from send2trash import send2trash
 from googleapiclient.http import MediaFileUpload
+
+from socket import timeout
+from googleapiclient.errors import HttpError
+from httplib2 import ServerNotFoundError
 
 from pysync.Functions import (
     hex_md5_file,
@@ -20,8 +22,11 @@ from pysync.Options_parser import load_options
 
 class FileIDNotFoundError(Exception):
     pass
+
+
 class GDriveQuotaExceeded(Exception):
     pass
+
 
 def gen_exe(url, signatures):
     text = f"""xdg-open {url}

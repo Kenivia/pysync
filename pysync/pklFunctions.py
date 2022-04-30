@@ -14,17 +14,6 @@ def pload(path):
     return pkl.load(open(path, "rb"))
 
 
-def dump_test_pkl(obj, name, datetime=None):
-    if datetime is None:
-        datetime = get_today_name()
-    folderpath = load_options("ROOT") + "/test_pkl/{}/".format(datetime)
-    if not os.path.isdir(folderpath):
-        sp.run(["mkdir", folderpath])
-
-    pdump(obj, folderpath + name)
-    return datetime
-
-
 def AddZero(inp):
     assert isinstance(inp, str)
     assert len(inp) == 1 or len(inp) == 2
@@ -45,3 +34,14 @@ def get_today_name():
     date = year + "." + mon + "." + day
     time = hour + "." + minu + "." + sec
     return date + "-" + time
+
+
+def dump_test_pkl(obj, name, datetime=None):
+    if datetime is None:
+        datetime = get_today_name()
+    folderpath = load_options("ROOT") + "/test_pkl/{}/".format(datetime)
+    if not os.path.isdir(folderpath):
+        sp.run(["mkdir", folderpath])
+
+    pdump(obj, folderpath + name)
+    return datetime

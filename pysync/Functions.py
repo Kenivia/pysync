@@ -2,7 +2,10 @@ import os
 import pathlib
 import hashlib as hl
 
-from datetime import datetime, timezone
+from datetime import (
+    datetime,
+    timezone,
+)
 
 """
 This file defines miscellaneous functions that:
@@ -12,9 +15,11 @@ This file defines miscellaneous functions that:
 
 """
 
+
 def local_to_utc(utc_dt):
     LOCAL_TIMEZONE = datetime.now(timezone.utc).astimezone().tzinfo
     return utc_dt.replace(tzinfo=LOCAL_TIMEZONE).astimezone(tz=timezone.utc)
+
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -28,7 +33,7 @@ def match_attr(infos, **kwargs):
     # * doesn't support multiple values
     # * e.g action = push, action = pull because there's no way of knowing
     # * whether it should be AND or OR or whatever
-    # * should probably do it case by case
+    # * instead, it should be done case by case
     out = []
     for i in infos:
         matched = True
