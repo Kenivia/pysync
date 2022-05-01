@@ -1,4 +1,5 @@
 import sys
+import  traceback
 
 from pysync.Exit import (
     on_exit,
@@ -19,9 +20,14 @@ def main():
     except socket.error:
         print("an instance of pysync is already running. Exiting")
         sys.exit(0)
-        
-    check_options()
-
+    
+    try:
+        check_options()
+    except Exception:
+        traceback.print_exc(file=sys.stdout)
+        print("\nThe error above occured while parsing Options.json. Exiting")
+        sys.exit(1)
+    
     print("pysync started successfully")
     try:
         timer = event_sequence(load_options("PATH"))

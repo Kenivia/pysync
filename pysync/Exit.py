@@ -13,8 +13,10 @@ def exc_with_message(message=None, exception=None, raise_silent=True):
         traceback.print_exc(file=sys.stdout)
     else:
         traceback.print_exception(exception, None, None)
+        
     if message is not None:
         print("\n" + message)
+        
     on_exit(True)
     if raise_silent:
         raise SilentExit
@@ -32,11 +34,12 @@ def on_exit(failure, timer=None):
     """
     if not load_options("ASK_AT_EXIT"):
         print("pysync will now exit")
-        return
+        sys.exit(0)
 
     t = Thread(target=on_exit_thread, args=(timer, failure,), daemon=False)
     # * very important that daemon=False
     t.start()
+    sys.exit(0)
 
 
 def on_exit_thread(timer=None, failure=False):
