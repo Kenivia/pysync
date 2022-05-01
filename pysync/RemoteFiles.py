@@ -5,7 +5,10 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from google.auth.exceptions import RefreshError, TransportError
+from google.auth.exceptions import (
+    RefreshError,
+    TransportError,
+)
 
 
 from pysync.Timer import logtime
@@ -188,7 +191,7 @@ def get_one_path(folders, root, info, out_dict, mapping):
     except AssertionError:
         exc_with_message(
             "A remote name is occupied by multiple files and folders: " +
-            info.remote_path)+ "\nThis also sometimes occurs when files are trashed very recently"
+            info.remote_path) + "\nThis also sometimes occurs when files are trashed very recently"
 
 
 def init_one_fileinfo(args):

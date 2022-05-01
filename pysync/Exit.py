@@ -34,12 +34,11 @@ def on_exit(failure, timer=None):
     """
     if not load_options("ASK_AT_EXIT"):
         print("pysync will now exit")
-        sys.exit(0)
+        return
 
     t = Thread(target=on_exit_thread, args=(timer, failure,), daemon=False)
     # * very important that daemon=False
     t.start()
-    sys.exit(0)
 
 
 def on_exit_thread(timer=None, failure=False):

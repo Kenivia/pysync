@@ -8,7 +8,6 @@ class FuncTimer():
     def __init__(self, category, func_title):
         """Timer for one function
         """
-
         self.reset()
         self.usertime = None
         self.func_title = func_title

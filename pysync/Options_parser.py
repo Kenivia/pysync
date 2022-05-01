@@ -34,6 +34,7 @@ def alias_to_code(raw_options):
 
         "Max upload threads": "MAX_UPLOAD",
         "Max compute threads": "MAX_COMPUTE",
+
         "Max retry count": "MAX_RETRY",
 
         "Always pull": "APULL",
@@ -62,15 +63,10 @@ def cache_options():
     load_options(*all_available_code)  # * to load all the cache
 
 
-# def get_active_path():
-
-
-#     return options_path if os.path.exists(options_path) else default_options_path
-
 def override_default():
     options_path = str(PurePath(__file__).parent.parent) + OPTIONS_NAME
     default_options_path = str(PurePath(__file__).parent.parent) + DEFAULT_NAME
-    
+
     djson = json.load(open(default_options_path, "r"))
     if not os.path.exists(options_path):
         return djson
@@ -104,10 +100,6 @@ def check_options():
         "Default push": list,
         "Default ignore": list,
     }
-
-    # active_path = get_active_path()
-    # active_name = active_path.split("/"[-1])
-    # DEFAULT_NAME
 
     raw_options = override_default()
     seen_keys = []

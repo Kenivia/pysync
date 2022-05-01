@@ -2,10 +2,8 @@
 .vscode/*
 junkyard.py
 example file output
-pysync/*test*
 
 test_pkl/*
-CreateTestpkl.py
 *test*
 .pytest_cache/*
 data/client_secrets.json

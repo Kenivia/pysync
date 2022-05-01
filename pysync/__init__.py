@@ -1,5 +1,5 @@
 import sys
-import  traceback
+import traceback
 
 from pysync.Exit import (
     on_exit,
@@ -19,24 +19,23 @@ def main():
         s.bind('\0pysync_process_lock')
     except socket.error:
         print("an instance of pysync is already running. Exiting")
-        sys.exit(0)
-    
+        return
+
     try:
         check_options()
     except Exception:
         traceback.print_exc(file=sys.stdout)
         print("\nThe error above occured while parsing Options.json. Exiting")
-        sys.exit(1)
-    
+        return
+
     print("pysync started successfully")
     try:
         timer = event_sequence(load_options("PATH"))
         on_exit(False, timer=timer)
 
     except SilentExit:
-        sys.exit(0)
+        return
     except KeyboardInterrupt:
         on_exit(False)
-        sys.exit(130)
     except Exception:
         exc_with_message(message=None, raise_silent=False)
