@@ -31,9 +31,11 @@ def get_local_files(path, output_dict, timer=None):
 def _get_local(path, out_dict):
 
     get_local_info_list(path, out_dict)
+
     if not main_thread().is_alive():
         # * there's no easy way to interrupt either stages, so here i'll just stop the 2nd stage
         return
+    
     print("Processing local files..")
     # * This calculates md5sum using many threads
     max_threads = load_options("MAX_COMPUTE")

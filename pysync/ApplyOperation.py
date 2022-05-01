@@ -37,10 +37,12 @@ def run_drive_ops(diff_infos, all_data, drive):
     before_paths = [i.path for i in pending]
     if pending:
         print(f"Applying {str(len(pending))} changes..")
+        if load_options("PRINT_UPLOAD"):
+            print("Not displaying the progress")
     else:
         print("No available changes")
 
-    interrupt_key = "uniqueKey//"
+    interrupt_key = "uniqueKey///"
     max_threads = load_options("MAX_UPLOAD")
     # * must be processpool, threadpool runs into memory issue with python
     with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:

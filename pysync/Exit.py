@@ -13,10 +13,10 @@ def exc_with_message(message=None, exception=None, raise_silent=True):
         traceback.print_exc(file=sys.stdout)
     else:
         traceback.print_exception(exception, None, None)
-        
+
     if message is not None:
         print("\n" + message)
-        
+
     on_exit(True)
     if raise_silent:
         raise SilentExit
@@ -82,15 +82,22 @@ def restart():
     retval = sp.run(["dpkg", "-s", "gnome-terminal"],
                     stdout=sp.DEVNULL, stderr=sp.DEVNULL)
     if retval.returncode == 0:
-        sp.call(["gnome-terminal", "--", thispython, root_path + "/pysync"])
+        sp_list = ["gnome-terminal", "--", thispython, root_path + "/pysync"]
+        command_used = " ".join([str(i) for i in sp_list])
+        sp.call(sp_list)
     else:
         retval = sp.run(["dpkg", "-s", "xfce4-terminal"],
                         stdout=sp.DEVNULL, stderr=sp.DEVNULL)
         if retval.returncode == 0:
-            sp.call(["xfce4-terminal", "-x", thispython, root_path + "/pysync"])
+            sp_list = ["xfce4-terminal", "-x", thispython, root_path + "/pysync"]
+            command_used = " ".join([str(i) for i in sp_list])
+            sp.call(sp_list)
         else:
             print(
-                "Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
+                "Neither gnome-puterminal nor xfce4-terminal is available, unable to restart")
             input("Press enter to exit")
             return
-    print("A new instance of pysync has been started, this process should end immediately")
+    
+    print("A new instance of pysync has been started using the following command:" +
+          "\n\t" + command_used +
+          "\nthis process should end immediately")

@@ -70,7 +70,11 @@ def contains_parent(parents_list, inp, accept_self=True):
 
 
 def hex_md5_file(path):
-    return hl.md5(open(path, 'rb').read()).hexdigest()
+    hash_md5 = hl.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
 
 
 def append_slash(path):
