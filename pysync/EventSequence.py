@@ -1,6 +1,3 @@
-import subprocess as sp
-import sys
-import pkg_resources
 
 
 from pysync.Timer import (
@@ -21,40 +18,6 @@ from pysync.RemoteFiles import (
 from pysync.ApplyOperation import run_drive_ops
 
 
-def init_libraries(required):
-    """installs required packages using pip if they are not present
-
-    Args:
-        required (set): a set containing the packages in string
-
-    Returns:
-        bool: if things are installed properly
-    """
-    required = {'send2trash', }
-    installed = {pkg.key for pkg in pkg_resources.working_set}
-    missing = list(required - installed)
-
-    if missing:
-        missingtext = ", ".join(missing)
-        command_list = [sys.executable, '-m', 'pip', 'install', *missing]
-        print("The following packages are required by pysync:")
-        print("\t" + missingtext)
-        print("The following command will be ran:")
-        print("\t" + " ".join(command_list))
-        inp = input("Proceed (y/N)? ")
-        if inp.lower() == "y":
-            print("")
-            completed = sp.run(command_list)
-            if completed.returncode != 0:
-                print("An error occured while running the command above")
-                return False
-            print("")  # * looks better
-            return True
-        else:
-            print("Installation was cancelled by the user")
-            return False
-    else:
-        return True
 
 
 def event_sequence(path):

@@ -45,14 +45,16 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
   - select Desktop app for Application type, and enter any Name(pysync)
   - click CREATE
   - you'll be prompted with a screen, click DOWNLOAD JSON
-  - rename the file to `client_secrets.json` and place this file in `./pysync/data`, replacing the dummy file that's already in there
+  - rename the file to `client_secrets.json` and place this file in `./pysync/data`
   - and you're done!
   
 ## Requirements
 
 - `python3.6+`
 
-- `send2trash`: `pip3 install send2trash`
+- `python-dateutil`, `send2trash`, `google-api-python-client` and `google-auth-oauthlib`
+
+- pysync should detect missing packages and install them automatically using `pip`.
   
 - a folder at `~/gdrive` to sync with (you can change the location in `./pysync/options.py`)
 

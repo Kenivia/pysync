@@ -1,5 +1,5 @@
 import copy
-import psutil
+import multiprocessing
 import os
 import json
 from functools import lru_cache
@@ -141,7 +141,7 @@ Each of the following must be included exactly once:
     cache_options()
 
 
-@lru_cache
+@lru_cache(None)
 def load_options(*keys):
 
     if len(keys) > 1:
@@ -156,7 +156,7 @@ def load_options(*keys):
         key = keys[0]
         if key == "MAX_COMPUTE":
             temp = options[key]
-            return psutil.cpu_count() if temp < 1 else temp
+            return multiprocessing.cpu_count() if temp < 1 else temp
 
         elif key == "PATH":
             # * slash removal is vital for a lot of the program

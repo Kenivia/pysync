@@ -1,21 +1,16 @@
-from pysync.Options_parser import check_options
-from pysync.EventSequence import (
-    event_sequence,
-    init_libraries,
-)
-from pysync.Options_parser import load_options
-from pysync.Functions import SilentExit
+import sys
+
 from pysync.Exit import (
     on_exit,
     exc_with_message,
 )
+from pysync.Functions import SilentExit
+from pysync.Options_parser import load_options
+from pysync.EventSequence import event_sequence
+from pysync.Options_parser import check_options
 
 
 def main():
-
-    if not init_libraries({"send2trash"}):
-        print("pysync will now exit")
-        return
 
     check_options()
 
@@ -26,10 +21,9 @@ def main():
         on_exit(False, timer=timer)
 
     except SilentExit:
-        return 0
+        sys.exit(0)
     except KeyboardInterrupt:
         on_exit(False)
-        return 130
+        sys.exit(130)
     except Exception:
         exc_with_message(message=None, raise_silent=False)
-        

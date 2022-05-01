@@ -212,23 +212,23 @@ Press Enter or use `apply` to apply the following changes:"""
         arguments, message = replace_numbers(arguments, len(diff_infos))
         changed = []
         all_index = {}
-        for item in arguments:
-            if item == "all":
+        for inp in arguments:
+            if inp == "all":
                 for i in match_attr(diff_infos, forced=False):
                     i.action = command
                     changed.append(str(i.index))
 
-            elif item.isnumeric():
+            elif inp.isnumeric():
                 # * shouldn't need to check for forced here since forced don't get an index
-                if item not in all_index:
+                if inp not in all_index:
                     for i in diff_infos:
                         if i.index is not None:
-                            all_index[item] = i
-                info = all_index[item]
+                            all_index[str(i.index)] = i
+                info = all_index[inp]
                 info.action = command
                 changed.append(str(info.index))
             else:
-                print(item, "is invalid, ignored")
+                print(inp, "is invalid, ignored")
 
         changed = num_shorten(changed)
         text = message

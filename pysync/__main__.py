@@ -6,7 +6,44 @@ if (__package__ is None or __package__ == "") and not hasattr(sys, 'frozen'):
     path = os.path.realpath(os.path.abspath(__file__))
     sys.path.insert(0, os.path.dirname(os.path.dirname(path)))
 
-import pysync
+import subprocess as sp
+import pkg_resources
 
+
+required = {"python-dateutil",
+            "send2trash",
+            "google-api-python-client",
+            "google-auth-oauthlib",
+            }
+installed = {pkg.key for pkg in pkg_resources.working_set}
+missing = list(required - installed)
+
+if missing:
+    missingtext = ", ".join(missing)
+    if __name__ == "__main__":
+        
+        command_list = [sys.executable, '-m', 'pip', 'install', *missing]
+        print("The following packages are missing and are required by pysync:")
+        print("\t" + missingtext)
+        print("The following command will be ran:")
+        print("\t" + " ".join(command_list))
+        inp = input("Proceed (y/N)? ")
+        if inp.lower() == "y":
+            print("")
+            completed = sp.run(command_list)
+            if completed.returncode != 0:
+                print("An error occured while running the command above")
+                sys.exit()
+            print("\nInstallation completed successfully")
+
+        else:
+            print("Installation was cancelled by the user")
+            sys.exit()
+    else:
+        print("pysync couldn't initialize because the following packages are missing:" + ", ".join(missing))
+        sys.exit()
+        
+import pysync    
 if __name__ == "__main__":
     pysync.main()
+

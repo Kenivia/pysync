@@ -6,10 +6,12 @@ import dateutil.parser as dup
 
 from datetime import datetime
 from send2trash import send2trash
-from googleapiclient.http import MediaFileUpload
-
 from socket import timeout
-from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload
+from googleapiclient.errors import (
+    HttpError,
+    ResumableUploadError,
+    )
 from httplib2 import ServerNotFoundError
 
 from pysync.Functions import (
@@ -233,12 +235,12 @@ class FileInfo():
                                            ).execute()
                 with open(self.path, "wb") as f:
                     f.write(response)
-                self.write_remote_mtime()
+                self.write_remote_mtime(drive)
             else:
                 with open(self.path, "w") as exe_file:
                     exe_file.write(gen_exe(self.link, load_options("SIGNATURE")))
                     sp.run(["chmod", "+x", self.path])
-                self.write_remote_mtime()
+                self.write_remote_mtime(drive)
 
     def up_diff(self, drive):
         # * can't be folder
@@ -255,7 +257,7 @@ class FileInfo():
         response = drive.get_media(fileId=self.id).execute()
         with open(self.path, "wb") as f:
             f.write(response)
-        self.write_remote_mtime()
+        self.write_remote_mtime(drive)
 
     def drive_op(self, parent, drive):
         """Applies the operation specified by self.change_type and self.action
@@ -345,7 +347,7 @@ class FileInfo():
                 elif isinstance(e, ServerNotFoundError):
                     message = "Couldn't connect to server"
 
-                elif isinstance(e, HttpError):
+                elif isinstance(e, HttpError) or isinstance(e,ResumableUploadError):
                     if "userRateLimitExceeded" in repr(e):
                         message = "This file failed, rate of requests too high"
                     elif "storageQuotaExceeded" in repr(e):

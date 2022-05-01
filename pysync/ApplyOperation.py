@@ -86,12 +86,14 @@ def run_drive_ops(diff_infos, all_data, drive):
             # * after each iteration, the leftovers are sorted and ran again
 
     if interrupt_key in all_data:
+        final_straw = all_data[interrupt_key].args[0]
         after_paths = [i.path for i in pending]
         done_paths = [i for i in before_paths if i not in after_paths and
-                      i != all_data[interrupt_key].args[0]]
+                      i != final_straw]
         done_text = "\n".join(sorted(done_paths, key=lambda x: (len(x.split("/")), x)))
         exc_with_message("The following files were done before running out of space on Google drive:\n" +
                          done_text + "\n\n" +
-                         f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space",
-                         exception=all_data[interrupt_key])
+                         f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space"+
+                         "\nYour drive ran out of space while trying to upload this file: " + final_straw
+                         , exception=all_data[interrupt_key])
     print("All done")

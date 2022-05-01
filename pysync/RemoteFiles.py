@@ -188,7 +188,7 @@ def get_one_path(folders, root, info, out_dict, mapping):
     except AssertionError:
         exc_with_message(
             "A remote name is occupied by multiple files and folders: " +
-            info.remote_path)
+            info.remote_path)+ "\nThis also sometimes occurs when files are trashed very recently"
 
 
 def init_one_fileinfo(args):
