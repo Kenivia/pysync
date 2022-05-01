@@ -74,7 +74,7 @@ MAKE A BACKUP OF YOUR GOOGLE DRIVE FOLDER BEFORE YOU RUN THIS!
 
 You will be prompted by a google page asking for permission to your google files. Then, follow the instructions
 
-To modify options, make a file at ./pysync-master/data/Option.json and copy over the content of `Default Options.json`
+Options can be overriden using ./pysync-master/data/Option.json
 
 ## Current features
 

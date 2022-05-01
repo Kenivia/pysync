@@ -46,7 +46,7 @@ def init_drive():
     creds = None
     scopes = ['https://www.googleapis.com/auth/drive']
 
-    token_path = load_options("ROOT") + "/data/token.json"
+    token_path = load_options("ROOT") + "/data/Internal/token.json"
     if os.path.exists(token_path):
         creds = Credentials.from_authorized_user_file(token_path, scopes)
 

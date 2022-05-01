@@ -1,13 +1,12 @@
 **/__pycache__
-data/token.json
-data/saved_creds.json
 .vscode/*
 junkyard.py
 example file output
 pysync/*test*
-data/client_secrets.json
+
 test_pkl/*
 CreateTestpkl.py
 *test*
 .pytest_cache/*
-data/Options.json
+data/client_secrets.json
+data/Internal/token.json

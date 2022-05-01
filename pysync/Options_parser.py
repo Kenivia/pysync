@@ -2,6 +2,8 @@ import copy
 import multiprocessing
 import os
 import json
+import platform
+
 from functools import lru_cache
 from pathlib import PurePath
 
@@ -10,6 +12,9 @@ from pysync.Functions import (
     abs_path,
     assert_start,
 )
+
+OPTIONS_NAME = "/data/Options.json"
+DEFAULT_NAME = "/data/Internal/Default Options.json"
 
 
 def code_to_alias(alias, inp):
@@ -57,15 +62,28 @@ def cache_options():
     load_options(*all_available_code)  # * to load all the cache
 
 
-def get_active_path():
+# def get_active_path():
 
-    options_path = str(PurePath(__file__).parent.parent) + "/data/Options.json"
-    default_options_path = str(PurePath(__file__).parent.parent) + "/data/Default Options.json"
 
-    return options_path if os.path.exists(options_path) else default_options_path
+#     return options_path if os.path.exists(options_path) else default_options_path
+
+def override_default():
+    options_path = str(PurePath(__file__).parent.parent) + OPTIONS_NAME
+    default_options_path = str(PurePath(__file__).parent.parent) + DEFAULT_NAME
+    
+    djson = json.load(open(default_options_path, "r"))
+    if not os.path.exists(options_path):
+        return djson
+    ojson = json.load(open(options_path, "r"))
+
+    for i in ojson:
+        djson[i] = ojson[i]
+    return djson
 
 
 def check_options():
+
+    assert platform.system() == "Linux"
 
     expected_types = {
         "Local path": str,
@@ -87,26 +105,26 @@ def check_options():
         "Default ignore": list,
     }
 
-    active_path = get_active_path()
-    active_name = active_path.split("/"[-1])
+    # active_path = get_active_path()
+    # active_name = active_path.split("/"[-1])
+    # DEFAULT_NAME
 
-    with open(active_path, "r") as f:
-        raw_options = json.load(f)
-        seen_keys = []
+    raw_options = override_default()
+    seen_keys = []
 
-        for raw_key in raw_options:
-            if raw_key not in expected_types:
+    for raw_key in raw_options:
+        if raw_key not in expected_types:
 
-                print(f"Unknown key: \"{raw_key}\" in {active_name}, ignored")
+            print(f"Unknown key: \"{raw_key}\" in {OPTIONS_NAME}, ignored")
 
-            assert isinstance(raw_options[raw_key], expected_types[raw_key])
-            seen_keys.append(raw_key)
+        assert isinstance(raw_options[raw_key], expected_types[raw_key])
+        seen_keys.append(raw_key)
 
-        if len(seen_keys) < len(raw_options):
-            missing = raw_options.keys() - seen_keys
-            raise ValueError(
-                f"The following keys are missing from {active_name}: " +
-                ", ".join(missing))
+    if len(seen_keys) < len(raw_options):
+        missing = raw_options.keys() - seen_keys
+        raise ValueError(
+            f"The following keys are missing from {OPTIONS_NAME}: " +
+            ", ".join(missing))
 
     options = alias_to_code(raw_options)
 
@@ -149,9 +167,9 @@ def load_options(*keys):
         return tuple([load_options(i) for i in keys])
     else:
         root_path = str(PurePath(__file__).parent.parent)
-        active_path = get_active_path()
-        with open(active_path, "r") as f:
-            raw_options = json.load(f)
+
+        raw_options = override_default()
+
         options = alias_to_code(raw_options)
         key = keys[0]
         if key == "MAX_COMPUTE":
