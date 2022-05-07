@@ -33,8 +33,11 @@ def event_sequence(path):
     # * stages not neccessarily in order
     sequence = ["init", "load_remote", "comp_remote", "compare", "choose", "apply"]
     # * sequence is in order
-    concurrent = {"local": (0, 2)}
+    concurrent = {"local": (0, 3)}
     # * the key: the beginning and end indexes that it overlaps with
+    # * "key" : (A, B) means the thread started just before A and joined before B starts
+    # * when B == len(sequence), it means that it joined after the last task finished
+    
     for i in concurrent:
         stages[i].concurrent = True
 
