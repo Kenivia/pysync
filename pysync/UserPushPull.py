@@ -3,8 +3,8 @@ from pysync.Timer import logtime
 from pysync.Functions import (
     contains_parent,
     SilentExit,
+    match_attr,
 )
-from pysync.Functions import match_attr
 from pysync.Options_parser import load_options
 from pysync.Exit import restart
 

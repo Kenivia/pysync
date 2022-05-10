@@ -18,7 +18,7 @@ def main():
         # Create an abstract socket, by prefixing it with null.
         s.bind('\0pysync_process_lock')
     except socket.error:
-        print("an instance of pysync is already running. Exiting")
+        input("an instance of pysync is already running. Press enter to exit")
         return
 
     try:

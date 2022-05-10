@@ -11,7 +11,7 @@ from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import (
     HttpError,
     ResumableUploadError,
-    )
+)
 from httplib2 import ServerNotFoundError
 
 from pysync.Functions import (
@@ -71,7 +71,7 @@ class FileInfo():
 
         if self.islocal:
             self.path = kwargs["path"]
-            self.type = "folder" if os.path.isdir(self.path) else "file"
+            self.type = kwargs["type"]  # ("folder" if os.path.isdir(self.path) else "file")
             if not self.isfolder:
                 if kwargs["md5_now"]:
                     self.calculate_md5()
@@ -347,7 +347,7 @@ class FileInfo():
                 elif isinstance(e, ServerNotFoundError):
                     message = "Couldn't connect to server"
 
-                elif isinstance(e, HttpError) or isinstance(e,ResumableUploadError):
+                elif isinstance(e, HttpError) or isinstance(e, ResumableUploadError):
                     if "userRateLimitExceeded" in repr(e):
                         message = "This file failed, rate of requests too high"
                     elif "storageQuotaExceeded" in repr(e):
@@ -447,39 +447,41 @@ class FileInfo():
     def action_human(self):
 
         out = "forced " if self.forced else ""
-        if self.action == "ignore":
+        if self.action_code == "ignore":
             return out + "ignoring"
 
-        if self.change_type == "local_new":
-            if self.action == "push":
-                return out + "uploading new"
+        elif self.action_code == "up new":
+            return out + "uploading new"
 
-            elif self.action == "pull":
-                if self.isfolder:
-                    return out + "deleting local folder and ALL its content"
-                else:
-                    return out + "deleting local file"
+        elif self.action_code == "del local":
+            if self.isfolder:
+                return out + "deleting local folder and ALL its content"
+            else:
+                return out + "deleting local file"
 
-        elif self.change_type == "remote_new":
-            if self.action == "push":
-                if self.isfolder:
-                    return out + "deleting remote folder and ALL its content"
-                else:
-                    return out + "deleting remote file"
+        elif self.action_code == "del remote":
+            if self.isfolder:
+                return out + "deleting remote folder and ALL its content"
+            else:
+                return out + "deleting remote file"
 
-            elif self.action == "pull":
-                return out + "downloading new"
+        elif self.action_code == "down new":
+            return out + "downloading new"
 
-        elif self.change_type == "content_change" or self.change_type == "mtime_change":
-            if self.action == "push":
-                return out + "uploading difference"
+        elif self.action_code == "up diff":
+            return out + "uploading difference"
 
-            elif self.action == "pull":
-                return out + "downloading difference"
+        elif self.action_code == "down diff":
+            return out + "downloading difference"
+        else:
+            raise RuntimeError
 
     @property
     def action_code(self):
 
+        assert self.change_type is not None
+        assert self.action is not None
+        
         if self.action == "ignore":
             return "ignore"
 
@@ -501,7 +503,7 @@ class FileInfo():
             elif self.action == "pull":
                 return "down diff"
 
-        raise ValueError
+        raise ValueError(self.change_type + " and " + self.action + " is not valid")
 
     def __hash__(self):
 

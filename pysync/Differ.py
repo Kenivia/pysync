@@ -36,7 +36,7 @@ def one_diff(args):
         obj.partner = remote_data[path]
         change_type = obj.compare_info()
 
-    elif in_local:
+    elif in_local: # TODO how to determine whether it's remote del or local new 
         obj = local_data[path]
         obj.change_type = change_type = "local_new"
 
@@ -71,8 +71,7 @@ def get_diff(local_data, remote_data):
     all_data = {}
     max_threads = load_options("MAX_COMPUTE")
     with cf.ThreadPoolExecutor(max_workers=max_threads) as executor:
-        chunksize = int(len(_map) / max_threads)
-        for change_type, obj in executor.map(one_diff, _map, chunksize=chunksize):
+        for change_type, obj in executor.map(one_diff, _map):
             if isinstance(obj, str):
                 all_data[load_options("PATH")] = obj
             else:

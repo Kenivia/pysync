@@ -9,15 +9,13 @@ from pysync.UserPushPull import (
     user_push_pull,
 )
 from pysync.Differ import get_diff
-from pysync.LocalFiles import get_local_files
+from pysync.LocalFiles import get_local
 from pysync.RemoteFiles import (
-    init_drive,
-    list_remote,
+    get_remote,
     process_remote
 )
+from pysync.InitDrive import init_drive
 from pysync.ApplyOperation import run_drive_ops
-
-
 
 
 def event_sequence(path):
@@ -37,7 +35,7 @@ def event_sequence(path):
     # * the key: the beginning and end indexes that it overlaps with
     # * "key" : (A, B) means the thread started just before A and joined before B starts
     # * when B == len(sequence), it means that it joined after the last task finished
-    
+
     for i in concurrent:
         stages[i].concurrent = True
 
@@ -45,12 +43,12 @@ def event_sequence(path):
 
     local_data = {}
     print("Started loading local files..")
-    thread = get_local_files(path, local_data, timer=timer.time("local"))
+    thread = get_local(path, local_data, timer=timer.time("local"))
 
     drive = init_drive(timer=timer.time("init"))
 
     print("Started getting remote files..")
-    remote_raw_data = list_remote(drive, timer=timer.time("load_remote"))
+    remote_raw_data = get_remote(drive, timer=timer.time("load_remote"))
     remote_data = process_remote(remote_raw_data, timer=timer.time("comp_remote"))
     print("Remote files done")
 
@@ -58,7 +56,6 @@ def event_sequence(path):
 
     print("Comparing..")
     diff_infos, all_data = get_diff(local_data, remote_data, timer=timer.time("compare"))
-
     apply_forced_and_default(diff_infos, timer=timer.time("compare"))
 
     user_push_pull(diff_infos, timer=timer.time("choose"))

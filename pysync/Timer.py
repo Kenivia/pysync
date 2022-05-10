@@ -68,22 +68,22 @@ class TimeLogger():
             for key in self.concurrent:
                 if index == self.concurrent[key][0]:
                     ctimer = self.stages[key]
-                    print(("  - started: " + ctimer.func_title).ljust(max_len),
+                    print(("- started: " + ctimer.func_title).ljust(max_len),
                           round(ctimer.duration, self.dp))
 
                 elif index == self.concurrent[key][1]:
                     ctimer = self.stages[key]
-                    print(("  - joined: " + ctimer.func_title).ljust(max_len),
+                    print(("- joined: " + ctimer.func_title).ljust(max_len),
                           round(ctimer.duration, self.dp))
-                    
+
             print(timer.func_title.ljust(max_len), round(timer.duration, self.dp))
 
         for key in self.concurrent:
             if len(self.sequence) == self.concurrent[key][1]:
                 ctimer = self.stages[key]
                 print(("  - joined: " + ctimer.func_title).ljust(max_len),
-                        round(ctimer.duration, self.dp))
-                    
+                      round(ctimer.duration, self.dp))
+
         usersum = self.sum_time("user")
         compsum = self.sum_time("comp")
         netsum = self.sum_time("net")

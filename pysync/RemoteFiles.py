@@ -1,64 +1,11 @@
-import os.path
+import concurrent.futures as cf
 
 from socket import timeout
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from google.auth.exceptions import (
-    RefreshError,
-    TransportError,
-)
-
 
 from pysync.Timer import logtime
 from pysync.Options_parser import load_options
 from pysync.FileInfo import FileInfo
 from pysync.Exit import exc_with_message
-
-
-def process_creds(creds, scopes):
-    if creds and creds.valid:
-        return creds
-
-    if creds and creds.refresh_token:  # * this was bugged from the tutorial..
-        try:
-            creds.refresh(Request())
-            print("Old token refreshed successfully")
-            return creds
-
-        except RefreshError:
-            print("Couldn't refresh old token")
-            pass
-
-        except TransportError:
-            exc_with_message(
-                "pysync couldn't refresh your token, please check your internet connectio")
-
-    print("Requesting a new token")
-    flow = InstalledAppFlow.from_client_secrets_file(
-        load_options("ROOT") + "/data/client_secrets.json", scopes)
-    creds = flow.run_local_server(port=0)
-    return creds
-
-
-@logtime
-def init_drive():
-    """Initializes the google drive and returns an UNPICKLABLE object"""
-
-    creds = None
-    scopes = ['https://www.googleapis.com/auth/drive']
-
-    token_path = load_options("ROOT") + "/data/Internal/token.json"
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, scopes)
-
-    creds = process_creds(creds, scopes)
-    with open(token_path, 'w') as f:
-        f.write(creds.to_json())
-
-    service = build('drive', 'v3', credentials=creds)
-    return service.files()
 
 
 def kws_to_query(kws_list, equals, operator, exclude_list=[]):
@@ -71,10 +18,10 @@ def kws_to_query(kws_list, equals, operator, exclude_list=[]):
 
 
 @logtime
-def list_remote(drive):
+def get_remote(drive):
     """Lists remote files that are not in trash and are owned by me"""
-    folder_kws = ["application/vnd.google-apps.folder"]
-    gdoc_kws = [
+    folder_mtype = ["application/vnd.google-apps.folder"]
+    gdoc_mtype = [
         'application/vnd.google-apps.document',
         'application/vnd.google-apps.form',
         'application/vnd.google-apps.map',
@@ -89,7 +36,7 @@ def list_remote(drive):
         'mimeType',
         'parents',
         'modifiedTime',
-    ], kws_to_query(folder_kws, True, "N/A")
+    ], kws_to_query(folder_mtype, True, "N/A")
     )
     gdoc_args = (drive, [
         'id',
@@ -99,7 +46,7 @@ def list_remote(drive):
         'md5Checksum',
         'webViewLink',
         'modifiedTime',
-    ], kws_to_query(gdoc_kws, True, "or")
+    ], kws_to_query(gdoc_mtype, True, "or")
     )
 
     file_args = (drive, [
@@ -109,25 +56,31 @@ def list_remote(drive):
         'parents',
         'md5Checksum',
         'modifiedTime',
-    ], kws_to_query(gdoc_kws + folder_kws, False, "and")
-    )
+    ], kws_to_query(gdoc_mtype + folder_mtype, False, "and")
+    )  # TODO maybe find a way to split this request
+
     all_args = []
     all_args.append(folder_args)
     all_args.append(gdoc_args)
     all_args.append(file_args)
 
     results = []
-    for i in all_args:
-        results.extend(list_drive_thread(i))
+    max_threads = len(all_args) + 1
+    with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
+        for item in executor.map(get_remote_thread, all_args):
+            results.extend(item)
+
+    return results, get_root_id(drive)
+
+
+def get_root_id(drive):
 
     root = drive.get(fileId="root",
                      fields="id").execute()
-    results.append(root["id"])
-
-    return results
+    return root["id"]
 
 
-def list_drive_thread(args):
+def get_remote_thread(args):
 
     drive, fields, query = args[0], args[1], args[2]
     out = []
@@ -139,7 +92,6 @@ def list_drive_thread(args):
                 spaces="drive",
                 q=query,
                 pageSize=1000,
-                # fields="*",
                 fields=f"nextPageToken, files({','.join(fields)})",
                 pageToken=page_token,
             ).execute()
@@ -191,7 +143,7 @@ def get_one_path(folders, root, info, out_dict, mapping):
     except AssertionError:
         exc_with_message(
             "A remote name is occupied by multiple files and folders: " +
-            info.remote_path) + "\nThis also sometimes occurs when files are trashed very recently"
+            info.remote_path) + "\nThis error may occur by mistake when files are trashed very recently"
 
 
 def init_one_fileinfo(args):
@@ -200,7 +152,7 @@ def init_one_fileinfo(args):
 
 @logtime
 def process_remote(raw_files):
-    """Lists the remote files and process them
+    """Converts google drive responses into FileInfo objects
 
     Returns a dictionary containings FileInfo with their paths as keys
     """
@@ -208,6 +160,7 @@ def process_remote(raw_files):
     folder_list = []
     file_list = []
     root = raw_files[-1]
+    assert isinstance(root, str)
 
     for i in raw_files[0:-1]:
         file_info = init_one_fileinfo(i)
