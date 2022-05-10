@@ -5,7 +5,7 @@ from pysync.Functions import (
     SilentExit,
     match_attr,
 )
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 from pysync.Exit import restart
 
 

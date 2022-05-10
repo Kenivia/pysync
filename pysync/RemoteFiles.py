@@ -3,7 +3,7 @@ import concurrent.futures as cf
 from socket import timeout
 
 from pysync.Timer import logtime
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 from pysync.FileInfo import FileInfo
 from pysync.Exit import exc_with_message
 

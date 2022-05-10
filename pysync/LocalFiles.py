@@ -7,7 +7,7 @@ import concurrent.futures as cf
 
 from pysync.FileInfo import FileInfo
 from pysync.Timer import logtime
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 
 
 def get_local(path, output_dict, timer=None):

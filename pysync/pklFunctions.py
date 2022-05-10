@@ -3,7 +3,7 @@ import time as ti
 import os
 import subprocess as sp
 
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 
 
 def pdump(obj, path):

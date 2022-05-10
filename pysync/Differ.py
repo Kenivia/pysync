@@ -1,7 +1,7 @@
 import random
 import concurrent.futures as cf
 
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 from pysync.Timer import logtime
 
 

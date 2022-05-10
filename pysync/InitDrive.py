@@ -12,7 +12,7 @@ from json.decoder import JSONDecodeError
 
 from pysync.Exit import exc_with_message
 from pysync.Timer import logtime
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 
 
 def process_creds(creds, scopes):

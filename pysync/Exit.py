@@ -4,7 +4,7 @@ import traceback
 
 from threading import Thread
 
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 from pysync.Functions import SilentExit
 
 

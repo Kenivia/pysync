@@ -19,7 +19,7 @@ from pysync.Functions import (
     contains_parent,
     local_to_utc,
 )
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 
 
 class FileIDNotFoundError(Exception):

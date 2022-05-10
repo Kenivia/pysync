@@ -6,9 +6,9 @@ from pysync.Exit import (
     exc_with_message,
 )
 from pysync.Functions import SilentExit
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 from pysync.EventSequence import event_sequence
-from pysync.Options_parser import check_options
+from pysync.OptionParser import check_options
 
 
 def main():

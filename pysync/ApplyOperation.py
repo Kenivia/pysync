@@ -5,7 +5,7 @@ from pysync.FileInfo import GDriveQuotaExceeded
 
 from pysync.Functions import match_attr
 from pysync.Timer import logtime
-from pysync.Options_parser import load_options
+from pysync.OptionParser import load_options
 
 
 def assign_parent(info, all_data):
