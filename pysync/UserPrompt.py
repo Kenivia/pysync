@@ -1,15 +1,14 @@
-from pysync.InputParser import replace_numbers
 from pysync.Timer import logtime
 from pysync.Functions import (
     contains_parent,
     SilentExit,
     match_attr,
 )
-from pysync.OptionParser import load_options
+from pysync.OptionsParser import load_options
 from pysync.Exit import restart
 
 
-def isin_override(info):
+def get_forced(info):
     apull, apush, aignore = load_options("APULL", "APUSH", "AIGNORE")
     if contains_parent(apull, info):
         return "pull"
@@ -37,17 +36,17 @@ def get_default_action(change_type):
 def apply_forced_and_default(diff_infos):
 
     for info in diff_infos:
-        forced_action = isin_override(info.path)
+        forced_action = get_forced(info.path)
         if forced_action:
-            info.action = forced_action
+            info._action = forced_action
             info.forced = True
         else:
-            info.action = get_default_action(info.change_type)
+            info._action = get_default_action(info.change_type)
 
     return diff_infos
 
 
-def num_shorten(num_list):
+def add_hyphens(num_list):
     """Opposite of replace_numbers
 
     Args:
@@ -77,8 +76,53 @@ def num_shorten(num_list):
     return out
 
 
-def print_half(infos, initing, forced, index):
+def replace_hyphen(inp, upperbound):
+    """convert user input into a list of numbers(in strings)
 
+    e.g 2-6 -> 2, 3, 4, 5, 6
+
+    doesn't change non-numerical items in the list
+
+    Args:
+        inp (list): list of strings
+        upperbound (int): the highest index displayed on screen
+
+    Returns:
+        list: list of converted strings
+        str: error/warning messages
+    """
+    message = ""
+    out = []
+    for item in inp:
+        if item.isnumeric():
+            if int(item) >= 1 and int(item) <= upperbound:
+                if str(item) not in out:
+                    out.append(str(item))
+            else:
+                message += item + " is out of range, ignored. It must be between 1 and " + \
+                    str(upperbound) + "\n"
+
+        elif "-" in item and item.split("-")[0].isnumeric() and item.split("-")[1].isnumeric():
+            lower = int(item.split("-")[0])
+            upper = int(item.split("-")[1])
+            if lower >= 1 and upper <= upperbound:
+                temp = 0
+                for i in range(lower, upper + 1):
+                    if str(i) not in out:
+                        out.append(str(i))
+                    temp += 1
+            else:
+                message += item + " is out of range, ignored. It must be between 1 and " + \
+                    str(upperbound) + "\n"
+        else:
+            out.append(item)
+            # * doesn't touch non-numerical things
+
+    return out, message
+
+
+def print_half(infos, initing, forced, index):
+    # * honestly have no idea how this is working and i dont intend on changing that
     actions = ["pull", "push", "ignore"]
     for action in actions:
         this = match_attr(infos, action=action)
@@ -102,9 +146,8 @@ def print_half(infos, initing, forced, index):
                 index += 1
 
 
-def print_change_types(infos, initing):
+def print_changes(infos, initing):
 
-    # todo abbreviate folders where all content are new/deleted
     normal = match_attr(infos, forced=False,)
     print_half(normal, initing, False, 1)
 
@@ -112,7 +155,8 @@ def print_change_types(infos, initing):
     print_half(forced, initing, True, None)
 
 
-def print_status(infos):
+def print_totals(infos):
+    
     cur_actions = {}
     for i in infos:
         if i.action_human not in cur_actions:
@@ -124,15 +168,15 @@ def print_status(infos):
         if key.startswith("forced"):
             print("  -" + key + "(" + str(len(cur_actions[key])) + ")")
         else:
-            short = num_shorten([i.index for i in cur_actions[key]])
+            short = add_hyphens([i.index for i in cur_actions[key]])
             print("  -" + key + "(" + str(len(cur_actions[key])) + "):", " ".join(short))
 
 
-def deletion_compression(diff_infos):
+def compress_deletes(diff_infos):
     """removes children of folders that are being deleted
 
     idea being that a deletion of folder would only happen if all children are also being deleted
-    this also metigates issues when applying
+    this also mitigate issues when applying
 
     this isn't done for creating new files/modifying files for user clarity
 
@@ -159,7 +203,7 @@ def deletion_compression(diff_infos):
 
 
 @logtime
-def user_push_pull(diff_infos):
+def choose_changes(diff_infos):
     """Prompts the user to change which change types to push/pull
     """
     if not diff_infos:
@@ -168,12 +212,12 @@ def user_push_pull(diff_infos):
     text = """Use `push a` or `pull a-b` to change the action of files, e.g push 1-5
 Press Enter or use `apply` to apply the following changes:"""
     while True:
-        deletion_compression(diff_infos)
-        print_change_types(diff_infos, initing)
+        compress_deletes(diff_infos)
+        print_changes(diff_infos, initing)
         initing = False
 
         print("\n" + text)
-        print_status(diff_infos)
+        print_totals(diff_infos)
 
         inp = input("\n>>> ").lower()
         inp = inp.strip()
@@ -209,13 +253,13 @@ Press Enter or use `apply` to apply the following changes:"""
                 print("restart doesn't take arguments, ignored")
             raise SilentExit
 
-        arguments, message = replace_numbers(arguments, len(diff_infos))
+        arguments, message = replace_hyphen(arguments, len(diff_infos))
         changed = []
         all_index = {}
         for inp in arguments:
             if inp == "all":
                 for i in match_attr(diff_infos, forced=False):
-                    i.action = command
+                    i._action = command
                     changed.append(str(i.index))
 
             elif inp.isnumeric():
@@ -225,12 +269,12 @@ Press Enter or use `apply` to apply the following changes:"""
                         if i.index is not None:
                             all_index[str(i.index)] = i
                 info = all_index[inp]
-                info.action = command
+                info._action = command
                 changed.append(str(info.index))
             else:
                 print(inp, "is invalid, ignored")
 
-        changed = num_shorten(changed)
+        changed = add_hyphens(changed)
         text = message
         if changed:
             text += "Input interpreted as: " + command + " " + " ".join(changed)

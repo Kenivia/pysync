@@ -8,6 +8,7 @@ from functools import lru_cache
 from pathlib import PurePath
 
 from pysync.Functions import (
+    get_root,
     remove_slash,
     abs_path,
     assert_start,
@@ -58,14 +59,14 @@ def cache_options():
         "MAX_UPLOAD", "MAX_COMPUTE",
         "APULL", "APUSH", "AIGNORE",
         "DPULL", "DPUSH", "DIGNORE",
-        "ROOT", "RECHECK_TIME", "SIGNATURE", "MAX_RETRY"
+        "RECHECK_TIME", "SIGNATURE", "MAX_RETRY"
     ]
     load_options(*all_available_code)  # * to load all the cache
 
 
 def override_default():
-    options_path = str(PurePath(__file__).parent.parent) + OPTIONS_NAME
-    default_options_path = str(PurePath(__file__).parent.parent) + DEFAULT_NAME
+    options_path = get_root() + OPTIONS_NAME
+    default_options_path = get_root() + DEFAULT_NAME
 
     djson = json.load(open(default_options_path, "r"))
     if not os.path.exists(options_path):
@@ -158,7 +159,6 @@ def load_options(*keys):
         # * doing this in this weird way to take advantage of cache
         return tuple([load_options(i) for i in keys])
     else:
-        root_path = str(PurePath(__file__).parent.parent)
 
         raw_options = override_default()
 
@@ -177,11 +177,6 @@ def load_options(*keys):
 
         elif key == "RECHECK_TIME":
             return 0.01
-
-        elif key == "ROOT":
-            # * root as in the directory containing the folder pysync & data
-            # * ends with no slash
-            return root_path
 
         elif key == "SIGNATURE":
             # todo take care of cases where the signature is changed?

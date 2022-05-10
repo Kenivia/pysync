@@ -2,6 +2,7 @@ import os
 import time
 import subprocess as sp
 import dateutil.parser as dup
+import concurrent.futures as cf
 
 
 from datetime import datetime
@@ -18,8 +19,12 @@ from pysync.Functions import (
     hex_md5_file,
     contains_parent,
     local_to_utc,
+    match_attr,
 )
-from pysync.OptionParser import load_options
+from pysync.OptionsParser import load_options
+from pysync.Exit import exc_with_message
+from pysync.Timer import logtime
+from pysync.OptionsParser import load_options
 
 
 class FileIDNotFoundError(Exception):
@@ -30,53 +35,41 @@ class GDriveQuotaExceeded(Exception):
     pass
 
 
-def gen_exe(url, signatures):
-    text = f"""xdg-open {url}
-# This file was created by pysync. Do not remove the line below!
-{signatures}"""
-    return text
-
-
-def get_id_exe(text):
-    for line in text.split("\n"):
-        if line.startswith("xdg-open https://docs.google.com/"):
-            split = text.split("/")
-            for index, item in enumerate(split):
-                if item == "d":  # * the id is after a /d/ sequence
-                    return split[index + 1]
-    raise FileIDNotFoundError()
-
-
 class FileInfo():
 
     """Object containing the metadata of either a local or remote file"""
 
     def __init__(self, location, **kwargs):
-        self.parentID = None  # * checked by isorphan
-        self.action = None  # * checked  by op_checks
-        self.partner = None  # * checked by id and parent_id
-        self.change_type = None  # * checked by op_checks
-        self._md5sum = None  # * checked by md5sum
-        self._id = None  # * checked by id
-        self.link = None  # * checked by op_checks
-        self.isremotegdoc = False  # * checked by op_checks
-        self.path = None  # * checked by remote_path
-        self.forced = False  # * used in UserPushPull
-        self.index = None  # * used in UserPushPull
-        self.islocal_gdoc = False  # * used in compare_info
 
-        self._location = location  # * whether local or remote
-        self.op_already_done = False  # * set by drive_op, checked by op_checks
-        self.checked_good = False  # * set by op_checks, checked by drive_op
+        self._location = location
+
+        self._action = None
+        self._md5sum = None
+        self._id = None
+
+        self._parentID = None
+        self.partner = None
+        self.change_type = None
+
+        self.link = None
+        self.path = None
+
+        self.forced = False
+        self.index = None
+
+        self._islocalgdoc = None
+        self.isremotegdoc = False
+
+        self.op_completed = False
+        self.checked_good = False
 
         if self.islocal:
             self.path = kwargs["path"]
             self.type = kwargs["type"]  # ("folder" if os.path.isdir(self.path) else "file")
-            if not self.isfolder:
+            if self.isfile:
                 if kwargs["md5_now"]:
                     self.calculate_md5()
                 self.mtime = int(os.stat(self.path).st_mtime)
-            self.islocal_gdoc = self.signature_present()
 
         else:
             self._id = kwargs["id"]
@@ -85,14 +78,195 @@ class FileInfo():
             self.mtime = int(dup.parse(kwargs["modifiedTime"]).timestamp())
             if "parents" in kwargs:
                 assert len(kwargs["parents"]) == 1
-                self.parentID = kwargs["parents"][0]
+                self._parentID = kwargs["parents"][0]
             # TODO make a "shared" folder for orphans(because they're all shared files i think)
 
-            if not self.isfolder:
+            if self.isfile:
                 self._md5sum = kwargs["md5Checksum"] if "md5Checksum" in kwargs else None
                 if "application/vnd.google-apps." in kwargs["mimeType"]:
                     self.isremotegdoc = True
                     self.link = kwargs["webViewLink"]
+
+    def __hash__(self):
+
+        out = {}
+        for key in self.__dict__:
+            if key == "partner":
+                out[key] = self.partner.id
+            item = self.__dict__[key]
+            if isinstance(item, dict):
+                out[key] = frozenset(item)
+            elif isinstance(item, list):
+                out[key] = tuple(item)
+            else:
+                out[key] = item
+
+        return hash(frozenset(out))
+
+    @property
+    def md5sum(self):
+        assert self.isfile
+        if self.isremote:
+            return self._md5sum
+        if self._md5sum is None:
+            self.calculate_md5()
+        return self._md5sum
+
+    @property
+    def id(self):
+        if self._id is not None:
+            return self._id
+        if self.partner is not None:
+            return self.partner.id
+        return None
+
+    @property
+    def isfolder(self):
+        assert self.type == "folder" or self.type == "file"
+        return self.type == "folder"
+
+    @property
+    def isfile(self):
+        return not self.isfolder
+
+    @property
+    def islocal(self):
+        assert self._location == "local" or self._location == "remote"
+        return self._location == "local"
+
+    @property
+    def isremote(self):
+        return not self.islocal
+
+    @property
+    def isorphan(self):
+        return self.parentID is None
+
+    @property
+    def parent_path(self):
+        return os.path.split(self.path)[0]
+
+    @property
+    def name(self):
+        return self._name if self.isremote else os.path.split(self.path)[1]
+
+    @property
+    def parentID(self):
+        if self.partner is not None and self._parentID is None:
+            self._parentID = self.partner.parentID
+        return self._parentID
+
+    def calculate_md5(self):
+        assert self._md5sum is None and self.islocal
+        self._md5sum = hex_md5_file(self.path)
+
+    @property
+    def remote_path(self):
+        """returns its path as it would appear in gdrive(without PATH in front of it)"""
+        local_path = load_options("PATH")
+        assert self.path is not None
+        assert self.path.startswith(local_path)
+        return self.path[len(local_path):]
+
+    @property
+    def action(self):
+        return self._action
+
+    @property
+    def action_code(self):
+        return self.get_action_code(False)
+
+    @property
+    def action_human(self):
+        return self.get_action_code(True)
+
+    @property
+    def islocalgdoc(self):
+        if self._islocalgdoc is None:
+            self._islocalgdoc = self.has_signature()
+        return self._islocalgdoc
+
+
+    def get_action_code(self, readable):
+
+        assert self.change_type is not None
+        assert self.action is not None
+
+        if self.action == "ignore":
+            out = "ignoring" if readable else "ignore"
+
+        elif self.change_type == "local_new":
+            if self.action == "push":
+                out = "uploading new" if readable else "up new"
+            elif self.action == "pull":
+                if self.isfolder:
+                    out = "deleting local folder and ALL its content" if readable else "del local"
+                else:
+                    out = "deleting local file" if readable else "del local"
+
+        elif self.change_type == "remote_new":
+            if self.action == "push":
+                if self.isfolder:
+                    out = "deleting remote folder and ALL its content" if readable else "del remote"
+                else:
+                    out = "deleting remote file" if readable else "del remote"
+            elif self.action == "pull":
+                out = "downloading new" if readable else "down new"
+
+        elif self.change_type == "content_change" or self.change_type == "mtime_change":
+            if self.action == "push":
+                out = "uploading difference" if readable else "up diff"
+            elif self.action == "pull":
+                out = "donwloading difference" if readable else "down diff"
+        else:
+            raise ValueError(self.change_type + " and " + self.action + " is not valid")
+
+        forced = "forced " if self.forced and readable else ""
+        return forced + out
+
+    def has_signature(self):
+
+        if self.islocal and self.isfile:
+            try:
+                with open(self.path, "r") as _file:
+                    if load_options("SIGNATURE") in _file.read():                        
+                        return True
+            except UnicodeDecodeError:
+                return False
+        else:
+            return False
+
+    def gen_localgdoc(self):
+        return f"""xdg-open {self.link}
+    # This file was created by pysync. Do not remove the line below!
+    {load_options("SIGNATURE")}"""
+
+    def find_id(self):
+        text = open(self.path, "r").read()
+        for line in text.split("\n"):
+            if line.startswith("xdg-open https://docs.google.com/"):
+                split = text.split("/")
+                for index, item in enumerate(split):
+                    if item == "d":  # * the id is after a /d/ sequence
+                        return split[index + 1]
+
+        raise FileIDNotFoundError()
+
+    def get_posix_mtime(self):
+        assert self.path is not None
+        return os.path.getmtime(self.path)
+
+    def get_formatted_mtime(self):
+        assert self.path is not None
+        mtime = self.get_posix_mtime()
+        dt = datetime.fromtimestamp(mtime)
+        return local_to_utc(dt).isoformat()
+
+    def write_remote_mtime(self, drive):
+        assert self.path is not None
+        _file = drive.get(fileId=self.id, fields="modifiedTime",).execute()
+        mtime = int(dup.parse(_file["modifiedTime"]).timestamp())
+        os.utime(self.path, (mtime, mtime))
 
     def compare_info(self):
         """Checks if there are differences between self and self.partner
@@ -106,10 +280,8 @@ class FileInfo():
 
         assert self.islocal
         assert self.path == self.partner.path
-        if self.islocal_gdoc:
-            # * modifying local gdoc will not make a difference
-            # * local gdoc must have a corresponding remote gdoc file
-            assert self.partner.isremotegdoc
+        if self.partner.isremotegdoc:
+            assert self.islocalgdoc
             return False
 
         if self.isfolder:
@@ -142,7 +314,7 @@ class FileInfo():
 
         assert self.action is not None
         assert self.action == "pull" or self.action == "push"
-        assert not self.op_already_done
+        assert not self.op_completed
         if self.partner is not None:
             assert not self.partner.islocal
         if self.isremotegdoc:
@@ -186,7 +358,7 @@ class FileInfo():
             parent_id = parent
         else:
             parent_id = parent.id
-        self.parentID = parent_id
+        self._parentID = parent_id
 
         if self.isfolder:
             body = {"parents": [self.parentID],
@@ -195,9 +367,9 @@ class FileInfo():
             _file = drive.create(body=body, fields="id").execute()
             self._id = _file["id"]  # * for other op_checks & other drive_ops
 
-        elif self.islocal_gdoc:
+        elif self.partner.isremotegdoc and self.islocalgdoc:
 
-            file_id = get_id_exe(open(self.path, "r").read())
+            file_id = self.find_id()
             _file = drive.get(fileId=file_id,
                               fields="trashed, parents").execute()
 
@@ -212,7 +384,7 @@ class FileInfo():
                     removeParents=old_parent).execute()
             else:
                 print(
-                    "\tThis local pysync gdoc file was invalid: " +
+                    "\tThis file is a local gdoc file but was invalid: " +
                     self.path,
                 )
         else:
@@ -238,7 +410,7 @@ class FileInfo():
                 self.write_remote_mtime(drive)
             else:
                 with open(self.path, "w") as exe_file:
-                    exe_file.write(gen_exe(self.link, load_options("SIGNATURE")))
+                    exe_file.write(self.gen_localgdoc())
                     sp.run(["chmod", "+x", self.path])
                 self.write_remote_mtime(drive)
 
@@ -261,24 +433,6 @@ class FileInfo():
 
     def drive_op(self, parent, drive):
         """Applies the operation specified by self.change_type and self.action
-
-        self.op_checks must be ran before this
-
-        There are several scenarios:
-        change_type       action      outcome
-
-        local_new       push        file uploaded to gdrive
-        local_new       pull        local file deleted
-        remote_new      push        deletes the remote file
-        remote_new      pull        creates the folder/download the file
-        content_change  push        upload the local file and overwrite the remote copy
-        content_change  pull        download the remote file and overwrite the local copy
-        mtime_change will yield the same behaviour as content_change
-
-        for changes,
-
-        if a file/folder was deleted, it will delete its entry in all_data
-        if a file is created/updated, it will add `self` to all_data with key `self.path`
 
         if a new remote file is a google document e.g. google sheets, google docs
         then an executable text file will be created in the local copy that opens the document in a browser
@@ -324,7 +478,7 @@ class FileInfo():
                 if count > 0:
                     print(f"Retry #" + str(count) + " was successful: " + self.path)
 
-                self.op_already_done = True
+                self.op_completed = True
 
                 if deletion:
                     return self.path
@@ -365,177 +519,97 @@ class FileInfo():
                 if max_count > 0 and count >= max_count:
                     raise RuntimeError("Max retry count exceeded")
 
-    @property
-    def md5sum(self):
-        assert not self.isfolder
-        if not self.islocal:
-            return self._md5sum
-        if self._md5sum is None:
-            self.calculate_md5()
-        return self._md5sum
+    def assign_parent(self, all_data):
 
-    @property
-    def id(self):
-        if self._id is not None:
-            return self._id
-        if self.partner is not None:
-            return self.partner.id
-        return None
+        if self.parentID is None and self.parent_path in all_data:
+            # * this doesn't consider whether or not `info` has parentID already but thats fine
+            if isinstance(all_data[self.parent_path], str):
+                self._parentID = all_data[self.parent_path]
+            else:
+                self._parentID = all_data[self.parent_path].id
 
-    @property
-    def isfolder(self):
-        assert self.type == "folder" or self.type == "file"
-        return self.type == "folder"
 
-    @property
-    def islocal(self):
-        assert self._location == "local" or self._location == "remote"
-        return self._location == "local"
+@logtime
+def run_drive_ops(diff_infos, all_data, drive):
+    """Run drive_op for each push/pull operation using many threads
 
-    @property
-    def isorphan(self):
-        return self.parentID is None
+    Will not exceed the `Max upload threads` option at any given time
 
-    @property
-    def parent_path(self):
-        return os.path.split(self.path)[0]
+    Applies the changes to folders first, then files with least depth
 
-    @property
-    def name(self):
-        return self._name if not self.islocal else os.path.split(self.path)[1]
+    Args:
+        diff_infos (list): list generated by get_diff, containing FileInfo objects
+        all_data (dict): dict from get_diff
+        drive (googleapiclient.discovery.Resource): Resource object from service.files() in init_drive
+    """
 
-    @property
-    def parent_id(self):
+    pending = match_attr(diff_infos, action="push") + \
+        match_attr(diff_infos, action="pull")
+    before_paths = [i.path for i in pending]
 
-        if self.partner is not None and self.parentID is None:
-            self.parentID = self.partner.parentID
-        return self.parentID
+    if pending:
+        print(f"Applying {str(len(pending))} changes..")
+        if load_options("PRINT_UPLOAD"):
+            print("Not displaying the progress")
+    else:
+        print("No available changes")
 
-    def signature_present(self):
+    interrupt_key = "uniqueKey///"
+    max_threads = load_options("MAX_UPLOAD")
+    # * must be processpool, threadpool runs into memory issue
+    with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
+        while pending:
+            pending.sort(key=lambda x: (  # * folders first, then less depth first, then alphabetitc
+                not x.isfolder, len(x.path.split("/")), x.path), reverse=True)
+            # * important to sort by depth first, not just .path, contrary to other sorts for printing
+            # * the items are removed(from the back), thats why its reversed
+            # * sorta like a queue?
 
-        if self.islocal and not self.isfolder:
-            try:
-                with open(self.path, "r") as _file:
-                    if load_options("SIGNATURE") in _file.read():
-                        return True
-            except UnicodeDecodeError:
-                return False
+            index = len(pending) - 1
+            for _ in range(len(pending)):
+
+                if interrupt_key in all_data:
+                    raise all_data[interrupt_key]
+
+                info = pending[index]
+                info.assign_parent(all_data)
+
+                if info.parentID is None or not os.path.isdir(info.parent_path):
+                    continue
+
+                future = executor.submit(info.drive_op, all_data[info.parent_path], drive)
+                pending.remove(info)
+
+                def add_all_data(fut):
+                    exception = fut.exception()
+                    if exception is not None:
+                        all_data[interrupt_key] = exception
+                    else:
+                        result = fut.result()
+                        if isinstance(result, str):
+                            del all_data[result]
+                        else:
+                            all_data[result.path] = result
+
+                future.add_done_callback(add_all_data)
+                index -= 1
+            # * after each iteration, the leftovers are sorted and ran again
+
+    if interrupt_key in all_data:
+        exception = all_data[interrupt_key]
+        if isinstance(exception, GDriveQuotaExceeded):
+            final_straw = exception.args[0]
+            after_paths = [i.path for i in pending]
+            done_paths = [i for i in before_paths
+                          if i not in after_paths and i != final_straw]
+            done_text = "\n".join(sorted(done_paths, key=lambda x: (len(x.split("/")), x)))
+            exc_with_message("The following files were done before running out of space on Google drive:\n" +
+                             done_text + "\n\n" +
+                             f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space" +
+                             "\nYour drive ran out of space while trying to upload this file: " + final_straw,
+                             exception=exception)
+
         else:
-            return False
-
-    @property
-    def ignore_me(self):
-        return contains_parent(load_options("AIGNORE"), self.path)
-
-    def get_path(self, path):
-        assert self._location == "remote"
-        self.path = os.path.join(path, self.name)
-
-    def calculate_md5(self):
-        assert self._md5sum is None and self.islocal
-        self._md5sum = hex_md5_file(self.path)
-
-    @property
-    def remote_path(self):
-        """returns its path as it would appear in gdrive(without PATH in front of it)"""
-        local_path = load_options("PATH")
-        assert self.path is not None
-        assert self.path.startswith(local_path)
-        return self.path[len(local_path):]
-
-    @property
-    def action_human(self):
-
-        out = "forced " if self.forced else ""
-        if self.action_code == "ignore":
-            return out + "ignoring"
-
-        elif self.action_code == "up new":
-            return out + "uploading new"
-
-        elif self.action_code == "del local":
-            if self.isfolder:
-                return out + "deleting local folder and ALL its content"
-            else:
-                return out + "deleting local file"
-
-        elif self.action_code == "del remote":
-            if self.isfolder:
-                return out + "deleting remote folder and ALL its content"
-            else:
-                return out + "deleting remote file"
-
-        elif self.action_code == "down new":
-            return out + "downloading new"
-
-        elif self.action_code == "up diff":
-            return out + "uploading difference"
-
-        elif self.action_code == "down diff":
-            return out + "downloading difference"
-        else:
-            raise RuntimeError
-
-    @property
-    def action_code(self):
-
-        assert self.change_type is not None
-        assert self.action is not None
-        
-        if self.action == "ignore":
-            return "ignore"
-
-        if self.change_type == "local_new":
-            if self.action == "push":
-                return "up new"
-            elif self.action == "pull":
-                return "del local"
-
-        elif self.change_type == "remote_new":
-            if self.action == "push":
-                return "del remote"
-            elif self.action == "pull":
-                return "down new"
-
-        elif self.change_type == "content_change" or self.change_type == "mtime_change":
-            if self.action == "push":
-                return "up diff"
-            elif self.action == "pull":
-                return "down diff"
-
-        raise ValueError(self.change_type + " and " + self.action + " is not valid")
-
-    def __hash__(self):
-
-        out = {}
-        for key in self.__dict__:
-            if key == "partner":
-                out[key] = self.partner.id
-            item = self.__dict__[key]
-            if isinstance(item, dict):
-                out[key] = frozenset(item)
-            elif isinstance(item, list):
-                out[key] = tuple(item)
-            else:
-                out[key] = item
-
-        return hash(frozenset(out))
-
-    def get_posix_mtime(self):
-
-        assert self.path is not None
-        return os.path.getmtime(self.path)
-
-    def get_formatted_mtime(self):
-
-        assert self.path is not None
-        mtime = self.get_posix_mtime()
-        dt = datetime.fromtimestamp(mtime)
-        return local_to_utc(dt).isoformat()
-
-    def write_remote_mtime(self, drive):
-
-        assert self.path is not None
-        _file = drive.get(fileId=self.id, fields="modifiedTime",).execute()
-        mtime = int(dup.parse(_file["modifiedTime"]).timestamp())
-        os.utime(self.path, (mtime, mtime))
+            exc_with_message("The error above occured while applying a change",
+                             exception=exception)
+    print("All done")

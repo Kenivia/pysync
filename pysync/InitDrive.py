@@ -12,7 +12,7 @@ from json.decoder import JSONDecodeError
 
 from pysync.Exit import exc_with_message
 from pysync.Timer import logtime
-from pysync.OptionParser import load_options
+from pysync.Functions import get_root
 
 
 def process_creds(creds, scopes):
@@ -35,7 +35,7 @@ def process_creds(creds, scopes):
 
     print("Requesting a new token")
     flow = InstalledAppFlow.from_client_secrets_file(
-        load_options("ROOT") + "/data/client_secrets.json", scopes)
+        get_root() + "/data/client_secrets.json", scopes)
     creds = flow.run_local_server(port=0)
     return creds
 
@@ -47,7 +47,7 @@ def init_drive():
     creds = None
     scopes = ['https://www.googleapis.com/auth/drive']
 
-    token_path = load_options("ROOT") + "/data/Internal/token.json"
+    token_path = get_root() + "/data/Internal/token.json"
     if os.path.exists(token_path):
         try:
             creds = Credentials.from_authorized_user_file(token_path, scopes)

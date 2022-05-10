@@ -1,14 +1,11 @@
 import sys
 import traceback
 
-from pysync.Exit import (
-    on_exit,
-    exc_with_message,
-)
+from pysync.Exit import on_exit, exc_with_message
 from pysync.Functions import SilentExit
-from pysync.OptionParser import load_options
+from pysync.OptionsParser import load_options
 from pysync.EventSequence import event_sequence
-from pysync.OptionParser import check_options
+from pysync.OptionsParser import check_options
 
 
 def main():

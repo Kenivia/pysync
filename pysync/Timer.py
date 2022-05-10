@@ -30,7 +30,7 @@ class FuncTimer():
         return self.duration
 
 
-class TimeLogger():
+class Timer():
     def __init__(self, stages, sequence, concurrent, decimal_points=2):
         self.dp = decimal_points
         self.sequence = sequence

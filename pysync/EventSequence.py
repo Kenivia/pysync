@@ -1,21 +1,19 @@
-
-
 from pysync.Timer import (
-    TimeLogger,
+    Timer,
     FuncTimer,
 )
-from pysync.UserPushPull import (
+from pysync.UserPrompt import (
     apply_forced_and_default,
-    user_push_pull,
+    choose_changes,
 )
 from pysync.Differ import get_diff
-from pysync.LocalFiles import get_local
-from pysync.RemoteFiles import (
+from pysync.GetLocal import get_local
+from pysync.GetRemote import (
     get_remote,
     process_remote
 )
 from pysync.InitDrive import init_drive
-from pysync.ApplyOperation import run_drive_ops
+from pysync.FileInfo import run_drive_ops
 
 
 def event_sequence(path):
@@ -39,7 +37,7 @@ def event_sequence(path):
     for i in concurrent:
         stages[i].concurrent = True
 
-    timer = TimeLogger(stages, sequence, concurrent, decimal_points=3)
+    timer = Timer(stages, sequence, concurrent, decimal_points=3)
 
     local_data = {}
     print("Started loading local files..")
@@ -58,7 +56,7 @@ def event_sequence(path):
     diff_infos, all_data = get_diff(local_data, remote_data, timer=timer.time("compare"))
     apply_forced_and_default(diff_infos, timer=timer.time("compare"))
 
-    user_push_pull(diff_infos, timer=timer.time("choose"))
+    choose_changes(diff_infos, timer=timer.time("choose"))
 
     run_drive_ops(diff_infos, all_data, drive, timer=timer.time("apply"))
 

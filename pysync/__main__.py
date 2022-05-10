@@ -21,12 +21,12 @@ missing = list(required - installed)
 if missing:
     missingtext = ", ".join(missing)
     if __name__ == "__main__":
-        
+
         command_list = [sys.executable, '-m', 'pip', 'install', *missing]
-        print("The following packages are missing and are required by pysync:")
-        print("\t" + missingtext)
-        print("The following command will be ran:")
-        print("\t" + " ".join(command_list))
+        print("The following packages are required by pysync but are missing:")
+        print(missingtext + "\n")
+        print("pysync will now try to install the missing packages using the following command:")
+        print(" ".join(command_list) + "\n")
         inp = input("Proceed (y/N)? ")
         if inp.lower() == "y":
             print("")
@@ -42,8 +42,7 @@ if missing:
     else:
         print("pysync couldn't initialize because the following packages are missing:" + ", ".join(missing))
         sys.exit()
-        
-import pysync    
-if __name__ == "__main__":
-    pysync.main()
 
+if __name__ == "__main__":
+    import pysync
+    pysync.main()

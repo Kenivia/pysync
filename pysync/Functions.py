@@ -1,7 +1,11 @@
 import os
 import pathlib
 import hashlib as hl
+import pickle as pkl
+import time as ti
+import subprocess as sp
 
+from pathlib import PurePath
 from datetime import (
     datetime,
     timezone,
@@ -14,6 +18,51 @@ This file defines miscellaneous functions that:
     - are flexible for use in a variety of situations
 
 """
+
+
+def pdump(obj, path):
+    pkl.dump(obj, open(path, "wb"))
+
+
+def pload(path):
+    return pkl.load(open(path, "rb"))
+
+
+def AddZero(inp):
+    assert isinstance(inp, str)
+    assert len(inp) == 1 or len(inp) == 2
+    if len(inp) == 1:
+        inp = "0" + inp
+    return inp
+
+
+def get_today_name():
+    _date = ti.localtime()
+    day = AddZero(str(_date.tm_mday))
+    mon = AddZero(str(_date.tm_mon))
+    year = str(_date.tm_year)
+    hour = AddZero(str(_date.tm_hour))
+    minu = AddZero(str(_date.tm_min))
+    sec = AddZero(str(_date.tm_sec))
+
+    date = year + "." + mon + "." + day
+    time = hour + "." + minu + "." + sec
+    return date + "-" + time
+
+
+def dump_test_pkl(obj, name, datetime=None):
+    if datetime is None:
+        datetime = get_today_name()
+    folderpath = get_root() + "/test_pkl/{}/".format(datetime)
+    if not os.path.isdir(folderpath):
+        sp.run(["mkdir", folderpath])
+
+    pdump(obj, folderpath + name)
+    return datetime
+
+
+def get_root():
+    return str(PurePath(__file__).parent.parent)
 
 
 def local_to_utc(utc_dt):

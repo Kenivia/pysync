@@ -1,11 +1,10 @@
-import random
 import concurrent.futures as cf
 
-from pysync.OptionParser import load_options
+from pysync.OptionsParser import load_options
 from pysync.Timer import logtime
 
 
-def one_diff(args):
+def one_diff(path, local_data, remote_data):
     """Determines the change type of one file
 
     This is implemented this way to allow files to be compared in parallel
@@ -24,7 +23,6 @@ def one_diff(args):
         pysync.FileInfo: FileInfo object from either dictionaries, local is preferred
         if the path is PATH, returns False and a dict with information about PATH
     """
-    path, local_data, remote_data = args[0], args[1], args[2]
     if path == load_options("PATH"):
         return False, remote_data[path]
 
@@ -36,7 +34,7 @@ def one_diff(args):
         obj.partner = remote_data[path]
         change_type = obj.compare_info()
 
-    elif in_local: # TODO how to determine whether it's remote del or local new 
+    elif in_local:  # TODO how to determine whether it's remote del or local new
         obj = local_data[path]
         obj.change_type = change_type = "local_new"
 
@@ -65,19 +63,16 @@ def get_diff(local_data, remote_data):
 
     diff_infos = []
     all_keys = set(local_data).union(set(remote_data))
-    _map = [(path, local_data, remote_data)
-            for path in all_keys]
-    random.shuffle(_map)
     all_data = {}
     max_threads = load_options("MAX_COMPUTE")
     with cf.ThreadPoolExecutor(max_workers=max_threads) as executor:
-        for change_type, obj in executor.map(one_diff, _map):
+        for change_type, obj in executor.map(
+                lambda path: one_diff(path, local_data, remote_data), all_keys):
             if isinstance(obj, str):
                 all_data[load_options("PATH")] = obj
             else:
                 all_data[obj.path] = obj
             if change_type:
-                
                 diff_infos.append(obj)
 
     return diff_infos, all_data

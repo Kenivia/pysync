@@ -1,13 +1,10 @@
 import os
-from threading import (
-    Thread,
-    main_thread,
-)
+from threading import Thread
 import concurrent.futures as cf
 
 from pysync.FileInfo import FileInfo
 from pysync.Timer import logtime
-from pysync.OptionParser import load_options
+from pysync.OptionsParser import load_options
 
 
 def get_local(path, output_dict, timer=None):

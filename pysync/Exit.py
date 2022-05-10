@@ -4,8 +4,8 @@ import traceback
 
 from threading import Thread
 
-from pysync.OptionParser import load_options
-from pysync.Functions import SilentExit
+from pysync.OptionsParser import load_options
+from pysync.Functions import SilentExit, get_root
 
 
 def exc_with_message(message=None, exception=None, raise_silent=True):
@@ -76,7 +76,7 @@ def on_exit_thread(timer=None, failure=False):
 
 
 def restart():
-    root_path = load_options("ROOT")
+    root_path = get_root()
     thispython = sys.executable
     retval = sp.run(["dpkg", "-s", "gnome-terminal"],
                     stdout=sp.DEVNULL, stderr=sp.DEVNULL)
