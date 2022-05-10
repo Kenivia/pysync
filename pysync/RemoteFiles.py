@@ -151,7 +151,7 @@ def init_one_fileinfo(args):
 
 
 @logtime
-def process_remote(raw_files):
+def process_remote(raw_files, root):
     """Converts google drive responses into FileInfo objects
 
     Returns a dictionary containings FileInfo with their paths as keys
@@ -159,10 +159,9 @@ def process_remote(raw_files):
 
     folder_list = []
     file_list = []
-    root = raw_files[-1]
     assert isinstance(root, str)
 
-    for i in raw_files[0:-1]:
+    for i in raw_files:
         file_info = init_one_fileinfo(i)
         if not file_info.isorphan:
             if file_info.isfolder:

@@ -48,8 +48,8 @@ def event_sequence(path):
     drive = init_drive(timer=timer.time("init"))
 
     print("Started getting remote files..")
-    remote_raw_data = get_remote(drive, timer=timer.time("load_remote"))
-    remote_data = process_remote(remote_raw_data, timer=timer.time("comp_remote"))
+    remote_raw_data, root = get_remote(drive, timer=timer.time("load_remote"))
+    remote_data = process_remote(remote_raw_data, root, timer=timer.time("comp_remote"))
     print("Remote files done")
 
     thread.join()
