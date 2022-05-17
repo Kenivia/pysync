@@ -12,10 +12,7 @@ from datetime import datetime
 from send2trash import send2trash
 from socket import timeout
 from googleapiclient.http import MediaFileUpload
-from googleapiclient.errors import (
-    HttpError,
-    ResumableUploadError,
-)
+from googleapiclient.errors import HttpError, ResumableUploadError
 from httplib2 import ServerNotFoundError
 
 from pysync.Functions import (
@@ -237,7 +234,6 @@ class FileInfo():
         return forced + out
 
     def has_signature(self):
-
         if self.islocal and self.isfile:
             try:
                 with open(self.path, "r") as _file:
@@ -320,8 +316,6 @@ class FileInfo():
         Raises:
             AssertionError: something went wrong
 
-        Returns:
-            str: "not_ready", "ignored" or "ready"
         """
 
         assert self.action is not None
@@ -359,7 +353,8 @@ class FileInfo():
         drive.update(body={"trashed": True},
                      fileId=self.id).execute()
 
-    def del_local(self):
+    def del_local(self, drive=None):
+        drive
         send2trash(self.path)
 
     def up_new(self, drive):
@@ -459,37 +454,16 @@ class FileInfo():
         deletion = False
         count = 0
         max_count = get_option("MAX_RETRY")
+        funcs = {"del remote": self.del_remote,
+                 "del local": self.del_local,
+                 "up new": self.up_new,
+                 "down new": self.down_new,
+                 "up diff": self.up_diff,
+                 "down diff": self.down_diff,
+                 }
         while True:
             try:
-                if self.action_code == "del remote":
-                    self.del_remote(drive)
-                    deletion = True
-
-                elif self.action_code == "del local":
-                    self.del_local()
-                    deletion = True
-
-                elif self.action_code == "up new":
-                    self.up_new(drive)
-
-                elif self.action_code == "down new":
-                    self.down_new(drive)
-
-                elif self.action_code == "up diff":
-                    self.up_diff(drive)
-
-                elif self.action_code == "down diff":
-                    self.down_diff(drive)
-
-                if count > 0:
-                    print(f"Retry #" + str(count) + " was successful: " + self.path)
-
-                self.op_completed = True
-
-                if deletion:
-                    return self.path
-                else:
-                    return self
+                funcs[self.action_code](drive)
 
             except Exception as e:
 
@@ -521,12 +495,20 @@ class FileInfo():
                     print("\t" + message + retry_text(count, max_count) + self.path + "\n")
 
                 else:
-                    print(
-                        "\tThis file failed with the following error" + retry_text(count, max_count) + self.path +
-                        "\n" + reason + "\n")
+                    print("\tThis file failed with the following error" + retry_text(count, max_count) + self.path +
+                          "\n" + reason + "\n")
                 time.sleep(0.5)
 
-    def assign_parent(self, all_data):
+            if self.action_code == "del remote" or self.action_code == "del local":
+                deletion = True
+
+            if count > 0:
+                print(f"Retry #" + str(count) + " was successful: " + self.path)
+
+            self.op_completed = True
+            return self.path if deletion else self
+
+    def find_parent(self, all_data):
 
         if self.parentID is None and self.parent_path in all_data:
             self.parent = all_data[self.parent_path]  # * not exactly necessary but why not

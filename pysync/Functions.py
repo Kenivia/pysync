@@ -6,10 +6,7 @@ import time as ti
 import subprocess as sp
 
 from pathlib import PurePath
-from datetime import (
-    datetime,
-    timezone,
-)
+from datetime import datetime, timezone
 
 """
 This file defines miscellaneous functions that:

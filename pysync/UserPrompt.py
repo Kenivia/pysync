@@ -156,7 +156,7 @@ def print_changes(infos, initing):
 
 
 def print_totals(infos):
-    
+
     cur_actions = {}
     for i in infos:
         if i.action_human not in cur_actions:

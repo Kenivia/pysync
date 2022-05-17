@@ -5,7 +5,6 @@ import json
 import platform
 
 from functools import lru_cache
-from pathlib import PurePath
 
 from pysync.Functions import (
     get_root,

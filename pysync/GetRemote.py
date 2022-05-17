@@ -1,6 +1,4 @@
 import concurrent.futures as cf
-from pathlib import PurePath
-
 from socket import timeout
 
 from pysync.Timer import logtime
