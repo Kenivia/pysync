@@ -1,5 +1,7 @@
 import os
 import time
+import traceback
+
 import subprocess as sp
 import dateutil.parser as dup
 import concurrent.futures as cf
@@ -17,7 +19,6 @@ from httplib2 import ServerNotFoundError
 
 from pysync.Functions import (
     hex_md5_file,
-    contains_parent,
     local_to_utc,
     match_attr,
 )
@@ -186,7 +187,6 @@ class FileInfo():
             self._islocalgdoc = self.has_signature()
         return self._islocalgdoc
 
-
     def get_action_code(self, readable):
 
         assert self.change_type is not None
@@ -229,7 +229,7 @@ class FileInfo():
         if self.islocal and self.isfile:
             try:
                 with open(self.path, "r") as _file:
-                    if load_options("SIGNATURE") in _file.read():                        
+                    if load_options("SIGNATURE") in _file.read():
                         return True
             except UnicodeDecodeError:
                 return False
@@ -367,7 +367,7 @@ class FileInfo():
             _file = drive.create(body=body, fields="id").execute()
             self._id = _file["id"]  # * for other op_checks & other drive_ops
 
-        elif self.partner.isremotegdoc and self.islocalgdoc:
+        elif self.partner is not None and self.partner.isremotegdoc and self.islocalgdoc:
 
             file_id = self.find_id()
             _file = drive.get(fileId=file_id,
@@ -494,7 +494,7 @@ class FileInfo():
 
                 count += 1
                 message = None
-                reason = repr(e)
+                reason = traceback.format_exc()
                 if isinstance(e, timeout):
                     message = "This file timed out"
 
@@ -509,10 +509,11 @@ class FileInfo():
 
                 if message is not None:
                     print("\t" + message + retry_text(count, max_count) + self.path + "\n")
+                    
                 else:
                     print(
                         "\tThis file failed with the following error" + retry_text(count, max_count) + self.path +
-                        "\n\t\t" + reason + "\n")
+                        "\n" + reason + "\n")
                 time.sleep(0.5)
 
             finally:
@@ -522,7 +523,6 @@ class FileInfo():
     def assign_parent(self, all_data):
 
         if self.parentID is None and self.parent_path in all_data:
-            # * this doesn't consider whether or not `info` has parentID already but thats fine
             if isinstance(all_data[self.parent_path], str):
                 self._parentID = all_data[self.parent_path]
             else:
