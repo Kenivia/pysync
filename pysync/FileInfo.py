@@ -562,7 +562,7 @@ def run_drive_ops(diff_infos, all_data, drive):
                     raise all_data[interrupt_key]
 
                 info = pending[index]
-                info.assign_parent(all_data)
+                info.find_parent(all_data)
 
                 if info.parentID is None or not os.path.isdir(info.parent_path):
                     continue

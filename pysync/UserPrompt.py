@@ -189,12 +189,20 @@ def compress_deletes(diff_infos):
     del_folder = []
     for i in diff_infos:
         if i.isfolder and "del" in i.action_code:
-            del_folder.append(i.path)
+            found = False
+            for z in del_folder:
+                if i.path.startswith(z):
+                    found = True
+                    break
+            if not found:
+                del_folder = [z for z in del_folder if not z.startswith(i.path)]
+                del_folder.append(i.path)
 
     indexs = []
     for index, item in enumerate(diff_infos):
-        if contains_parent(del_folder, item.path, accept_self=False):
-            indexs.append(index)
+        for i in del_folder:
+            if item.path.startswith(i) and item.path != i:
+                indexs.append(index)
 
     for i in reversed(indexs):
         del diff_infos[i]
