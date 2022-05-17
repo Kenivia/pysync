@@ -3,7 +3,7 @@ import traceback
 
 from pysync.Exit import on_exit, exc_with_message
 from pysync.Functions import SilentExit
-from pysync.OptionsParser import load_options
+from pysync.OptionsParser import get_option
 from pysync.EventSequence import event_sequence
 from pysync.OptionsParser import check_options
 
@@ -27,7 +27,7 @@ def main():
 
     print("pysync started successfully")
     try:
-        timer = event_sequence(load_options("PATH"))
+        timer = event_sequence(get_option("PATH"))
         on_exit(False, timer=timer)
 
     except SilentExit:

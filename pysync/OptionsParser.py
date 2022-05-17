@@ -61,7 +61,7 @@ def cache_options():
         "DPULL", "DPUSH", "DIGNORE",
         "RECHECK_TIME", "SIGNATURE", "MAX_RETRY"
     ]
-    load_options(*all_available_code)  # * to load all the cache
+    get_option(*all_available_code)  # * to load all the cache
 
 
 def override_default():
@@ -153,11 +153,11 @@ Each of the following must be included exactly once:
 
 
 @lru_cache(None)
-def load_options(*keys):
+def get_option(*keys):
 
     if len(keys) > 1:
         # * doing this in this weird way to take advantage of cache
-        return tuple([load_options(i) for i in keys])
+        return tuple([get_option(i) for i in keys])
     else:
 
         raw_options = override_default()

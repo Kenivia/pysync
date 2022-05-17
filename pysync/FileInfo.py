@@ -7,6 +7,7 @@ import dateutil.parser as dup
 import concurrent.futures as cf
 
 
+from multiprocessing import RLock
 from datetime import datetime
 from send2trash import send2trash
 from socket import timeout
@@ -22,10 +23,10 @@ from pysync.Functions import (
     local_to_utc,
     match_attr,
 )
-from pysync.OptionsParser import load_options
+from pysync.OptionsParser import get_option
 from pysync.Exit import exc_with_message
 from pysync.Timer import logtime
-from pysync.OptionsParser import load_options
+from pysync.OptionsParser import get_option
 
 
 class FileIDNotFoundError(Exception):
@@ -43,29 +44,29 @@ class FileInfo():
     def __init__(self, location, **kwargs):
 
         self._location = location
-
         self._action = None
         self._md5sum = None
         self._id = None
-
         self._parentID = None
+        self._path = None
+        self._islocalgdoc = None
+
+        self.parent = None
         self.partner = None
-        self.change_type = None
 
         self.link = None
-        self.path = None
 
+        self.change_type = None
         self.forced = False
         self.index = None
 
-        self._islocalgdoc = None
         self.isremotegdoc = False
 
         self.op_completed = False
         self.checked_good = False
 
         if self.islocal:
-            self.path = kwargs["path"]
+            self._path = kwargs["path"]
             self.type = kwargs["type"]  # ("folder" if os.path.isdir(self.path) else "file")
             if self.isfile:
                 if kwargs["md5_now"]:
@@ -103,6 +104,17 @@ class FileInfo():
                 out[key] = item
 
         return hash(frozenset(out))
+
+    @property
+    def path(self):
+        if self.islocal:
+            return self._path
+        if self._path is not None:
+            return self._path
+        assert self.parent is not None
+        parent_path = get_option("PATH") if isinstance(self.parent, str) else self.parent.path
+        self._path = parent_path + "/" + self.name
+        return self._path
 
     @property
     def md5sum(self):
@@ -164,7 +176,7 @@ class FileInfo():
     @property
     def remote_path(self):
         """returns its path as it would appear in gdrive(without PATH in front of it)"""
-        local_path = load_options("PATH")
+        local_path = get_option("PATH")
         assert self.path is not None
         assert self.path.startswith(local_path)
         return self.path[len(local_path):]
@@ -229,7 +241,7 @@ class FileInfo():
         if self.islocal and self.isfile:
             try:
                 with open(self.path, "r") as _file:
-                    if load_options("SIGNATURE") in _file.read():
+                    if get_option("SIGNATURE") in _file.read():
                         return True
             except UnicodeDecodeError:
                 return False
@@ -239,7 +251,7 @@ class FileInfo():
     def gen_localgdoc(self):
         return f"""xdg-open {self.link}
     # This file was created by pysync. Do not remove the line below!
-    {load_options("SIGNATURE")}"""
+    {get_option("SIGNATURE")}"""
 
     def find_id(self):
         text = open(self.path, "r").read()
@@ -291,7 +303,7 @@ class FileInfo():
             self.change_type = "mtime_change"
             return self.change_type
 
-        if load_options("CHECK_MD5"):
+        if get_option("CHECK_MD5"):
             # assert self.md5sum is not None and self.partner.md5sum is not None
             if self.md5sum != self.partner.md5sum:
                 self.change_type = "content_change"
@@ -350,15 +362,7 @@ class FileInfo():
     def del_local(self):
         send2trash(self.path)
 
-    def up_new(self, parent, drive):
-
-        if isinstance(parent, str):
-            # * this is for when new folders are created so parentID might be empty
-            # * root
-            parent_id = parent
-        else:
-            parent_id = parent.id
-        self._parentID = parent_id
+    def up_new(self, drive):
 
         if self.isfolder:
             body = {"parents": [self.parentID],
@@ -431,7 +435,7 @@ class FileInfo():
             f.write(response)
         self.write_remote_mtime(drive)
 
-    def drive_op(self, parent, drive):
+    def drive_op(self, drive, countdown=None):
         """Applies the operation specified by self.change_type and self.action
 
         if a new remote file is a google document e.g. google sheets, google docs
@@ -449,10 +453,12 @@ class FileInfo():
 
         """
         self.op_checks()
+        if get_option("PRINT_UPLOAD") and countdown is not None:
+            print(" ".join((str(countdown), self.action_human, self.path)))
 
         deletion = False
         count = 0
-        max_count = load_options("MAX_RETRY")
+        max_count = get_option("MAX_RETRY")
         while True:
             try:
                 if self.action_code == "del remote":
@@ -464,7 +470,7 @@ class FileInfo():
                     deletion = True
 
                 elif self.action_code == "up new":
-                    self.up_new(parent, drive)
+                    self.up_new(drive)
 
                 elif self.action_code == "down new":
                     self.down_new(drive)
@@ -486,8 +492,12 @@ class FileInfo():
                     return self
 
             except Exception as e:
+
+                if max_count >= 0 and count >= max_count:
+                    raise e
+
                 def retry_text(_count, _max_count):
-                    if _max_count > 0 and _count >= _max_count:
+                    if _max_count >= 0 and _count >= _max_count:
                         return ", " + f"tried {_max_count} times, giving up" + ": "
                     else:
                         return ", " + f"retrying({_count}/{_max_count})" + ": "
@@ -509,20 +519,17 @@ class FileInfo():
 
                 if message is not None:
                     print("\t" + message + retry_text(count, max_count) + self.path + "\n")
-                    
+
                 else:
                     print(
                         "\tThis file failed with the following error" + retry_text(count, max_count) + self.path +
                         "\n" + reason + "\n")
                 time.sleep(0.5)
 
-            finally:
-                if max_count > 0 and count >= max_count:
-                    raise RuntimeError("Max retry count exceeded")
-
     def assign_parent(self, all_data):
 
         if self.parentID is None and self.parent_path in all_data:
+            self.parent = all_data[self.parent_path]  # * not exactly necessary but why not
             if isinstance(all_data[self.parent_path], str):
                 self._parentID = all_data[self.parent_path]
             else:
@@ -543,24 +550,25 @@ def run_drive_ops(diff_infos, all_data, drive):
         drive (googleapiclient.discovery.Resource): Resource object from service.files() in init_drive
     """
 
-    pending = match_attr(diff_infos, action="push") + \
-        match_attr(diff_infos, action="pull")
+    pending = match_attr(diff_infos, action="push") + match_attr(diff_infos, action="pull")
+    pending.sort(key=lambda x: (  # * folders first, then less depth first, then alphabetitc
+        not x.isfolder, len(x.path.split("/")), x.path), reverse=True)
     before_paths = [i.path for i in pending]
 
     if pending:
         print(f"Applying {str(len(pending))} changes..")
-        if load_options("PRINT_UPLOAD"):
+        if not get_option("PRINT_UPLOAD"):
             print("Not displaying the progress")
     else:
         print("No available changes")
 
-    interrupt_key = "uniqueKey///"
-    max_threads = load_options("MAX_UPLOAD")
+    interrupt_key = "uniqueKey///\\\\\\"
+    max_threads = get_option("MAX_UPLOAD")
     # * must be processpool, threadpool runs into memory issue
+    lock = RLock()
     with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
         while pending:
-            pending.sort(key=lambda x: (  # * folders first, then less depth first, then alphabetitc
-                not x.isfolder, len(x.path.split("/")), x.path), reverse=True)
+
             # * important to sort by depth first, not just .path, contrary to other sorts for printing
             # * the items are removed(from the back), thats why its reversed
             # * sorta like a queue?
@@ -577,13 +585,20 @@ def run_drive_ops(diff_infos, all_data, drive):
                 if info.parentID is None or not os.path.isdir(info.parent_path):
                     continue
 
-                future = executor.submit(info.drive_op, all_data[info.parent_path], drive)
+                future = executor.submit(info.drive_op, drive, countdown=len(pending))
                 pending.remove(info)
 
                 def add_all_data(fut):
                     exception = fut.exception()
                     if exception is not None:
-                        all_data[interrupt_key] = exception
+                        with lock:
+                            # * test/set situation, what might happen without lock is:
+                            # * thread 1 sees that there's no interrupt key
+                            # * thread 2 sees that there's no interrupt key
+                            # * thread 1 writes to it
+                            # * thread 2 writes to it, so end result is from thread 2 but it should've been 1
+                            if interrupt_key not in all_data:
+                                all_data[interrupt_key] = exception
                     else:
                         result = fut.result()
                         if isinstance(result, str):
@@ -610,6 +625,9 @@ def run_drive_ops(diff_infos, all_data, drive):
                              exception=exception)
 
         else:
-            exc_with_message("The error above occured while applying a change",
+            max_count = get_option("MAX_RETRY")
+            if max_count < 0:
+                print("WARNING retry count was negative but pysync gave up incorrectly")
+            exc_with_message("A file failed after " + str(max_count) + " retries:\n",
                              exception=exception)
     print("All done")

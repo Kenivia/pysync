@@ -1,51 +1,4 @@
-import concurrent.futures as cf
-
-from pysync.OptionsParser import load_options
 from pysync.Timer import logtime
-
-
-def one_diff(path, local_data, remote_data):
-    """Determines the change type of one file
-
-    This is implemented this way to allow files to be compared in parallel
-    intended to be called using concurrent.future
-
-    Args:
-        args (tuple):   1) path to the file
-                        2) dict of local FileInfo objects from get_local_files
-                        3) dict of remote FileInfo objects from process_remote
-
-    Raises:
-        ValueError: if the path is not in either dictionary
-
-    Returns:
-        str:  change_type - "local_new", "remote_new", "content_change" or "mtime_change"
-        pysync.FileInfo: FileInfo object from either dictionaries, local is preferred
-        if the path is PATH, returns False and a dict with information about PATH
-    """
-    if path == load_options("PATH"):
-        return False, remote_data[path]
-
-    in_local = path in local_data
-    in_remote = path in remote_data
-    change_type = False
-    if in_remote and in_local:
-        obj = local_data[path]
-        obj.partner = remote_data[path]
-        change_type = obj.compare_info()
-
-    elif in_local:  # TODO how to determine whether it's remote del or local new
-        obj = local_data[path]
-        obj.change_type = change_type = "local_new"
-
-    elif in_remote:
-
-        obj = remote_data[path]
-        obj.change_type = change_type = "remote_new"
-    else:
-        raise ValueError
-
-    return change_type, obj
 
 
 @logtime
@@ -62,17 +15,35 @@ def get_diff(local_data, remote_data):
     """
 
     diff_infos = []
-    all_keys = set(local_data).union(set(remote_data))
     all_data = {}
-    max_threads = load_options("MAX_COMPUTE")
-    with cf.ThreadPoolExecutor(max_workers=max_threads) as executor:
-        for change_type, obj in executor.map(
-                lambda path: one_diff(path, local_data, remote_data), all_keys):
-            if isinstance(obj, str):
-                all_data[load_options("PATH")] = obj
-            else:
-                all_data[obj.path] = obj
-            if change_type:
-                diff_infos.append(obj)
+    local = set(local_data.keys())
+    remote = set(remote_data.keys())
+
+    in_both = local & remote
+    only_local = local - remote
+    only_remote = remote - local
+
+    for path in only_local:
+        f = local_data[path]
+        f.change_type = "local_new"
+
+        diff_infos.append(f)
+        all_data[path] = f
+
+    for path in only_remote:
+        f = remote_data[path]
+        if isinstance(f, str):
+            continue
+        f.change_type = "remote_new"
+
+        diff_infos.append(f)
+        all_data[path] = f
+
+    for path in in_both:
+        f = local_data[path]
+        f.partner = remote_data[path]
+        if f.compare_info():
+            diff_infos.append(f)
+        all_data[path] = f
 
     return diff_infos, all_data

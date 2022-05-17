@@ -4,7 +4,7 @@ import traceback
 
 from threading import Thread
 
-from pysync.OptionsParser import load_options
+from pysync.OptionsParser import get_option
 from pysync.Functions import SilentExit, get_root
 
 
@@ -32,7 +32,7 @@ def on_exit(failure, timer=None):
         failure (bool): whether or not pysync completed successfully
         timer (pysync.TimeLogger, optional): TimeLogger object from event_sequence
     """
-    if not load_options("ASK_AT_EXIT"):
+    if not get_option("ASK_AT_EXIT"):
         print("pysync will now exit")
         return
 

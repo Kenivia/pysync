@@ -4,7 +4,7 @@ import concurrent.futures as cf
 
 from pysync.FileInfo import FileInfo
 from pysync.Timer import logtime
-from pysync.OptionsParser import load_options
+from pysync.OptionsParser import get_option
 
 
 def get_local(path, output_dict, timer=None):
@@ -31,22 +31,19 @@ def filter_link(inp):
 def real_get_local(path, out_dict):
     """Adds FileInfo objects to out_dict with their paths as the key
     """
-    all_file, all_folder = [],[]
+    all_file, all_folder = [], []
     for parent, dirs, files in os.walk(path):
 
         all_file.extend(filter_link([os.path.join(parent, names) for names in files]))
         all_folder.extend([os.path.join(parent, names) for names in dirs])
 
-
-    max_threads = load_options("MAX_COMPUTE")
+    max_threads = get_option("MAX_COMPUTE")
     with cf.ThreadPoolExecutor(max_workers=max_threads) as executor:
 
         for info in executor.map(lambda path:
-                                 FileInfo("local", type="file", path=path, md5_now=True),
-                                 all_file):
+                                 FileInfo("local", type="file", path=path, md5_now=True), all_file):
             out_dict[info.path] = info
 
         for info in executor.map(lambda path:
-                                 FileInfo("local", type="folder", path=path),
-                                 all_folder):
+                                 FileInfo("local", type="folder", path=path), all_folder):
             out_dict[info.path] = info

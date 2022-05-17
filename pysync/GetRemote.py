@@ -1,9 +1,10 @@
 import concurrent.futures as cf
+from pathlib import PurePath
 
 from socket import timeout
 
 from pysync.Timer import logtime
-from pysync.OptionsParser import load_options
+from pysync.OptionsParser import get_option
 from pysync.FileInfo import FileInfo
 from pysync.Exit import exc_with_message
 
@@ -107,45 +108,6 @@ def get_remote_thread(args):
     return out
 
 
-def get_one_parent(folders, root, info):
-
-    parent = root
-    for i in folders:
-        if info.parentID == i.id:
-            parent = i
-            break
-    return parent
-
-
-def get_one_path(folders, root, info, out_dict, mapping):
-
-    path = info.name
-    parent = info
-    try:
-        while True:
-            _id = parent.id
-            if _id in mapping:
-                parent = mapping[_id]
-
-            else:
-                parent = get_one_parent(folders, root, parent)
-                mapping[_id] = parent
-
-            if parent == root:
-                info.path = load_options("PATH") + "/" + path
-
-                assert info.path not in out_dict  # * duplicated name
-
-                out_dict[info.path] = info
-                return info.parentID
-            path = parent.name + "/" + path
-
-    except AssertionError:
-        exc_with_message(
-            "A remote name is occupied by multiple files and folders: " +
-            info.remote_path) + "\nThis error may occur by mistake when files are trashed very recently"
-
-
 def init_one_fileinfo(args):
     return FileInfo("remote", **args)
 
@@ -172,9 +134,20 @@ def process_remote(raw_files, root):
             # TODO handle orphan files, which are all sharedWithMe
             pass
 
-    out_dict = {load_options("PATH"): root}
-    mapping = {}
+    out_dict = {get_option("PATH"): root}
+    id_map = {root: root}
     for i in folder_list + file_list:
-        get_one_path(folder_list, root, i, out_dict, mapping)
+        id_map[i.id] = i
+
+    for i in id_map:
+        if i == root:
+            continue
+        id_map[i].parent = id_map[id_map[i].parentID]
+
+    for i in id_map:
+        if i == root:
+            continue
+        out_dict[id_map[i].path] = id_map[i]
+
 
     return out_dict

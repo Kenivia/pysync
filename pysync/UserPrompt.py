@@ -4,12 +4,12 @@ from pysync.Functions import (
     SilentExit,
     match_attr,
 )
-from pysync.OptionsParser import load_options
+from pysync.OptionsParser import get_option
 from pysync.Exit import restart
 
 
 def get_forced(info):
-    apull, apush, aignore = load_options("APULL", "APUSH", "AIGNORE")
+    apull, apush, aignore = get_option("APULL", "APUSH", "AIGNORE")
     if contains_parent(apull, info):
         return "pull"
     elif contains_parent(apush, info):
@@ -21,7 +21,7 @@ def get_forced(info):
 
 
 def get_default_action(change_type):
-    dpull, dpush, dignore = load_options("DPULL", "DPUSH", "DIGNORE")
+    dpull, dpush, dignore = get_option("DPULL", "DPUSH", "DIGNORE")
     if change_type in dpull:
         return "pull"
     elif change_type in dpush:
@@ -133,7 +133,7 @@ def print_half(infos, initing, forced, index):
 
         for i in this:
             if forced:
-                if i.action == "ignore" and load_options("HIDE_FIGNORE"):
+                if i.action == "ignore" and get_option("HIDE_FIGNORE"):
                     pass
                 else:
                     print(i.action_human, i.path)
