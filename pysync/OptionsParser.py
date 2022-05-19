@@ -10,7 +10,7 @@ from pysync.Functions import (
     get_root,
     remove_slash,
     abs_path,
-    assert_start,
+    assert_list_start,
 )
 
 OPTIONS_NAME = "/data/Options.json"
@@ -132,11 +132,15 @@ def check_options():
     if options["MAX_UPLOAD"] > 50:
         print("Warning! \"Max upload threads\" was set to a value higher than 50. This may cause upload to fail")
 
-    assert os.path.isdir(remove_slash(abs_path(options["PATH"])))
-
-    assert_start(options["PATH"], options["APULL"])
-    assert_start(options["PATH"], options["APUSH"])
-    assert_start(options["PATH"], options["AIGNORE"])
+    options["PATH"] = remove_slash(abs_path(options["PATH"]))
+    options["APULL"] = [remove_slash(abs_path(i)) for i in options["APULL"]]
+    options["APUSH"] = [remove_slash(abs_path(i)) for i in options["APUSH"]]
+    options["AIGNORE"] =[remove_slash(abs_path(i)) for i in options["AIGNORE"]]
+    
+    assert os.path.isdir(options["PATH"])
+    assert_list_start(options["PATH"], options["APULL"])
+    assert_list_start(options["PATH"], options["APUSH"])
+    assert_list_start(options["PATH"], options["AIGNORE"])
 
     dpull = options["DPULL"]
     dpush = options["DPUSH"]

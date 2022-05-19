@@ -12,7 +12,7 @@ class FuncTimer():
         self.usertime = None
         self.func_title = func_title
         self.category = category
-        self.is_concurrent = False
+        self.isConcurrent = False
 
     def reset(self):
         self.start_time = None
@@ -42,13 +42,13 @@ class Timer():
 
     @property
     def max_len(self):
-        return max([len(i.func_title) if not i.concurrent else
+        return max([len(i.func_title) if not i.isConcurrent else
                     len("  - started: " + i.func_title)
                     for i in self.stages.values()])
 
     def sum_time(self, category):
-        sumtime = sum([i.duration for i in match_attr(self.stages.values(), category=category) 
-                       if not i.concurrent])
+        sumtime = sum([i.duration for i in match_attr(self.stages.values(), category=category)
+                       if not i.isConcurrent])
         for i in self.concurrent:
             if self.stages[i].category == category:
                 main_time = sum([self.stages[i].duration for i in self.stages]

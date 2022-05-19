@@ -1,3 +1,4 @@
+import pathlib
 from pysync.Timer import logtime
 from pysync.Functions import (
     contains_parent,
@@ -8,16 +9,26 @@ from pysync.OptionsParser import get_option
 from pysync.Exit import restart
 
 
-def get_forced(info):
+def get_forced_depth(flist, path):
+    max_depth = -1
+    for i in flist:
+        if i == path or pathlib.Path(i) in pathlib.Path(path).parents:
+            depth = len(i.split("/"))
+            if depth > max_depth:
+                max_depth = depth
+
+    return max_depth
+
+
+def get_forced(path):
     apull, apush, aignore = get_option("APULL", "APUSH", "AIGNORE")
-    if contains_parent(apull, info):
-        return "pull"
-    elif contains_parent(apush, info):
-        return "push"
-    elif contains_parent(aignore, info):
-        return "ignore"
-    else:
-        return False
+    temp = {}
+
+    temp[get_forced_depth(apush, path)] = "push"
+    temp[get_forced_depth(apull, path)] = "pull"
+    temp[get_forced_depth(aignore, path)] = "ignore"
+    # * in a tie, ignore perfered over pull over push
+    return False if max(temp) < 0 else temp[max(temp)]
 
 
 def get_default_action(change_type):
@@ -227,8 +238,7 @@ Press Enter or use `apply` to apply the following changes:"""
         print("\n" + text)
         print_totals(diff_infos)
 
-        inp = input("\n>>> ").lower()
-        inp = inp.strip()
+        inp = input("\n>>> ").lower().strip()
         if inp == "":
             return
 
@@ -269,6 +279,7 @@ Press Enter or use `apply` to apply the following changes:"""
                 for i in match_attr(diff_infos, forced=False):
                     i._action = command
                     changed.append(str(i.index))
+                continue
 
             elif inp.isnumeric():
                 # * shouldn't need to check for forced here since forced don't get an index
@@ -276,11 +287,15 @@ Press Enter or use `apply` to apply the following changes:"""
                     for i in diff_infos:
                         if i.index is not None:
                             all_index[str(i.index)] = i
+                    else:
+                        message += inp + " is invalid, ignored\n"
+                        continue
                 info = all_index[inp]
                 info._action = command
                 changed.append(str(info.index))
+
             else:
-                print(inp, "is invalid, ignored")
+                message += inp + " is invalid, ignored\n"
 
         changed = add_hyphens(changed)
         text = message

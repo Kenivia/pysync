@@ -1,7 +1,7 @@
 {
     "Local path": "~/gdrive",
     "Ask before exit": false,
-    "Hide forced ignore": true,
+    "Hide forced ignore": false,
     "Print upload progress": false,
     "Compare md5sum": true,
     "Max upload threads": 40,

@@ -152,6 +152,6 @@ def abs_path(inp):
         return inp
 
 
-def assert_start(start, inp_list):
+def assert_list_start(start, inp_list):
     for i in inp_list:
         assert i.startswith(start)

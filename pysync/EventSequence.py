@@ -35,7 +35,7 @@ def event_sequence(path):
     # * when B == len(sequence), it means that it joined after the last task finished
 
     for i in concurrent:
-        stages[i].is_concurrent = True
+        stages[i].isConcurrent = True
 
     timer = Timer(stages, sequence, concurrent, decimal_points=3)
 
