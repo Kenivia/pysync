@@ -24,7 +24,6 @@ def process_creds(creds, scopes):
 
         except RefreshError:
             print("Couldn't refresh old token")
-            pass
 
         except TransportError:
             exc_with_message(

@@ -12,7 +12,7 @@ class FuncTimer():
         self.usertime = None
         self.func_title = func_title
         self.category = category
-        self.concurrent = False
+        self.is_concurrent = False
 
     def reset(self):
         self.start_time = None

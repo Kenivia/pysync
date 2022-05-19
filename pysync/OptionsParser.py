@@ -67,9 +67,18 @@ def override_default():
     options_path = get_root() + OPTIONS_NAME
     default_options_path = get_root() + DEFAULT_NAME
 
-    djson = json.load(open(default_options_path, "r"))
     if not os.path.exists(options_path):
+        assert os.path.exists(default_options_path)
+        djson = json.load(open(default_options_path, "r"))
         return djson
+    
+    try:
+        djson = json.load(open(default_options_path, "r"))
+    except Exception:
+        # * won't have to have the default file if the override file is found
+        # * just in case ojson is a perfectly fine option file on its own and djson is deleted
+        djson = {}
+
     ojson = json.load(open(options_path, "r"))
 
     for i in ojson:
