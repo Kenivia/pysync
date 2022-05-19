@@ -47,8 +47,8 @@ class Timer():
                     for i in self.stages.values()])
 
     def sum_time(self, category):
-        sumtime = sum([
-            i.duration for i in match_attr(self.stages.values(), category=category) if not i.concurrent])
+        sumtime = sum([i.duration for i in match_attr(self.stages.values(), category=category) 
+                       if not i.concurrent])
         for i in self.concurrent:
             if self.stages[i].category == category:
                 main_time = sum([self.stages[i].duration for i in self.stages]

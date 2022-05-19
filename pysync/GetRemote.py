@@ -64,12 +64,15 @@ def get_remote(drive):
     all_args.append(file_args)
 
     results = []
+
     max_threads = len(all_args) + 1
     with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
+        future = executor.submit(get_root_id, drive)
         for item in executor.map(get_remote_thread, all_args):
             results.extend(item)
+        root = future.result()
 
-    return results, get_root_id(drive)
+    return results, root
 
 
 def get_root_id(drive):
@@ -146,6 +149,5 @@ def process_remote(raw_files, root):
         if i == root:
             continue
         out_dict[id_map[i].path] = id_map[i]
-
 
     return out_dict

@@ -20,8 +20,9 @@ def get_local(path, output_dict, timer=None):
 def filter_link(inp):
     out = []
     for i in inp:
-        if os.path.islink(i):
-            print(i + " is a symlink, ignored")
+        path = i[0]
+        if os.path.islink(path):
+            print(path + " is a symlink, ignored")
         else:
             out.append(i)
     return out
@@ -31,19 +32,17 @@ def filter_link(inp):
 def real_get_local(path, out_dict):
     """Adds FileInfo objects to out_dict with their paths as the key
     """
-    all_file, all_folder = [], []
+    file_paths, folder_paths = [], []
     for parent, dirs, files in os.walk(path):
 
-        all_file.extend(filter_link([os.path.join(parent, names) for names in files]))
-        all_folder.extend([os.path.join(parent, names) for names in dirs])
+        file_paths.extend(filter_link(
+            [(os.path.join(parent, names), "file") for names in files]))
+        folder_paths.extend(
+            [(os.path.join(parent, names), "folder") for names in dirs])
 
     max_threads = get_option("MAX_COMPUTE")
     with cf.ThreadPoolExecutor(max_workers=max_threads) as executor:
-
-        for info in executor.map(lambda path:
-                                 FileInfo("local", type="file", path=path, md5_now=True), all_file):
-            out_dict[info.path] = info
-
-        for info in executor.map(lambda path:
-                                 FileInfo("local", type="folder", path=path), all_folder):
+        for info in executor.map(lambda inp:
+                                 FileInfo("local", type=inp[1], path=inp[0], md5_now=True),
+                                 file_paths + folder_paths):
             out_dict[info.path] = info
