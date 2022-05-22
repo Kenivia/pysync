@@ -1,17 +1,16 @@
 # pysync
 
-pysync uploads & download files to and from Google drive. Only Linux is supported, there is an app by Google for Windows and macOS
+pysync is a Linux script that uploads & download files to and from Google drive. 
 
 This is not a background sync script - it is currently intended for use with user confirmation
 
-pysync is similar to [drive](https://github.com/odeke-em/drive), but is much faster (~150s -> 30s for ~5400 files)
+pysync is similar to [drive](https://github.com/odeke-em/drive), but is much faster (150s -> <30s for comparing ~5400 files), thanks mostly to parallelism and(probably) the more recent API used
 
 ## Google Credentials
 
 - First and foremost, this app is not yet verified by Google. Therefore, you can't easily give the code permission to access and modify your drive.
 - For the code to access your drive you'll have to create your own credentials.
 - The idea is that you make your own personal project and make yourself a test user.
-- The alternative is that I put your email down as a tester in my project, but that is slow and has a limit of 100 testers
 - Unfortunately, tutorials on this are rather hideous so please follow this step by step guide. This is up to date as of April 2022
   - go to <https://console.cloud.google.com/>
   - click on "Select a project" towards the top left
@@ -46,7 +45,6 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
   - click CREATE
   - you'll be prompted with a screen, click DOWNLOAD JSON
   - rename the file to `client_secrets.json` and place this file in `./pysync/data`
-  - and you're done!
   
 ## Requirements
 
@@ -54,21 +52,20 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
 
 - `python-dateutil`, `send2trash`, `google-api-python-client` and `google-auth-oauthlib`
 
-- pysync should detect missing packages and install them automatically using `pip`.
+- pysync will detect missing packages and install them automatically using `pip`.
   
-- a folder at `~/gdrive` to sync with (you can change the location in `./pysync/options.py`)
+- a folder at `~/gdrive` to sync with (you can change the location in `./pysync-master/data/Options.json`)
 
-- `client_secret.json` placed in `./pysync-master/data/`
+- `client_secret.json` created using the procedure above and placed in `./pysync-master/data/`
 
-- Either `gnome-terminal` or `xfce4-terminal` for a quick restart of the syncing process
+- `xdg-open`(used for opening gdoc files by double clicking)
 
-- `xdg-open`: present on most Linux desktop environments(used for opening gdoc files by double clicking)
+- Either `gnome-terminal` or `xfce4-terminal` for a quick restart of the syncing process. Other than this, any terminal will do
 
-This is tested on Linux Mint with python 3.8.5 and Cinnamon 5.0.7
 
 ## Usage
 
-MAKE A BACKUP OF YOUR GOOGLE DRIVE FOLDER BEFORE YOU RUN THIS!
+- MAKE A BACKUP OF YOUR GOOGLE DRIVE FOLDER BEFORE RUNNING THIS!
 
 - `python3 ./pysync-master/pysync`
 
@@ -78,18 +75,21 @@ Options can be overriden using ./pysync-master/data/Option.json
 
 ## Current features
 
-- Detect differences quickly, depending mostly on the size of the google drive and the disk read speed
+- Detect differences quickly, depending mostly on the size of the google drive and someties the disk read speed
 - The user can then choose which files to push/pull(upload/download)
 - Applies the chosen operations in parallel
 - For Google Docs, Google Sheets and Google Slides etc, download an executable text file that links to the file
-- Ext3/4 don't allow folders and files with the same name but it's fine on Google drive. This is checked and prevented by the script. You can avoid this problem with Capitalizations.
+- Ext3/4 file systems don't allow folders and files with the same name but it is allowed on Google drive. You can avoid this problem with Capitalizations.
 - Keeps track of how long each stage of the program took
 
 ## Known issues/plans
 
-- Google Docs files are currently download and delete only
+- Files marked with "abuse" by google(executable files mostly) will run into errors
+- Forced paths(specified in Options.json) don't behave correctly when a forced path contains another forced path
+-  Google Docs files are currently download and delete only
   - moving the text file locally won't move the remote copy
+- Implementation of background syncing and maybe a GUI, similar to [Google's Windows/macOs app](https://www.google.com/drive/download/), is the long term goal
 
 ## Contributing
 
-This is in an early stage of development, feedback & help are greatly appreciated!
+Any feedback & help are greatly appreciated!
