@@ -3,7 +3,6 @@ import os
 import subprocess as sp
 import dateutil.parser as dup
 
-
 from pysync.OptionsParser import get_option
 from pysync.FileInfo import FileInfo
 

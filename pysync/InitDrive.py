@@ -12,6 +12,8 @@ from pysync.Timer import logtime
 from pysync.Functions import get_root
 
 
+CLIENT_SECRET = "/data/client_secrets.json"
+
 def process_creds(creds, scopes):
     if creds and creds.valid:
         return creds
@@ -31,7 +33,7 @@ def process_creds(creds, scopes):
 
     print("Requesting a new token")
     flow = InstalledAppFlow.from_client_secrets_file(
-        get_root() + "/data/client_secrets.json", scopes)
+        get_root() + CLIENT_SECRET, scopes)
     creds = flow.run_local_server(port=0)
     return creds
 

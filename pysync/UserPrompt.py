@@ -1,7 +1,6 @@
 import pathlib
 from pysync.Timer import logtime
 from pysync.Functions import (
-    contains_parent,
     SilentExit,
     match_attr,
 )

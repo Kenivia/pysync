@@ -1,17 +1,8 @@
-from pysync.Timer import (
-    Timer,
-    FuncTimer,
-)
-from pysync.UserPrompt import (
-    apply_forced_and_default,
-    choose_changes,
-)
+from pysync.Timer import Timer, FuncTimer
+from pysync.UserPrompt import apply_forced_and_default, choose_changes
 from pysync.Differ import get_diff
 from pysync.GetLocal import get_local
-from pysync.GetRemote import (
-    get_remote,
-    process_remote
-)
+from pysync.GetRemote import get_remote, process_remote
 from pysync.InitDrive import init_drive
 from pysync.FileInfo import run_drive_ops
 

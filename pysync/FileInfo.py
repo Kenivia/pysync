@@ -11,7 +11,6 @@ from googleapiclient.errors import HttpError, ResumableUploadError
 from httplib2 import ServerNotFoundError
 
 from pysync.Functions import local_to_utc, match_attr
-
 from pysync.OptionsParser import get_option
 from pysync.Exit import exc_with_message
 from pysync.Timer import logtime
@@ -72,7 +71,7 @@ def run_drive_ops(diff_infos, all_data, drive):
                 info = pending[index]
                 info.find_parent(all_data)
 
-                if info.parentID is None or not os.path.isdir(info.parent_path):
+                if not info.parent_ready:
                     continue
 
                 future = executor.submit(info.drive_op, drive, countdown=len(pending))
