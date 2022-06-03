@@ -91,7 +91,7 @@ def restart():
             sp.call(sp_list)
         else:
             print(
-                "Neither gnome-puterminal nor xfce4-terminal is available, unable to restart")
+                "Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
             input("Press enter to exit")
             return
 

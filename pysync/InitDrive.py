@@ -19,7 +19,7 @@ def process_creds(creds, scopes):
     if creds and creds.valid:
         return creds
 
-    if creds and creds.refresh_token:  # * this was bugged from the tutorial..
+    if creds and creds.refresh_token:  # * the code from the tutorial was bugged
         try:
             creds.refresh(Request())
             print("Old token refreshed successfully")
@@ -29,7 +29,7 @@ def process_creds(creds, scopes):
             print("Couldn't refresh old token")
 
         except TransportError as e:
-            exit_with_message(message="pysync couldn't refresh your token, please check your internet connectio", 
+            exit_with_message(message="pysync couldn't refresh your token, please check your internet connection", 
                              exception=e)
 
     print("Requesting a new token")
@@ -37,8 +37,9 @@ def process_creds(creds, scopes):
         flow = InstalledAppFlow.from_client_secrets_file(
             get_root() + CLIENT_SECRET, scopes)
     except FileNotFoundError as e:
-        exit_with_message(message="The file 'client_secrets.json' is not found in "+get_root()+"/data/",
-                             exception=e)
+        exit_with_message(message="The file 'client_secrets.json' is not found at "+get_root()+"/data/",
+                        exception=e)
+        
         
     creds = flow.run_local_server(port=0)
     return creds

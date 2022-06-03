@@ -110,10 +110,10 @@ def run_drive_ops(diff_infos, all_data, drive):
                           if i not in after_paths and i != final_straw]
             done_text = "\n".join(sorted(done_paths, key=lambda x: (len(x.split("/")), x)))
             exit_with_message("The following files were done before running out of space on Google drive:\n" +
-                             done_text + "\n\n" +
-                             f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space" +
-                             "\nYour drive ran out of space while trying to upload this file: " + final_straw,
-                             exception=exception)
+                              done_text + "\n\n" +
+                              f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space" +
+                              "\nYour drive ran out of space while trying to upload this file: " + final_straw,
+                              exception=exception)
 
         else:
             max_count = get_option("MAX_RETRY")
@@ -121,7 +121,7 @@ def run_drive_ops(diff_infos, all_data, drive):
                 print("WARNING retry count was negative but pysync gave up anyway")
 
             exit_with_message(message="A file failed after " + str(max_count) + " retries",
-                             exception=None)
+                              exception=None)
     print("All done")
 
 
@@ -191,6 +191,9 @@ class FileInfo():
 
             except Exception as e:
 
+                if max_count >= 0 and count >= max_count:
+                    return None
+
                 def retry_text(_count, _max_count):
                     if _max_count >= 0 and _count >= _max_count:
                         return ", " + f"tried {_max_count} times, giving up" + ": "
@@ -219,9 +222,6 @@ class FileInfo():
                     print("\nThis file failed with the following error" + retry_text(count, max_count) + self.path +
                           "\n" + reason)
 
-                if max_count >= 0 and count >= max_count:
-                    return None 
-
                 time.sleep(0.5)
 
         if self.action_code == "del remote" or self.action_code == "del local":
@@ -232,34 +232,6 @@ class FileInfo():
 
         self.op_completed = True
         return self.path if deletion else self
-
-    def compare_info(self):
-        raise NotImplementedError
-
-    def op_checks(self):
-        """Ran before drive_op, sets self.checked_good flag"""
-        raise NotImplementedError
-
-    def del_remote(self):
-        raise NotImplementedError
-
-    def del_local(self):
-        raise NotImplementedError
-
-    def up_new(self):
-        raise NotImplementedError
-
-    def down_new(self):
-        raise NotImplementedError
-
-    def up_diff(self):
-        raise NotImplementedError
-
-    def down_diff(self):
-        raise NotImplementedError
-
-    def calculate_md5(self):
-        raise NotImplementedError
 
     def get_action_code(self, readable):
 
@@ -298,12 +270,6 @@ class FileInfo():
         forced = "forced " if self.forced and readable else ""
         return forced + out
 
-    def has_signature(self):
-        raise NotImplementedError
-
-    def gen_localgdoc(self):
-        raise NotImplementedError
-
     def get_posix_mtime(self):
         assert self.path is not None
         return os.path.getmtime(self.path)
@@ -313,9 +279,6 @@ class FileInfo():
         mtime = self.get_posix_mtime()
         dt = datetime.fromtimestamp(mtime)
         return local_to_utc(dt).isoformat()
-
-    def write_remote_mtime(self):
-        raise NotImplementedError
 
     def find_parent(self, all_data):
 
@@ -343,6 +306,77 @@ class FileInfo():
         return hash(frozenset(out))
 
     @property
+    def isfolder(self):
+        assert self.type == "folder" or self.type == "file"
+        return self.type == "folder"
+
+    @property
+    def parent_path(self):
+        return os.path.split(self.path)[0]
+
+    @property
+    def isfile(self):
+        return not self.isfolder
+
+    @property
+    def remote_path(self):
+        """returns its path as it would appear in gdrive(without PATH in front of it)"""
+        local_path = get_option("PATH")
+        assert self.path is not None
+        assert self.path.startswith(local_path)
+        return self.path[len(local_path):]
+
+    @property
+    def action(self):
+        """just to make the variable 'action' not writable"""
+        return self._action
+
+    @property
+    def action_code(self):
+        return self.get_action_code(False)
+
+    @property
+    def action_human(self):
+        return self.get_action_code(True)
+
+    def compare_info(self):
+        raise NotImplementedError
+
+    def op_checks(self):
+        """Ran before drive_op, sets self.checked_good flag"""
+        raise NotImplementedError
+
+    def del_remote(self):
+        raise NotImplementedError
+
+    def del_local(self):
+        raise NotImplementedError
+
+    def up_new(self):
+        raise NotImplementedError
+
+    def down_new(self):
+        raise NotImplementedError
+
+    def up_diff(self):
+        raise NotImplementedError
+
+    def down_diff(self):
+        raise NotImplementedError
+
+    def calculate_md5(self):
+        raise NotImplementedError
+
+    def has_signature(self):
+        raise NotImplementedError
+
+    def gen_localgdoc(self):
+        raise NotImplementedError
+
+    def write_remote_mtime(self):
+        raise NotImplementedError
+
+    @property
     def path(self):
         raise NotImplementedError
 
@@ -353,15 +387,6 @@ class FileInfo():
     @property
     def id(self):
         raise NotImplementedError
-
-    @property
-    def isfolder(self):
-        assert self.type == "folder" or self.type == "file"
-        return self.type == "folder"
-
-    @property
-    def isfile(self):
-        return not self.isfolder
 
     @property
     def islocal(self):
@@ -376,36 +401,12 @@ class FileInfo():
         raise NotImplementedError
 
     @property
-    def parent_path(self):
-        return os.path.split(self.path)[0]
-
-    @property
     def name(self):
         raise NotImplementedError
 
     @property
     def parentID(self):
         raise NotImplementedError
-
-    @property
-    def remote_path(self):
-        """returns its path as it would appear in gdrive(without PATH in front of it)"""
-        local_path = get_option("PATH")
-        assert self.path is not None
-        assert self.path.startswith(local_path)
-        return self.path[len(local_path):]
-
-    @property
-    def action(self):
-        return self._action
-
-    @property
-    def action_code(self):
-        return self.get_action_code(False)
-
-    @property
-    def action_human(self):
-        return self.get_action_code(True)
 
     @property
     def islocalgdoc(self):

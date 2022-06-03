@@ -7,9 +7,7 @@
     "Max upload threads": 40,
     "Max compute threads": -1,
     "Max retry count": 3,
-    "Always pull": [
-        "~/gdrive/Colab Notebooks"
-    ],
+    "Always pull": [],
     "Always push": [],
     "Always ignore": [],
     "Default pull": [
