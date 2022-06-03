@@ -10,7 +10,7 @@ from pysync.OptionsParser import get_option
 
 class LocalFileInfo(FileInfo):
 
-    """Object containing the metadata of either a local or remote file"""
+    """Object containing the metadata of either a local file"""
 
     def __init__(self, **kwargs):
 

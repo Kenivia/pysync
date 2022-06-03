@@ -21,5 +21,5 @@
         "mtime_change"
     ],
     "Default ignore": [],
-    "Download files marked as abuse": false
+    "Ask for abuse acknowledgement on startup": true
 }

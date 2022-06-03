@@ -4,6 +4,29 @@ from functools import wraps
 from pysync.Functions import match_attr
 
 
+def init_main_timer():
+    stages = {"local": FuncTimer("comp", "Loading local files"),
+              "init": FuncTimer("user", "Initializing drive"),
+              "load_remote": FuncTimer("net", "Getting remote files"),
+              "comp_remote": FuncTimer("comp", "Processing remote files"),
+              "compare": FuncTimer("comp", "Comparing local and remote files"),
+              "choose": FuncTimer("user", "Choosing which types to push & pull"),
+              "apply": FuncTimer("net", "Applying changes"),
+              }
+    # * stages not neccessarily in order
+    sequence = ["init", "load_remote", "comp_remote", "compare", "choose", "apply"]
+    # * sequence is in order
+    concurrent = {"local": (0, 3)}
+    # * the key: the beginning and end indexes that it overlaps with
+    # * "key" : (A, B) means the thread started just before A and joined before B starts
+    # * when B == len(sequence), it means that it joined after the last task finished
+
+    for i in concurrent:
+        stages[i].isConcurrent = True
+
+    return Timer(stages, sequence, concurrent, decimal_points=3)
+
+
 class FuncTimer():
     def __init__(self, category, func_title):
         """Timer for one function

@@ -4,7 +4,7 @@ import subprocess as sp
 import dateutil.parser as dup
 
 from googleapiclient.errors import HttpError
-from pysync.Functions import check_acknowledgement, get_root
+from pysync.Functions import check_acknowledgement
 
 from pysync.OptionsParser import get_option
 from pysync.FileInfo import FileInfo, FileIDNotFoundError
@@ -12,7 +12,7 @@ from pysync.FileInfo import FileInfo, FileIDNotFoundError
 
 class GdriveFileInfo(FileInfo):
 
-    """Object containing the metadata of either a local or remote file"""
+    """Object containing the metadata of either a remote google drive file"""
 
     def __init__(self, **kwargs):
 

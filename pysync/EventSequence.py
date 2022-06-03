@@ -1,4 +1,4 @@
-from pysync.Timer import Timer, FuncTimer
+from pysync.Timer import init_main_timer
 from pysync.UserPrompt import apply_forced_and_default, choose_changes
 from pysync.Differ import get_diff
 from pysync.GetLocal import get_local
@@ -9,27 +9,8 @@ from pysync.FileInfo import run_drive_ops
 
 def event_sequence(path):
 
-    stages = {"local": FuncTimer("comp", "Loading local files"),
-              "init": FuncTimer("user", "Initializing drive"),
-              "load_remote": FuncTimer("net", "Getting remote files"),
-              "comp_remote": FuncTimer("comp", "Processing remote files"),
-              "compare": FuncTimer("comp", "Comparing local and remote files"),
-              "choose": FuncTimer("user", "Choosing which types to push & pull"),
-              "apply": FuncTimer("net", "Applying changes"),
-              }
-    # * stages not neccessarily in order
-    sequence = ["init", "load_remote", "comp_remote", "compare", "choose", "apply"]
-    # * sequence is in order
-    concurrent = {"local": (0, 3)}
-    # * the key: the beginning and end indexes that it overlaps with
-    # * "key" : (A, B) means the thread started just before A and joined before B starts
-    # * when B == len(sequence), it means that it joined after the last task finished
-
-    for i in concurrent:
-        stages[i].isConcurrent = True
-
-    timer = Timer(stages, sequence, concurrent, decimal_points=3)
-
+    timer = init_main_timer()
+    
     local_data = {}
     print("Started loading local files..")
     thread = get_local(path, local_data, timer=timer.time("local"))
