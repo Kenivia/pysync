@@ -24,8 +24,11 @@ def main():
         traceback.print_exc(file=sys.stdout)
         print("\nThe error above occured while parsing Options.json. Exiting")
         return
-
-    print("pysync started successfully")
+    
+    print("""pysync Copyright (C) 2022 Kenivia
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it under certain conditions. 
+For more information, see https://www.gnu.org/licenses/.\n\n""")
     try:
         timer = event_sequence(get_option("PATH"))
         on_exit(False, timer=timer)
