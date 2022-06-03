@@ -1,30 +1,42 @@
 import pathlib
 from pysync.Timer import logtime
-from pysync.Functions import SilentExit, match_attr
+from pysync.Functions import contains_parent, SilentExit, match_attr
 from pysync.OptionsParser import get_option
 from pysync.Exit import restart
 
 
-def get_forced_depth(flist, path):
-    max_depth = -1
-    for i in flist:
-        if i == path or pathlib.Path(i) in pathlib.Path(path).parents:
-            depth = len(i.split("/"))
-            if depth > max_depth:
-                max_depth = depth
+# def get_forced_depth(flist, path):
+#     max_depth = -1
+#     for i in flist:
+#         if i == path or pathlib.Path(i) in pathlib.Path(path).parents:
+#             depth = len(i.split("/"))
+#             if depth > max_depth:
+#                 max_depth = depth
 
-    return max_depth
+#     return max_depth
 
+# def get_forced(path):
+#     apull, apush, aignore = get_option("APULL", "APUSH", "AIGNORE")
+#     temp = {}
 
-def get_forced(path):
+#     temp[get_forced_depth(apush, path)] = "push"
+#     temp[get_forced_depth(apull, path)] = "pull"
+#     temp[get_forced_depth(aignore, path)] = "ignore"
+#     # * in a tie, ignore perfered over pull over push
+#     return False if max(temp) < 0 else temp[max(temp)]
+
+def get_forced(info):
+    # ! This currently doesn't work correctly when a forced path is contained within another forced path
+    
     apull, apush, aignore = get_option("APULL", "APUSH", "AIGNORE")
-    temp = {}
-
-    temp[get_forced_depth(apush, path)] = "push"
-    temp[get_forced_depth(apull, path)] = "pull"
-    temp[get_forced_depth(aignore, path)] = "ignore"
-    # * in a tie, ignore perfered over pull over push
-    return False if max(temp) < 0 else temp[max(temp)]
+    if contains_parent(apull, info):
+        return "pull"
+    elif contains_parent(apush, info):
+        return "push"
+    elif contains_parent(aignore, info):
+        return "ignore"
+    else:
+        return False
 
 
 def get_default_action(change_type):

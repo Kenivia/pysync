@@ -60,7 +60,7 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
 
 - `xdg-open`(used for opening gdoc files by double clicking)
 
-- Either `gnome-terminal` or `xfce4-terminal` for a quick restart of the syncing process. Other than this, any terminal will do
+- Either `gnome-terminal` or `xfce4-terminal` for a quick restart of the syncing process. Other than this function, any terminal will do
 
 
 ## Usage
@@ -71,7 +71,7 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
 
 You will be prompted by a google page asking for permission to your google files. Then, follow the instructions
 
-Options can be overriden using ./pysync-master/data/Option.json
+Options can be specified using ./pysync-master/data/Option.json
 
 ## Current features
 
@@ -84,7 +84,6 @@ Options can be overriden using ./pysync-master/data/Option.json
 
 ## Known issues/plans
 
-- Files marked with "abuse" by google(executable files mostly) will run into errors
 - Forced paths(specified in Options.json) don't behave correctly when a forced path contains another forced path
 -  Google Docs files are currently download and delete only
   - moving the text file locally won't move the remote copy
