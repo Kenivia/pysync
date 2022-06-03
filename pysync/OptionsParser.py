@@ -3,6 +3,8 @@ import multiprocessing
 import os
 import json
 import platform
+import sys
+import traceback
 
 from functools import lru_cache
 
@@ -63,30 +65,18 @@ def cache_options():
     get_option(*all_available_code)  # * to load all the cache
 
 
-def override_default():
-    options_path = get_root() + OPTIONS_NAME
-    default_options_path = get_root() + DEFAULT_NAME
-
-    if not os.path.exists(options_path):
-        assert os.path.exists(default_options_path)
-        djson = json.load(open(default_options_path, "r"))
-        return djson
-    
-    try:
-        djson = json.load(open(default_options_path, "r"))
-    except Exception:
-        # * won't have to have the default file if the override file is found
-        # * just in case ojson is a perfectly fine option file on its own and djson is deleted
-        djson = {}
-
-    ojson = json.load(open(options_path, "r"))
-
-    for i in ojson:
-        djson[i] = ojson[i]
-    return djson
-
-
 def check_options():
+    try:
+        _check_options()
+    except Exception:
+        print("\n")
+        traceback.print_exc(file=sys.stdout)
+        print("\nThe error above occured while parsing Options.json.\n\
+A copy of default options can be found at " + get_root() + DEFAULT_NAME)
+        sys.exit()
+
+
+def _check_options():
 
     assert platform.system() == "Linux"
 
@@ -110,7 +100,8 @@ def check_options():
         "Default ignore": list,
     }
 
-    raw_options = override_default()
+    options_path = get_root() + OPTIONS_NAME
+    raw_options = json.load(open(options_path, "r"))
     seen_keys = []
 
     for raw_key in raw_options:
@@ -135,8 +126,8 @@ def check_options():
     options["PATH"] = remove_slash(abs_path(options["PATH"]))
     options["APULL"] = [remove_slash(abs_path(i)) for i in options["APULL"]]
     options["APUSH"] = [remove_slash(abs_path(i)) for i in options["APUSH"]]
-    options["AIGNORE"] =[remove_slash(abs_path(i)) for i in options["AIGNORE"]]
-    
+    options["AIGNORE"] = [remove_slash(abs_path(i)) for i in options["AIGNORE"]]
+
     assert os.path.isdir(options["PATH"])
     assert_list_start(options["PATH"], options["APULL"])
     assert_list_start(options["PATH"], options["APUSH"])
@@ -172,7 +163,8 @@ def get_option(*keys):
         return tuple([get_option(i) for i in keys])
     else:
 
-        raw_options = override_default()
+        options_path = get_root() + OPTIONS_NAME
+        raw_options = json.load(open(options_path, "r"))
 
         options = alias_to_code(raw_options)
         key = keys[0]
