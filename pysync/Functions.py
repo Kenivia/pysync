@@ -16,6 +16,8 @@ This file defines miscellaneous functions that:
 
 """
 
+def check_acknowledgement():
+    return os.path.isfile(get_root()+"/data/Internal/abuse_acknowledged")
 
 def pdump(obj, path):
     pkl.dump(obj, open(path, "wb"))

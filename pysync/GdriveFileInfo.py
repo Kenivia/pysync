@@ -3,6 +3,9 @@ import os
 import subprocess as sp
 import dateutil.parser as dup
 
+from googleapiclient.errors import HttpError
+from pysync.Functions import check_acknowledgement, get_root
+
 from pysync.OptionsParser import get_option
 from pysync.FileInfo import FileInfo, FileIDNotFoundError
 
@@ -106,11 +109,20 @@ class GdriveFileInfo(FileInfo):
         else:
             if not self.isremotegdoc:
                 # TODO abuse? but otherwise works
-                response = drive.get_media(fileId=self.id,  # acknowledgeAbuse=True
-                                           ).execute()
-                with open(self.path, "wb") as f:
-                    f.write(response)
-                self.write_remote_mtime(drive)
+                try:
+                    response = drive.get_media(fileId=self.id).execute()
+                except HttpError as e:
+                    if not "cannotDownloadAbusiveFile" in repr(e):
+                        raise e
+                    if check_acknowledgement():
+                        response = drive.get_media(fileId=self.id, acknowledgeAbuse=True).execute()
+                        with open(self.path, "wb") as f:
+                            f.write(response)
+                        self.write_remote_mtime(drive)
+                    else:
+                        print("This file was not downloaded because it was marked as 'abuse':")
+                        print(self.path)
+
             else:
                 with open(self.path, "w") as exe_file:
                     exe_file.write(self.gen_localgdoc())

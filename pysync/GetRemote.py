@@ -4,7 +4,7 @@ from socket import timeout
 from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
 from pysync.GdriveFileInfo import GdriveFileInfo
-from pysync.Exit import exc_with_message
+from pysync.Exit import exit_with_message
 
 
 def kws_to_query(kws_list, equals, operator, exclude_list=[]):
@@ -97,10 +97,10 @@ def get_remote_thread(args):
                 fields=f"nextPageToken, files({','.join(fields)})",
                 pageToken=page_token,
             ).execute()
-        except timeout:
+        except timeout as e:
             # ? i can probably make it so that you resume the listing after internet is back? thats kinda confusing tho
-            exc_with_message(
-                "Timed out while listing remote files, please check your internet connection")
+            exit_with_message(message="Timed out while listing remote files, please check your internet connection",
+                             exception=e)
 
         page_token = response.get('nextPageToken', None)
         out.extend(response.get("files", []))

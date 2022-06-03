@@ -8,10 +8,8 @@ from pysync.OptionsParser import get_option
 from pysync.Functions import SilentExit, get_root
 
 
-def exc_with_message(message=None, exception=None, raise_silent=True):
-    if exception is None:
-        traceback.print_exc(file=sys.stdout)
-    else:
+def exit_with_message(message=None, exception=None, raise_silent=True):
+    if exception is not None:
         traceback.print_exception(exception, None, None)
 
     if message is not None:

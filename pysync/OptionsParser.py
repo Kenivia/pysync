@@ -18,6 +18,50 @@ from pysync.Functions import (
 OPTIONS_NAME = "/data/Options.json"
 DEFAULT_NAME = "/data/Internal/Default Options.json"
 
+alias = {
+    "Local path": "PATH",
+    "Ask before exit": "ASK_AT_EXIT",
+    "Hide forced ignore": "HIDE_FIGNORE",
+    "Print upload progress": "PRINT_UPLOAD",
+    "Compare md5sum": "CHECK_MD5",
+
+    "Max upload threads": "MAX_UPLOAD",
+    "Max compute threads": "MAX_COMPUTE",
+
+    "Max retry count": "MAX_RETRY",
+
+    "Always pull": "APULL",
+    "Always push": "APUSH",
+    "Always ignore": "AIGNORE",
+
+    "Default pull": "DPULL",
+    "Default push": "DPUSH",
+    "Default ignore": "DIGNORE",
+    "Ask for abuse acknowledgement on startup": "ASK_ABUSE",
+
+}
+expected_types = {
+    "Local path": str,
+    "Ask before exit": bool,
+    "Hide forced ignore": bool,
+    "Print upload progress": bool,
+    "Compare md5sum": bool,
+
+    "Max upload threads": int,
+    "Max compute threads": int,
+    "Max retry count": int,
+
+    "Always pull": list,
+    "Always push": list,
+    "Always ignore": list,
+
+    "Default pull": list,
+    "Default push": list,
+    "Default ignore": list,
+
+    "Ask for abuse acknowledgement on startup": bool,
+}
+
 
 def code_to_alias(alias, inp):
     for i in alias:
@@ -27,27 +71,7 @@ def code_to_alias(alias, inp):
 
 
 def alias_to_code(raw_options):
-    alias = {
-        "Local path": "PATH",
-        "Ask before exit": "ASK_AT_EXIT",
-        "Hide forced ignore": "HIDE_FIGNORE",
-        "Print upload progress": "PRINT_UPLOAD",
-        "Compare md5sum": "CHECK_MD5",
 
-        "Max upload threads": "MAX_UPLOAD",
-        "Max compute threads": "MAX_COMPUTE",
-
-        "Max retry count": "MAX_RETRY",
-
-        "Always pull": "APULL",
-        "Always push": "APUSH",
-        "Always ignore": "AIGNORE",
-
-        "Default pull": "DPULL",
-        "Default push": "DPUSH",
-        "Default ignore": "DIGNORE",
-
-    }
     options = {}
     for raw_key in raw_options:
         options[alias[raw_key]] = raw_options[raw_key]
@@ -55,13 +79,7 @@ def alias_to_code(raw_options):
 
 
 def cache_options():
-    all_available_code = [
-        "PATH", "ASK_AT_EXIT", "HIDE_FIGNORE", "PRINT_UPLOAD", "CHECK_MD5",
-        "MAX_UPLOAD", "MAX_COMPUTE",
-        "APULL", "APUSH", "AIGNORE",
-        "DPULL", "DPUSH", "DIGNORE",
-        "RECHECK_TIME", "SIGNATURE", "MAX_RETRY"
-    ]
+    all_available_code = [alias[i] for i in alias]
     get_option(*all_available_code)  # * to load all the cache
 
 
@@ -79,26 +97,6 @@ A copy of default options can be found at " + get_root() + DEFAULT_NAME)
 def _check_options():
 
     assert platform.system() == "Linux"
-
-    expected_types = {
-        "Local path": str,
-        "Ask before exit": bool,
-        "Hide forced ignore": bool,
-        "Print upload progress": bool,
-        "Compare md5sum": bool,
-
-        "Max upload threads": int,
-        "Max compute threads": int,
-        "Max retry count": int,
-
-        "Always pull": list,
-        "Always push": list,
-        "Always ignore": list,
-
-        "Default pull": list,
-        "Default push": list,
-        "Default ignore": list,
-    }
 
     options_path = get_root() + OPTIONS_NAME
     raw_options = json.load(open(options_path, "r"))

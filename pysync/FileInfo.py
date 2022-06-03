@@ -12,7 +12,7 @@ from httplib2 import ServerNotFoundError
 
 from pysync.Functions import local_to_utc, match_attr
 from pysync.OptionsParser import get_option
-from pysync.Exit import exc_with_message
+from pysync.Exit import exit_with_message
 from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
 
@@ -107,7 +107,7 @@ def run_drive_ops(diff_infos, all_data, drive):
             done_paths = [i for i in before_paths
                           if i not in after_paths and i != final_straw]
             done_text = "\n".join(sorted(done_paths, key=lambda x: (len(x.split("/")), x)))
-            exc_with_message("The following files were done before running out of space on Google drive:\n" +
+            exit_with_message("The following files were done before running out of space on Google drive:\n" +
                              done_text + "\n\n" +
                              f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space" +
                              "\nYour drive ran out of space while trying to upload this file: " + final_straw,
@@ -117,8 +117,9 @@ def run_drive_ops(diff_infos, all_data, drive):
             max_count = get_option("MAX_RETRY")
             if max_count < 0:
                 print("WARNING retry count was negative but pysync gave up anyway")
-            exc_with_message("A file failed after " + str(max_count) + " retries:\n",
-                             exception=exception)
+
+            exit_with_message(message="A file failed after " + str(max_count) + " retries",
+                             exception=None)
     print("All done")
 
 
@@ -184,10 +185,9 @@ class FileInfo():
                          "down diff": self.down_diff,
                          }
                 funcs[self.action_code](drive)
+                break
 
             except Exception as e:
-                if max_count >= 0 and count >= max_count:
-                    raise e
 
                 def retry_text(_count, _max_count):
                     if _max_count >= 0 and _count >= _max_count:
@@ -215,17 +215,21 @@ class FileInfo():
 
                 else:
                     print("\nThis file failed with the following error" + retry_text(count, max_count) + self.path +
-                          "\n" + reason + "\n")
+                          "\n" + reason)
+
+                if max_count >= 0 and count >= max_count:
+                    raise e
+
                 time.sleep(0.5)
 
-            if self.action_code == "del remote" or self.action_code == "del local":
-                deletion = True
+        if self.action_code == "del remote" or self.action_code == "del local":
+            deletion = True
 
-            if count > 0:
-                print(f"Retry #" + str(count) + " was successful: " + self.path)
+        if count > 0:
+            print(f"Retry #" + str(count) + " was successful: " + self.path)
 
-            self.op_completed = True
-            return self.path if deletion else self
+        self.op_completed = True
+        return self.path if deletion else self
 
     def compare_info(self):
         raise NotImplementedError

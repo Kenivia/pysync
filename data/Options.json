@@ -20,5 +20,6 @@
         "content_change",
         "mtime_change"
     ],
-    "Default ignore": []
+    "Default ignore": [],
+    "Ask for abuse acknowledgement on startup": true
 }

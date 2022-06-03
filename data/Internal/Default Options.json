@@ -20,5 +20,6 @@
         "content_change",
         "mtime_change"
     ],
-    "Default ignore": []
+    "Default ignore": [],
+    "Download files marked as abuse": false
 }
