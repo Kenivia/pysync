@@ -8,6 +8,9 @@ from pysync.Functions import hex_md5_file, local_to_utc
 from pysync.OptionsParser import get_option
 
 
+UP_CHUNK_SIZE = 1024 ^ 2  # * -1 for uploading in one go
+
+
 class LocalFileInfo(FileInfo):
 
     """Object containing the metadata of either a local file"""
@@ -120,7 +123,7 @@ class LocalFileInfo(FileInfo):
             body = {"parents": [self.parentID],
                     "name": self.name,
                     "modifiedTime": self.get_iso_mtime(), }
-            media = MediaFileUpload(self.path, chunksize=-1, resumable=True)
+            media = MediaFileUpload(self.path, chunksize=UP_CHUNK_SIZE, resumable=True)
             drive.create(body=body,
                          media_body=media).execute()
 
@@ -129,7 +132,7 @@ class LocalFileInfo(FileInfo):
         # * uploadType is automatically media/multipart, no need for resumable
 
         body = {"modifiedTime": self.get_iso_mtime()}
-        media = MediaFileUpload(self.path, chunksize=1024*1024, resumable=True)
+        media = MediaFileUpload(self.path, chunksize=UP_CHUNK_SIZE, resumable=True)
         drive.update(fileId=self.id,
                      body=body,
                      media_body=media).execute()
