@@ -85,6 +85,7 @@ Options can be specified using ./pysync-master/data/Option.json
 ## Known issues/plans
 
 - Forced paths(specified in Options.json) don't behave correctly when a forced path contains another forced path
+- When a folder fails to upload after retrying, its children files won't give up and will hang indefinitely
 -  Google Docs files are currently download and delete only
   - moving the text file locally won't move the remote copy
 - Implementation of background syncing and maybe a GUI, similar to [Google's Windows/macOs app](https://www.google.com/drive/download/), is the long term goal

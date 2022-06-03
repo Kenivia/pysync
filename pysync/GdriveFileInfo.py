@@ -167,9 +167,7 @@ class GdriveFileInfo(FileInfo):
 
     @property
     def id(self):
-        if self._id is not None:
-            return self._id
-        return None
+        return self._id
 
     @property
     def islocal(self):

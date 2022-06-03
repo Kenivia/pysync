@@ -91,6 +91,8 @@ def run_drive_ops(diff_infos, all_data, drive):
                     else:
                         result = fut.result()
                         if result is None:
+                            # * gave up
+                            # TODO need to handle its children
                             pass
                         elif isinstance(result, str):
                             del all_data[result]
@@ -167,7 +169,6 @@ class FileInfo():
 
         Raises:
             GDriveQuotaExceeded: Google drive is full, this exception will contain self.path
-            Exception: Any exception encountered after exceeding max retries
 
         """
         count = 0

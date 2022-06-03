@@ -65,7 +65,7 @@ def init_drive():
         f.write(creds.to_json())
 
     service = build('drive', 'v3', credentials=creds)
-    print("Token initiated successfully")
+    print("Token produced successfully")
     
     if get_option("ASK_ABUSE") and not check_acknowledgement():
         ask_abuse_acknowledge()

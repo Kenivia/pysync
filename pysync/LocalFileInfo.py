@@ -129,7 +129,7 @@ class LocalFileInfo(FileInfo):
         # * uploadType is automatically media/multipart, no need for resumable
 
         body = {"modifiedTime": self.get_iso_mtime()}
-        media = MediaFileUpload(self.path, chunksize=-1, resumable=True)
+        media = MediaFileUpload(self.path, chunksize=1024*1024, resumable=True)
         drive.update(fileId=self.id,
                      body=body,
                      media_body=media).execute()
@@ -180,8 +180,8 @@ class LocalFileInfo(FileInfo):
     @property
     def id(self):
         if self.partner is not None:
-            return self.partner.id
-        return None
+            assert self._id == self.partner.id
+        return self._id
 
     @property
     def isfile(self):
@@ -214,4 +214,5 @@ class LocalFileInfo(FileInfo):
             return self._parentID
         if self.partner is None:
             return None
+        self._parentID = self.partner.parentID
         return self.partner.parentID
