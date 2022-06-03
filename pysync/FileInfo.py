@@ -90,7 +90,9 @@ def run_drive_ops(diff_infos, all_data, drive):
                                 all_data[interrupt_key] = exception
                     else:
                         result = fut.result()
-                        if isinstance(result, str):
+                        if result is None:
+                            pass
+                        elif isinstance(result, str):
                             del all_data[result]
                         else:
                             all_data[result.path] = result
@@ -218,7 +220,7 @@ class FileInfo():
                           "\n" + reason)
 
                 if max_count >= 0 and count >= max_count:
-                    raise e
+                    return None 
 
                 time.sleep(0.5)
 

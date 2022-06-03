@@ -46,3 +46,4 @@ def real_get_local(path, out_dict):
                                  LocalFileInfo(type=inp[1], path=inp[0], md5_now=True),
                                  file_paths + folder_paths):
             out_dict[info.path] = info
+    print("Finished loading local files")
