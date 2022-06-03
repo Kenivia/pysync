@@ -91,12 +91,13 @@ def run_drive_ops(diff_infos, all_data, drive):
                     else:
                         result = fut.result()
                         if result is None:
-                            # * gave up
+                            # * the info gave up after retries
                             # TODO need to handle its children
                             pass
                         elif isinstance(result, str):
                             del all_data[result]
                         else:
+                            # * this needs no lock because 2 infos won't try to write to the same path
                             all_data[result.path] = result
 
                 future.add_done_callback(add_all_data)
