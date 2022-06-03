@@ -28,7 +28,7 @@ if missing:
         print("pysync will now try to install the missing packages using the following command:")
         print(" ".join(command_list) + "\n")
         inp = input("Proceed (y/N)? ")
-        if inp.lower() == "y":
+        if inp.lower().strip() == "y":
             print("")
             completed = sp.run(command_list)
             if completed.returncode != 0:

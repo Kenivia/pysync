@@ -10,7 +10,7 @@ from pysync.Functions import SilentExit, get_root
 
 def exit_with_message(message=None, exception=None, raise_silent=True):
     if exception is not None:
-        traceback.print_exception(exception, None, None)
+        traceback.print_exception(exception, exception, exception.__traceback__, file=sys.stdout)
 
     if message is not None:
         print("\n" + message)
@@ -94,7 +94,7 @@ def restart():
                 "Neither gnome-puterminal nor xfce4-terminal is available, unable to restart")
             input("Press enter to exit")
             return
-    
+
     print("A new instance of pysync has been started using the following command:" +
           "\n\t" + command_used +
           "\nthis process should end immediately")
