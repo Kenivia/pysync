@@ -182,8 +182,11 @@ class LocalFileInfo(FileInfo):
 
     @property
     def id(self):
-        if self.partner is not None and self._id is not None:
-            assert self._id == self.partner.id
+        if self.partner is not None:
+            if self._id is not None:
+                assert self._id == self.partner.id
+            else:
+                self._id = self.partner.id
         return self._id
 
     @property
