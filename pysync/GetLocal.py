@@ -2,7 +2,7 @@ import os
 from threading import Thread
 import concurrent.futures as cf
 
-from pysync.FileInfo import FileInfo
+from pysync.LocalFileInfo import LocalFileInfo
 from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
 
@@ -43,6 +43,6 @@ def real_get_local(path, out_dict):
     max_threads = get_option("MAX_COMPUTE")
     with cf.ThreadPoolExecutor(max_workers=max_threads) as executor:
         for info in executor.map(lambda inp:
-                                 FileInfo("local", type=inp[1], path=inp[0], md5_now=True),
+                                 LocalFileInfo(type=inp[1], path=inp[0], md5_now=True),
                                  file_paths + folder_paths):
             out_dict[info.path] = info

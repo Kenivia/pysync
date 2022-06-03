@@ -33,7 +33,7 @@ def on_exit(failure, timer=None):
         timer (pysync.TimeLogger, optional): TimeLogger object from event_sequence
     """
     if not get_option("ASK_AT_EXIT"):
-        print("pysync will now exit")
+        print("Exiting")
         return
 
     t = Thread(target=on_exit_thread, args=(timer, failure,), daemon=False)

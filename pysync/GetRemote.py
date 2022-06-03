@@ -3,7 +3,7 @@ from socket import timeout
 
 from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
-from pysync.FileInfo import FileInfo
+from pysync.GdriveFileInfo import GdriveFileInfo
 from pysync.Exit import exc_with_message
 
 
@@ -110,14 +110,14 @@ def get_remote_thread(args):
 
 
 def init_one_fileinfo(args):
-    return FileInfo("remote", **args)
+    return GdriveFileInfo(**args)
 
 
 @logtime
 def process_remote(raw_files, root):
-    """Converts google drive responses into FileInfo objects
+    """Converts google drive responses into GdriveFileInfo objects
 
-    Returns a dictionary containings FileInfo with their paths as keys
+    Returns a dictionary containings GdriveFileInfo with their paths as keys
     """
 
     folder_list = []
