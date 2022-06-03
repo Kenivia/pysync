@@ -71,7 +71,7 @@ def run_drive_ops(diff_infos, all_data, drive):
                 info = pending[index]
                 info.find_parent(all_data)
 
-                if not info.parent_ready:
+                if not info.check_parent():
                     continue
 
                 future = executor.submit(info.drive_op, drive, countdown=len(pending))
@@ -116,7 +116,7 @@ def run_drive_ops(diff_infos, all_data, drive):
         else:
             max_count = get_option("MAX_RETRY")
             if max_count < 0:
-                print("WARNING retry count was negative but pysync gave up incorrectly")
+                print("WARNING retry count was negative but pysync gave up anyway")
             exc_with_message("A file failed after " + str(max_count) + " retries:\n",
                              exception=exception)
     print("All done")
@@ -167,22 +167,22 @@ class FileInfo():
             Exception: Any exception encountered after exceeding max retries
 
         """
-        self.op_checks()
-        if get_option("PRINT_UPLOAD") and countdown is not None:
-            print(" ".join((str(countdown), self.action_human, self.path)))
-
-        deletion = False
         count = 0
         max_count = get_option("MAX_RETRY")
-        funcs = {"del remote": self.del_remote,
-                 "del local": self.del_local,
-                 "up new": self.up_new,
-                 "down new": self.down_new,
-                 "up diff": self.up_diff,
-                 "down diff": self.down_diff,
-                 }
+        deletion = False
+        if get_option("PRINT_UPLOAD") and countdown is not None:
+            print(" ".join((str(countdown), self.action_human, self.path)))
         while True:
             try:
+                self.op_checks()
+
+                funcs = {"del remote": self.del_remote,
+                         "del local": self.del_local,
+                         "up new": self.up_new,
+                         "down new": self.down_new,
+                         "up diff": self.up_diff,
+                         "down diff": self.down_diff,
+                         }
                 funcs[self.action_code](drive)
 
             except Exception as e:
@@ -211,10 +211,10 @@ class FileInfo():
                         raise GDriveQuotaExceeded(self.path)
 
                 if message is not None:
-                    print("\t" + message + retry_text(count, max_count) + self.path + "\n")
+                    print("\n" + message + retry_text(count, max_count) + self.path + "\n")
 
                 else:
-                    print("\tThis file failed with the following error" + retry_text(count, max_count) + self.path +
+                    print("\nThis file failed with the following error" + retry_text(count, max_count) + self.path +
                           "\n" + reason + "\n")
                 time.sleep(0.5)
 
@@ -379,7 +379,7 @@ class FileInfo():
 
     @property
     def parentID(self):
-        return self._parentID
+        raise NotImplementedError
 
     @property
     def remote_path(self):
@@ -403,4 +403,11 @@ class FileInfo():
 
     @property
     def islocalgdoc(self):
+        raise NotImplementedError
+
+    def check_parent(self):
+        return NotImplementedError
+
+    @property
+    def parentID(self):
         raise NotImplementedError

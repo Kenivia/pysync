@@ -37,7 +37,7 @@ if missing:
             print("\nInstallation completed successfully")
 
         else:
-            print("Installation was cancelled by the user")
+            print("Installation was cancelled")
             sys.exit()
     else:
         print("pysync couldn't initialize because the following packages are missing:" + ", ".join(missing))

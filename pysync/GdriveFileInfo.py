@@ -4,7 +4,7 @@ import subprocess as sp
 import dateutil.parser as dup
 
 from pysync.OptionsParser import get_option
-from pysync.FileInfo import FileInfo
+from pysync.FileInfo import FileInfo, FileIDNotFoundError
 
 
 class GdriveFileInfo(FileInfo):
@@ -175,5 +175,9 @@ class GdriveFileInfo(FileInfo):
     def name(self):
         return self._name
 
-    def parent_ready(self):
-        return self.parentID is not None
+    def check_parent(self):
+        return os.path.isdir(self.parent_path)
+
+    @property
+    def parentID(self):
+        return self._parentID

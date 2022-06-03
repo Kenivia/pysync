@@ -1,9 +1,6 @@
 import pathlib
 from pysync.Timer import logtime
-from pysync.Functions import (
-    SilentExit,
-    match_attr,
-)
+from pysync.Functions import SilentExit, match_attr
 from pysync.OptionsParser import get_option
 from pysync.Exit import restart
 
@@ -273,6 +270,9 @@ Press Enter or use `apply` to apply the following changes:"""
         arguments, message = replace_hyphen(arguments, len(diff_infos))
         changed = []
         all_index = {}
+        for i in diff_infos:
+            if i.index is not None:
+                all_index[str(i.index)] = i
         for inp in arguments:
             if inp == "all":
                 for i in match_attr(diff_infos, forced=False):
@@ -283,12 +283,8 @@ Press Enter or use `apply` to apply the following changes:"""
             elif inp.isnumeric():
                 # * shouldn't need to check for forced here since forced don't get an index
                 if inp not in all_index:
-                    for i in diff_infos:
-                        if i.index is not None:
-                            all_index[str(i.index)] = i
-                    else:
-                        message += inp + " is invalid, ignored\n"
-                        continue
+                    message += inp + " is invalid, ignored\n"
+                    continue
                 info = all_index[inp]
                 info._action = command
                 changed.append(str(info.index))

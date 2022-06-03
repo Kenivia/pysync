@@ -106,7 +106,6 @@ def _check_options():
 
     for raw_key in raw_options:
         if raw_key not in expected_types:
-
             print(f"Unknown key: \"{raw_key}\" in {OPTIONS_NAME}, ignored")
 
         assert isinstance(raw_options[raw_key], expected_types[raw_key])
@@ -183,7 +182,6 @@ def get_option(*keys):
             return 0.01
 
         elif key == "SIGNATURE":
-            # todo take care of cases where the signature is changed?
             return "#da84f858e8104ca0534138cfa2ea" + "pysync" + "2ccf69e6a9d2b7481882ff1a651ad177a108"
 
         else:

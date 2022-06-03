@@ -48,7 +48,7 @@ def on_exit_thread(timer=None, failure=False):
     line_restart = "\nType \"restart\" to sync again"
     line_time = "\nType \"time\" to see how long each stage took"
 
-    cancel_text = "\nThe syncing process was cancelled by the user" + \
+    cancel_text = "\nThe syncing process was cancelled" + \
         line_exit + line_restart + line_input
 
     complete_text = "\nThe syncing process has completed successfully" + \

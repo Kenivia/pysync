@@ -1,5 +1,5 @@
 import os
-from datetime import datetime 
+from datetime import datetime
 from send2trash import send2trash
 from googleapiclient.http import MediaFileUpload
 from pysync.FileInfo import FileInfo
@@ -205,5 +205,13 @@ class LocalFileInfo(FileInfo):
             self._islocalgdoc = self.has_signature()
         return self._islocalgdoc
 
-    def parent_ready(self):
-        return os.path.isdir(self.parent_path)
+    def check_parent(self):
+        return self.parentID is not None
+
+    @property
+    def parentID(self):
+        if self._parentID is not None:
+            return self._parentID
+        if self.partner is None:
+            return None
+        return self.partner.parentID

@@ -46,4 +46,5 @@ def get_diff(local_data, remote_data):
             diff_infos.append(f)
         all_data[path] = f
 
+    
     return diff_infos, all_data

@@ -45,6 +45,7 @@ def event_sequence(path):
 
     print("Comparing..")
     diff_infos, all_data = get_diff(local_data, remote_data, timer=timer.time("compare"))
+    all_data[path] = root
     apply_forced_and_default(diff_infos, timer=timer.time("compare"))
 
     choose_changes(diff_infos, timer=timer.time("choose"))
