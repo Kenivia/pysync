@@ -177,6 +177,9 @@ class FileInfo():
         deletion = False
         if get_option("PRINT_UPLOAD") and countdown is not None:
             print(" ".join((str(countdown), self.action_human, self.path)))
+            if countdown == 1:
+                print("Waiting for threads to finish..")
+
         while True:
             try:
                 self.op_checks()

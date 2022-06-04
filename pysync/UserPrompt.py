@@ -27,7 +27,7 @@ from pysync.Exit import restart
 
 def get_forced(info):
     # ! This currently doesn't work correctly when a forced path is contained within another forced path
-    
+
     apull, apush, aignore = get_option("APULL", "APUSH", "AIGNORE")
     if contains_parent(apull, info):
         return "pull"

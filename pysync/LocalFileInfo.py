@@ -8,8 +8,7 @@ from pysync.Functions import hex_md5_file, local_to_utc
 from pysync.OptionsParser import get_option
 
 
-UP_CHUNK_SIZE = -1 # * -1 for uploading in one go, specifying a chunksized doesn't seem to work
-
+UP_CHUNK_SIZE = -1  # * -1 for uploading in one go, specifying a chunksized doesn't seem to work
 
 
 class LocalFileInfo(FileInfo):
@@ -146,7 +145,8 @@ class LocalFileInfo(FileInfo):
         self.write_remote_mtime(drive)
 
     def has_signature(self):
-        if self.islocal and self.isfile and os.path.getsize(self.path) < 300: #* these files made by pysync are around 260 bytes
+        if self.islocal and self.isfile and os.path.getsize(
+                self.path) < 300:  # * these files made by pysync are around 260 bytes
             try:
                 with open(self.path, "r") as _file:
                     if get_option("SIGNATURE") in _file.read():

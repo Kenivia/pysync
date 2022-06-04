@@ -100,7 +100,7 @@ def get_remote_thread(args):
         except timeout as e:
             # ? i can probably make it so that you resume the listing after internet is back? thats kinda confusing tho
             exit_with_message(message="Timed out while listing remote files, please check your internet connection",
-                             exception=e)
+                              exception=e)
 
         page_token = response.get('nextPageToken', None)
         out.extend(response.get("files", []))

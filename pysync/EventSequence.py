@@ -10,7 +10,7 @@ from pysync.FileInfo import run_drive_ops
 def event_sequence(path):
 
     timer = init_main_timer()
-    
+
     local_data = {}
     print("Started loading local files..")
     thread = get_local(path, local_data, timer=timer.time("local"))

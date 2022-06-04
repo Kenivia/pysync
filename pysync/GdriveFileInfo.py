@@ -111,7 +111,7 @@ class GdriveFileInfo(FileInfo):
                 # TODO abuse? but otherwise works
                 try:
                     response = drive.get_media(fileId=self.id).execute()
-                    
+
                 except HttpError as e:
                     if not "cannotDownloadAbusiveFile" in repr(e):
                         raise e
@@ -121,9 +121,9 @@ class GdriveFileInfo(FileInfo):
                         print("This file was not downloaded because it was marked as 'abuse':")
                         print(self.path)
                         return
-                    
+
                 with open(self.path, "wb") as f:
-                        f.write(response)
+                    f.write(response)
                 self.write_remote_mtime(drive)
 
             else:
