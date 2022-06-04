@@ -72,8 +72,14 @@ def init_drive():
     service = build('drive', 'v3', credentials=creds)
     print("Token produced successfully")
     
-    if get_option("ASK_ABUSE") and not check_acknowledgement():
-        ask_abuse_acknowledge()
+    
+    if check_acknowledgement():
+        print("pysync will download files marked as 'abuse'")
+    else:
+        if get_option("ASK_ABUSE"):
+            ask_abuse_acknowledge()
+        else:
+            print("pysync will not download files marked as 'abuse'")
         
     return service.files()
 
@@ -89,7 +95,7 @@ Would you like to download files marked as abuse in the future?")
             f.write("This file indicates that the user has agreed to downloading files marked as 'abuse' from Google drive.\
 \nTo disallow this, simply delete this file.")
         print("pysync will download files marked as 'abuse' in the future.\
-\nTo undo this, delete the file "+get_root()+"/data/Internal/abuse_acknowledged")
+\nTo undo this, delete the file " + get_root() + "/data/Internal/abuse_acknowledged")
     else:
         print("pysync will not download files marked as 'abuse'.\
 \npysync will continue to list these files but won't actually download them\
