@@ -29,7 +29,7 @@ def pload(path):
     return pkl.load(open(path, "rb"))
 
 
-def AddZero(inp):
+def add_zero(inp):
     assert isinstance(inp, str)
     assert len(inp) == 1 or len(inp) == 2
     if len(inp) == 1:
@@ -39,12 +39,12 @@ def AddZero(inp):
 
 def get_today_name():
     _date = ti.localtime()
-    day = AddZero(str(_date.tm_mday))
-    mon = AddZero(str(_date.tm_mon))
+    day = add_zero(str(_date.tm_mday))
+    mon = add_zero(str(_date.tm_mon))
     year = str(_date.tm_year)
-    hour = AddZero(str(_date.tm_hour))
-    minu = AddZero(str(_date.tm_min))
-    sec = AddZero(str(_date.tm_sec))
+    hour = add_zero(str(_date.tm_hour))
+    minu = add_zero(str(_date.tm_min))
+    sec = add_zero(str(_date.tm_sec))
 
     date = year + "." + mon + "." + day
     time = hour + "." + minu + "." + sec

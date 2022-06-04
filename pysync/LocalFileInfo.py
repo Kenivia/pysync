@@ -56,14 +56,10 @@ class LocalFileInfo(FileInfo):
         return False
 
     def op_checks(self):
-        """performs various checks before applying
-
-        Args:
-            all_data (dict): FileInfo objects from get_diff
+        """performs various checks before applying changes
 
         Raises:
             AssertionError: something went wrong
-
         """
 
         assert self.action is not None
@@ -129,8 +125,6 @@ class LocalFileInfo(FileInfo):
 
     def up_diff(self, drive):
         # * can't be folder
-        # * uploadType is automatically media/multipart, no need for resumable
-
         body = {"modifiedTime": self.get_iso_mtime()}
         media = MediaFileUpload(self.path, chunksize=UP_CHUNK_SIZE, resumable=True)
         drive.update(fileId=self.id,
@@ -213,7 +207,9 @@ class LocalFileInfo(FileInfo):
         return self._islocalgdoc
 
     def check_parent(self):
-        return self.parentID is not None
+        if self.action_code == "up new":
+            return self.parentID is not None
+        return True
 
     @property
     def parentID(self):

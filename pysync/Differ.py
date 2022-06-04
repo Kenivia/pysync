@@ -6,8 +6,8 @@ def get_diff(local_data, remote_data):
     """Determines the difference between the two
 
     Args:
-        local_data (dict): dict of local FileInfo objects from get_local_files
-        remote_data (dict): dict of remote FileInfo objects from process_remote
+        local_data (dict): dict of LocalFileInfo objects from get_local_files
+        remote_data (dict): dict of GdriveFileInfo objects from process_remote
 
     Returns:
         list: list of FileInfo objects that require change

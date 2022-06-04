@@ -177,7 +177,7 @@ def get_option(*keys):
             return [remove_slash(abs_path(i)) for i in options[key]]
 
         elif key == "RECHECK_TIME":
-            return 0.01
+            return 0.05
 
         elif key == "SIGNATURE":
             return "#da84f858e8104ca0534138cfa2ea" + "pysync" + "2ccf69e6a9d2b7481882ff1a651ad177a108"

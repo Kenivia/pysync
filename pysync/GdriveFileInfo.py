@@ -33,51 +33,15 @@ class GdriveFileInfo(FileInfo):
                 self.isremotegdoc = True
                 self.link = kwargs["webViewLink"]
 
-    def compare_info(self):
-        """Checks if there are differences between self and self.partner
-
-        mtime_change will only trigger if there is >3 sec difference
-        md5sum won't be checked if mtime_change is already triggered
-
-        Returns:
-            bool/str: False, "content_change" or "mtime_change"
-        """
-
-        assert self.islocal
-        assert self.path == self.partner.path
-        if self.partner.isremotegdoc:
-            assert self.islocalgdoc
-            return False
-
-        if self.isfolder:
-            return False
-
-        if (self.mtime - self.partner.mtime) >= 3:
-            self.change_type = "mtime_change"
-            return self.change_type
-
-        if get_option("CHECK_MD5"):
-            # assert self.md5sum is not None and self.partner.md5sum is not None
-            if self.md5sum != self.partner.md5sum:
-                self.change_type = "content_change"
-                return self.change_type
-
-        return False
-
     def op_checks(self):
-        """performs various checks before applying
-
-        Args:
-            all_data (dict): FileInfo objects from get_diff
+        """performs various checks before applying changes
 
         Raises:
             AssertionError: something went wrong
-
         """
 
         assert self.action is not None
         assert self.action == "pull" or self.action == "push"
-
         assert self.partner is None
         if self.isremotegdoc:
             assert self.link is not None
@@ -165,7 +129,6 @@ class GdriveFileInfo(FileInfo):
 
     @property
     def md5sum(self):
-
         return self._md5sum
 
     @property
@@ -189,7 +152,9 @@ class GdriveFileInfo(FileInfo):
         return self._name
 
     def check_parent(self):
-        return os.path.isdir(self.parent_path)
+        if self.action_code == "down new":
+            return os.path.isdir(self.parent_path)
+        return True
 
     @property
     def parentID(self):

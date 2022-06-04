@@ -17,6 +17,12 @@ from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
 
 
+"""
+This file defines a base class FileInfo and `run_drive_ops` 
+
+"""
+
+
 class FileIDNotFoundError(Exception):
     pass
 
@@ -29,7 +35,7 @@ class GDriveQuotaExceeded(Exception):
 def run_drive_ops(diff_infos, all_data, drive):
     """Run drive_op for each push/pull operation using many threads
 
-    Will not exceed the `Max upload threads` option at any given time
+    Will not exceed the `Max upload threads` option
 
     Applies the changes to folders first, then files with least depth
 
@@ -77,7 +83,7 @@ def run_drive_ops(diff_infos, all_data, drive):
                 future = executor.submit(info.drive_op, drive, countdown=len(pending))
                 pending.remove(info)
 
-                def add_all_data(fut):
+                def callback(fut):
                     exception = fut.exception()
                     if exception is not None:
                         with lock:
@@ -100,10 +106,11 @@ def run_drive_ops(diff_infos, all_data, drive):
                             # * this needs no lock because 2 infos won't try to write to the same path
                             all_data[result.path] = result
 
-                future.add_done_callback(add_all_data)
+                future.add_done_callback(callback)
                 index -= 1
             # * after each iteration, the leftovers are sorted and ran again
-
+            time.sleep(get_option("RECHECK_TIME"))
+            
     if interrupt_key in all_data:
         exception = all_data[interrupt_key]
         if isinstance(exception, GDriveQuotaExceeded):

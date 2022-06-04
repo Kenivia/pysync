@@ -47,7 +47,12 @@ def process_creds(creds, scopes):
 
 @logtime
 def init_drive():
-    """Initializes the google drive and returns an UNPICKLABLE object"""
+    """Initializes drive using credentials.json and asks for abuse acknowledgement
+
+    Returns:
+        googleapiclient.discovery.Resource: keep in mind this object is unpicklable 
+                        so it can't be returned by processes(and threads?) 
+    """
 
     
     creds = None

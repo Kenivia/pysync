@@ -18,7 +18,14 @@ def kws_to_query(kws_list, equals, operator, exclude_list=[]):
 
 @logtime
 def get_remote(drive):
-    """Lists remote files that are not in trash and are owned by me"""
+    """Lists remote files that are not in trash and are owned by me
+
+    Args:
+        drive (googleapiclient.discovery.Resource): Resource object from service.files() in init_drive
+
+    Returns:
+        list: list of dictionaries
+    """
     folder_mtype = ["application/vnd.google-apps.folder"]
     gdoc_mtype = [
         'application/vnd.google-apps.document',
@@ -109,15 +116,20 @@ def get_remote_thread(args):
     return out
 
 
-def init_one_fileinfo(args):
-    return GdriveFileInfo(**args)
-
-
 @logtime
 def process_remote(raw_files, root):
     """Converts google drive responses into GdriveFileInfo objects
 
-    Returns a dictionary containings GdriveFileInfo with their paths as keys
+    The difficult part is to find the absolute paths of the files as gdrive only tells you a file's parent
+
+    get_remote and process_remote aren't combined in one function to allow separate timing using @logtime
+
+    Args:
+        raw_files (list): list of dictionaries from get_remote
+        root (str): id of the root folder from get_remote
+
+    Returns:
+        dict: GdriveFileInfo with their paths as keys
     """
 
     folder_list = []
@@ -125,7 +137,7 @@ def process_remote(raw_files, root):
     assert isinstance(root, str)
 
     for i in raw_files:
-        file_info = init_one_fileinfo(i)
+        file_info = GdriveFileInfo(**i)
         if not file_info.isorphan:
             if file_info.isfolder:
                 folder_list.append(file_info)

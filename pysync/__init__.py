@@ -18,12 +18,8 @@ def main():
         input("an instance of pysync is already running. Press enter to exit")
         return
 
-    try:
-        check_options()
-    except Exception:
-        traceback.print_exc(file=sys.stdout)
-        print("\nThe error above occured while parsing Options.json. Exiting")
-        return
+
+    check_options()
 
     print("""pysync Copyright 2022 Kenivia
 This program comes with ABSOLUTELY NO WARRANTY.
