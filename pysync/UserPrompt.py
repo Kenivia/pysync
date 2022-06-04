@@ -236,6 +236,7 @@ def choose_changes(diff_infos):
     if not diff_infos:
         return
     initing = True
+    original_length = len(diff_infos)
     text = """Use `push a` or `pull a-b` to change the action of files, e.g push 1-5
 Press Enter or use `apply` to apply the following changes:"""
     while True:
@@ -279,7 +280,7 @@ Press Enter or use `apply` to apply the following changes:"""
                 print("restart doesn't take arguments, ignored")
             raise SilentExit
 
-        arguments, message = replace_hyphen(arguments, len(diff_infos))
+        arguments, message = replace_hyphen(arguments, original_length)
         changed = []
         all_index = {}
         for i in diff_infos:

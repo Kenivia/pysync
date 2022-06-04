@@ -8,7 +8,8 @@ from pysync.Functions import hex_md5_file, local_to_utc
 from pysync.OptionsParser import get_option
 
 
-UP_CHUNK_SIZE = 1024 ^ 2  # * -1 for uploading in one go
+UP_CHUNK_SIZE = -1 # * -1 for uploading in one go, specifying a chunksized doesn't seem to work
+
 
 
 class LocalFileInfo(FileInfo):
@@ -98,7 +99,7 @@ class LocalFileInfo(FileInfo):
             _file = drive.create(body=body, fields="id").execute()
             self._id = _file["id"]  # * for other op_checks & other drive_ops
 
-        elif self.partner is not None and self.partner.isremotegdoc and self.islocalgdoc:
+        elif self.islocalgdoc:
 
             file_id = self.find_id()
             _file = drive.get(fileId=file_id,
@@ -115,7 +116,7 @@ class LocalFileInfo(FileInfo):
                     removeParents=old_parent).execute()
             else:
                 print(
-                    "\tThis file is a local gdoc file but was invalid: " +
+                    "\tThis file local gdoc file has no matching remote file: " +
                     self.path,
                 )
         else:
@@ -145,7 +146,7 @@ class LocalFileInfo(FileInfo):
         self.write_remote_mtime(drive)
 
     def has_signature(self):
-        if self.islocal and self.isfile:
+        if self.islocal and self.isfile and os.path.getsize(self.path) < 300: #* these files made by pysync are around 260 bytes
             try:
                 with open(self.path, "r") as _file:
                     if get_option("SIGNATURE") in _file.read():
