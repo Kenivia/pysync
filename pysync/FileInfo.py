@@ -385,7 +385,7 @@ class FileInfo():
     def gen_localgdoc(self):
         raise NotImplementedError
 
-    def write_remote_mtime(self):
+    def copy_remote_mtime(self):
         raise NotImplementedError
 
     @property

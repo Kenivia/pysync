@@ -1,10 +1,10 @@
 import os
-from datetime import datetime
+
 from send2trash import send2trash
 from googleapiclient.http import MediaFileUpload
 from pysync.FileInfo import FileInfo
 
-from pysync.Functions import hex_md5_file, local_to_utc
+from pysync.Functions import hex_md5_file
 from pysync.OptionsParser import get_option
 
 
@@ -21,7 +21,7 @@ class LocalFileInfo(FileInfo):
         self._path = kwargs["path"]
         self.type = kwargs["type"]
         if self.isfile:
-            if kwargs["md5_now"]:
+            if kwargs["check_md5"]:
                 self.calculate_md5()
             self.mtime = int(os.stat(self.path).st_mtime)
 
@@ -47,8 +47,7 @@ class LocalFileInfo(FileInfo):
             self.change_type = "mtime_change"
             return self.change_type
 
-        if get_option("CHECK_MD5"):
-            # assert self.md5sum is not None and self.partner.md5sum is not None
+        if self.md5sum is not None:
             if self.md5sum != self.partner.md5sum:
                 self.change_type = "content_change"
                 return self.change_type
@@ -136,11 +135,11 @@ class LocalFileInfo(FileInfo):
         response = drive.get_media(fileId=self.id).execute()
         with open(self.path, "wb") as f:
             f.write(response)
-        self.write_remote_mtime(drive)
+        self.copy_remote_mtime(drive)
 
     def has_signature(self):
-        if self.islocal and self.isfile and os.path.getsize(
-                self.path) < 300:  # * these files made by pysync are around 260 bytes
+        if self.isfile and os.path.getsize(self.path) < 300:  
+            # * these files made by pysync are around 260 bytes
             try:
                 with open(self.path, "r") as _file:
                     if get_option("SIGNATURE") in _file.read():
@@ -149,20 +148,6 @@ class LocalFileInfo(FileInfo):
                 return False
         else:
             return False
-
-    def get_posix_mtime(self):
-        assert self.path is not None
-        return os.path.getmtime(self.path)
-
-    def get_iso_mtime(self):
-        assert self.path is not None
-        mtime = self.get_posix_mtime()
-        dt = datetime.fromtimestamp(mtime)
-        return local_to_utc(dt).isoformat()
-
-    @property
-    def path(self):
-        return self._path
 
     def calculate_md5(self):
         assert self._md5sum is None
@@ -185,22 +170,6 @@ class LocalFileInfo(FileInfo):
         return self._id
 
     @property
-    def isfile(self):
-        return not self.isfolder
-
-    @property
-    def islocal(self):
-        return True
-
-    @property
-    def isremote(self):
-        return False
-
-    @property
-    def name(self):
-        return os.path.split(self.path)[1]
-
-    @property
     def islocalgdoc(self):
         if self._islocalgdoc is None:
             self._islocalgdoc = self.has_signature()
@@ -219,3 +188,23 @@ class LocalFileInfo(FileInfo):
             return None
         self._parentID = self.partner.parentID
         return self.partner.parentID
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def isfile(self):
+        return not self.isfolder
+
+    @property
+    def islocal(self):
+        return True
+
+    @property
+    def isremote(self):
+        return False
+
+    @property
+    def name(self):
+        return os.path.split(self.path)[1]

@@ -4,15 +4,19 @@ import subprocess as sp
 import dateutil.parser as dup
 
 from googleapiclient.errors import HttpError
-from pysync.Functions import check_acknowledgement
 
+from pysync.Functions import check_acknowledgement
 from pysync.OptionsParser import get_option
 from pysync.FileInfo import FileInfo, FileIDNotFoundError
 
 
 class GdriveFileInfo(FileInfo):
 
-    """Object containing the metadata of either a remote google drive file"""
+    """
+    Object containing the metadata of either a remote google drive file
+    
+    This doesn't have up diff, down diff, compare info because these are called by LocalFileInfo
+    """
 
     def __init__(self, **kwargs):
 
@@ -88,13 +92,13 @@ class GdriveFileInfo(FileInfo):
 
                 with open(self.path, "wb") as f:
                     f.write(response)
-                self.write_remote_mtime(drive)
+                self.copy_remote_mtime(drive)
 
             else:
                 with open(self.path, "w") as exe_file:
                     exe_file.write(self.gen_localgdoc())
                     sp.run(["chmod", "+x", self.path])
-                self.write_remote_mtime(drive)
+                self.copy_remote_mtime(drive)
 
     def gen_localgdoc(self):
         return f"""xdg-open {self.link}
@@ -112,7 +116,7 @@ class GdriveFileInfo(FileInfo):
 
         raise FileIDNotFoundError()
 
-    def write_remote_mtime(self, drive):
+    def copy_remote_mtime(self, drive):
         assert self.path is not None
         _file = drive.get(fileId=self.id, fields="modifiedTime",).execute()
         mtime = int(dup.parse(_file["modifiedTime"]).timestamp())
@@ -126,6 +130,15 @@ class GdriveFileInfo(FileInfo):
         parent_path = get_option("PATH") if isinstance(self.parent, str) else self.parent.path
         self._path = parent_path + "/" + self.name
         return self._path
+
+    def check_parent(self):
+        if self.action_code == "down new":
+            return os.path.isdir(self.parent_path)
+        return True
+
+    @property
+    def parentID(self):
+        return self._parentID
 
     @property
     def md5sum(self):
@@ -151,11 +164,4 @@ class GdriveFileInfo(FileInfo):
     def name(self):
         return self._name
 
-    def check_parent(self):
-        if self.action_code == "down new":
-            return os.path.isdir(self.parent_path)
-        return True
-
-    @property
-    def parentID(self):
-        return self._parentID
+    

@@ -286,6 +286,7 @@ Press Enter or use `apply` to apply the following changes:"""
         for i in diff_infos:
             if i.index is not None:
                 all_index[str(i.index)] = i
+        
         for inp in arguments:
             if inp == "all":
                 for i in match_attr(diff_infos, forced=False):

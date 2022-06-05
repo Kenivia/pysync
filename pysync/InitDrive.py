@@ -51,10 +51,9 @@ def init_drive():
 
     Returns:
         googleapiclient.discovery.Resource: keep in mind this object is unpicklable 
-                        so it can't be returned by processes(and threads?) 
+                                so it can't be returned by processes(and threads?) 
     """
 
-    
     creds = None
     scopes = ['https://www.googleapis.com/auth/drive']
 
