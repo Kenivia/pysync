@@ -143,6 +143,7 @@ class FileInfo():
 
         self._action = None
         self._md5sum = None
+        self.mtime = None
         self._id = None
         self._parentID = None
         self._path = None
@@ -161,6 +162,8 @@ class FileInfo():
 
         self.op_completed = False
         self.checked_good = False
+        
+        
 
     def drive_op(self, drive, countdown=None):
         """Applies the operation specified by self.change_type and self.action

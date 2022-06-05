@@ -23,7 +23,8 @@ class LocalFileInfo(FileInfo):
         if self.isfile:
             if kwargs["check_md5"]:
                 self.calculate_md5()
-            self.mtime = int(os.stat(self.path).st_mtime)
+            else:
+                self.mtime = int(os.stat(self.path).st_mtime)
 
     def compare_info(self):
         """Checks if there are differences between self and self.partner
@@ -43,13 +44,14 @@ class LocalFileInfo(FileInfo):
         if self.isfolder:
             return False
 
-        if (self.mtime - self.partner.mtime) >= 3:
-            self.change_type = "mtime_change"
-            return self.change_type
-
         if self.md5sum is not None:
             if self.md5sum != self.partner.md5sum:
                 self.change_type = "content_change"
+                return self.change_type
+        else:
+            assert self.mtime is not None
+            if (self.mtime - self.partner.mtime) >= 3:
+                self.change_type = "mtime_change"
                 return self.change_type
 
         return False
@@ -138,7 +140,7 @@ class LocalFileInfo(FileInfo):
         self.copy_remote_mtime(drive)
 
     def has_signature(self):
-        if self.isfile and os.path.getsize(self.path) < 300:  
+        if self.isfile and os.path.getsize(self.path) < 300:
             # * these files made by pysync are around 260 bytes
             try:
                 with open(self.path, "r") as _file:
