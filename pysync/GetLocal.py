@@ -8,8 +8,6 @@ from pysync.OptionsParser import get_option
 
 
 def get_local(path, output_dict, timer=None):
-    """put FileInfo objects into output_dict and calculate their md5sum.
-    """
 
     t = Thread(target=real_get_local, args=(path, output_dict,),
                kwargs={"timer": timer})
@@ -30,11 +28,10 @@ def filter_link(inp):
 
 @logtime
 def real_get_local(path, out_dict):
-    """Adds FileInfo objects to out_dict with their paths as the key
-    """
+    """Adds FileInfo objects to out_dict with their paths as the key"""
+    
     file_paths, folder_paths = [], []
     for parent, dirs, files in os.walk(path):
-
         file_paths.extend(filter_link(
             [(os.path.join(parent, names), "file") for names in files]))
         folder_paths.extend(

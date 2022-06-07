@@ -24,6 +24,7 @@ alias = {
     "Hide forced ignore": "HIDE_FIGNORE",
     "Print upload progress": "PRINT_UPLOAD",
     "Compare md5sum": "CHECK_MD5",
+    "Ask for abuse acknowledgement on startup": "ASK_ABUSE",
 
     "Max upload threads": "MAX_UPLOAD",
     "Max compute threads": "MAX_COMPUTE",
@@ -37,7 +38,7 @@ alias = {
     "Default pull": "DPULL",
     "Default push": "DPUSH",
     "Default ignore": "DIGNORE",
-    "Ask for abuse acknowledgement on startup": "ASK_ABUSE",
+    
 
 }
 expected_types = {
@@ -46,7 +47,8 @@ expected_types = {
     "Hide forced ignore": bool,
     "Print upload progress": bool,
     "Compare md5sum": bool,
-
+    "Ask for abuse acknowledgement on startup": bool,
+    
     "Max upload threads": int,
     "Max compute threads": int,
     "Max retry count": int,
@@ -59,7 +61,7 @@ expected_types = {
     "Default push": list,
     "Default ignore": list,
 
-    "Ask for abuse acknowledgement on startup": bool,
+    
 }
 
 
@@ -85,7 +87,7 @@ def cache_options():
 
 def check_options():
     try:
-        _check_options()
+        real_check_options()
     except Exception:
         print("\n")
         traceback.print_exc(file=sys.stdout)
@@ -94,7 +96,7 @@ A copy of default options can be found at " + get_root() + DEFAULT_NAME)
         sys.exit()
 
 
-def _check_options():
+def real_check_options():
 
     assert platform.system() == "Linux"
 
@@ -112,8 +114,7 @@ def _check_options():
     if len(seen_keys) < len(raw_options):
         missing = raw_options.keys() - seen_keys
         raise ValueError(
-            f"The following keys are missing from {OPTIONS_NAME}: " +
-            ", ".join(missing))
+            f"The following keys are missing from {OPTIONS_NAME}: " + ", ".join(missing))
 
     options = alias_to_code(raw_options)
 

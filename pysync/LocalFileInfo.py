@@ -44,7 +44,7 @@ class LocalFileInfo(FileInfo):
         if self.isfolder:
             return False
 
-        if self.md5sum is not None:
+        if self._md5sum is not None:
             if self.md5sum != self.partner.md5sum:
                 self.change_type = "content_change"
                 return self.change_type

@@ -4,6 +4,7 @@
     "Hide forced ignore": false,
     "Print upload progress": true,
     "Compare md5sum": false,
+    "Ask for abuse acknowledgement on startup": true,
     "Max upload threads": 40,
     "Max compute threads": -1,
     "Max retry count": 3,
@@ -18,6 +19,6 @@
         "content_change",
         "mtime_change"
     ],
-    "Default ignore": [],
-    "Ask for abuse acknowledgement on startup": true
+    "Default ignore": []
+    
 }
