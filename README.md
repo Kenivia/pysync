@@ -74,49 +74,50 @@ Options can be specified using ./pysync-master/data/Option.json
 
 Typing `help` before applying changes will display the following message:
 
-    pysync has detected some differences between the local files and the files on Google drive. 
-    the above changes are proposed, you can modify them using the following commands:
+    pysync has detected some differences between the local files and the files on Google drive.
+    the changes above are proposed, the following commands are available:
 
 
     apply
         `apply` or simply submitting no input(pressing Enter) will commit these changes
-        
+
         MAKE A BACKUP OF YOUR FILES BEFORE RUNNING THIS! pysync comes with ABSOLUTELY NO WARRANTY
-        
-        pysync creates many(40 by default) processes to upload/download changes. This speeds up 
+
+        pysync creates many(40 by default) processes to upload/download changes. This speeds up
         the process for small files. However, this means that cancelling the process will require
         the user to press Ctrl+C a few times quickly.
-        
-        
+
+
     push, pull, ignore
         - `push` means that you want what's on your local storage to replace what's on Google drive.
                 This may upload new files, modify remote files or trash remote files
         - `pull` means that you want what's on Google drive to replace what's on your local storage.
                 This may download new files, modify local files or trash local files
         - `ignore` means that no action will be taken for the chosen file.
-        
+
         Using their index printed above, you can specify which paths to push, pull or ignore
         Use `,` or ` `(space) to separate indices
         Use `-` to specify indices in a range(inclusive)
-
-        Valid inputs:
-            push 1
-            pull 2 3
-            ignore 4,5, 6 
+        Use `all` to specify all indices
+        
+        Example inputs:
+            push 6 5
+            pull 4
+            ignore 1,  3,2 
             push 7-10(This will be the same as: push 7, 8, 9, 10)
-
+            pull all
 
     restart
         Terminate this process and use the same python interpreter to start another pysync instance
-        
-        This will not commit the pending changes
+
+        This will not apply the pending changes
 
 
     exit
-        Terminate this process without committing the pending changes
-    
-        
-    help 
+        Terminate this process without applying the pending changes
+
+
+    help
         Display this help message
 
 ## Current features

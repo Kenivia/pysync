@@ -7,7 +7,7 @@ from pysync.Exit import restart
 
 HELP_STRING = """
 pysync has detected some differences between the local files and the files on Google drive.
-the above changes are proposed, you can modify them using the following commands:
+the changes above are proposed, the following commands are available:
 
 
 apply
@@ -30,22 +30,24 @@ push, pull, ignore
     Using their index printed above, you can specify which paths to push, pull or ignore
     Use `,` or ` `(space) to separate indices
     Use `-` to specify indices in a range(inclusive)
-
-    Valid inputs:
-        push 1
-        pull 2 3
-        ignore 4,5, 6
+    Use `all` to specify all indices
+    
+    Example inputs:
+        push 6 5
+        pull 4
+        ignore 1,  3,2 
         push 7-10(This will be the same as: push 7, 8, 9, 10)
-
+        pull all
+    
 
 restart
     Terminate this process and use the same python interpreter to start another pysync instance
 
-    This will not commit the pending changes
+    This will not apply the pending changes
 
 
 exit
-    Terminate this process without committing the pending changes
+    Terminate this process without applying the pending changes
 
 
 help
@@ -243,10 +245,10 @@ def print_totals(infos):
 def compress_deletes(diff_infos):
     """removes children of folders that are being deleted
 
-    idea being that a deletion of folder would only happen if all children are also being deleted
+    idea being that when a folder is being deleted all it's children are guaranteed to be deleted
     this also mitigate issues when applying
 
-    this isn't done for creating new files/modifying files for user clarity
+    this isn't done for creating new/modifying entire folders for user clarity
 
     Args:
         diff_infos (list): list of FileInfo objects
@@ -257,12 +259,10 @@ def compress_deletes(diff_infos):
     del_folder = []
     for i in diff_infos:
         if i.isfolder and "del" in i.action_code:
-            found = False
             for z in del_folder:
                 if i.path.startswith(z):
-                    found = True
                     break
-            if not found:
+            else:
                 del_folder = [z for z in del_folder if not z.startswith(i.path)]
                 del_folder.append(i.path)
 
@@ -285,12 +285,15 @@ def choose_changes(diff_infos):
     if not diff_infos:
         return
     initing = True
+    original_inp = ""
     original_length = len(diff_infos)
     text = "pysync will download files marked as `abuse`" if check_acknowledgement() \
         else "pysync will not download files marked as `abuse`"
-    text += "\nThe following changes are pending, type `help` for further information:"
 
     while True:
+        if original_inp:
+            text += original_inp
+        text += "\nThe following changes are pending, type `help` for more information:"
         compress_deletes(diff_infos)
         print_changes(diff_infos, initing)
         initing = False
@@ -299,6 +302,7 @@ def choose_changes(diff_infos):
         print_totals(diff_infos)
 
         inp = input("\n>>> ").lower().strip()
+
         if inp == "":
             return
 
@@ -306,13 +310,17 @@ def choose_changes(diff_infos):
         inp = inp.split(" ")
         inp = [i for i in inp if i]  # * remove blanks
 
+        original_inp = "\nInput received: `" + " ".join(inp) + "`"
         command = inp[0]
         arguments = inp[1:]
 
         valid_actions = ["help", "push", "pull", "ignore", "apply", "restart", "exit"]
         if not command in valid_actions:
             text = "Unrecognized action, valid actions are: " + \
-                ", ".join(valid_actions) + "type `help` for more information"
+                ", ".join(valid_actions)
+            continue
+        if command == "help":
+            text = HELP_STRING
             continue
 
         if command == "apply":
@@ -343,6 +351,8 @@ def choose_changes(diff_infos):
                 for i in match_attr(diff_infos, forced=False):
                     i._action = command
                     changed.append(str(i.index))
+                if len(arguments) > 1:
+                    message += "`all` was not the only input, ignoring other inputs"
                 continue
 
             elif inp.isnumeric():
