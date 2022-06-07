@@ -13,7 +13,8 @@ the changes above are proposed, the following commands are available:
 apply
     `apply` or simply submitting no input(pressing Enter) will commit these changes
 
-    MAKE A BACKUP OF YOUR FILES BEFORE RUNNING THIS! pysync comes with ABSOLUTELY NO WARRANTY
+    MAKE A BACKUP OF YOUR FILES BEFORE RUNNING THIS!
+    pysync comes with ABSOLUTELY NO WARRANTY
 
     pysync creates many(40 by default) processes to upload/download changes. This speeds up
     the process for small files. However, this means that cancelling the process will require
@@ -27,7 +28,7 @@ push, pull, ignore
             This may download new files, modify local files or trash local files
     - `ignore` means that no action will be taken for the chosen file.
 
-    Using their index printed above, you can specify which paths to push, pull or ignore
+    Using the paths' index printed above, you can specify which paths to push, pull or ignore
     Use `,` or ` `(space) to separate indices
     Use `-` to specify indices in a range(inclusive)
     Use `all` to specify all indices
