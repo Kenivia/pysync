@@ -1,10 +1,58 @@
 import pathlib
 from pysync.Timer import logtime
-from pysync.Functions import contains_parent, SilentExit, match_attr
+from pysync.Functions import check_acknowledgement, contains_parent, SilentExit, match_attr
 from pysync.OptionsParser import get_option
 from pysync.Exit import restart
 
 
+HELP_STRING = """
+pysync has detected some differences between the local files and the files on Google drive.
+the above changes are proposed, you can modify them using the following commands:
+
+
+apply
+    `apply` or simply submitting no input(pressing Enter) will commit these changes
+
+    MAKE A BACKUP OF YOUR FILES BEFORE RUNNING THIS! pysync comes with ABSOLUTELY NO WARRANTY
+
+    pysync creates many(40 by default) processes to upload/download changes. This speeds up
+    the process for small files. However, this means that cancelling the process will require
+    the user to press Ctrl+C a few times quickly.
+
+
+push, pull, ignore
+    - `push` means that you want what's on your local storage to replace what's on Google drive.
+            This may upload new files, modify remote files or trash remote files
+    - `pull` means that you want what's on Google drive to replace what's on your local storage.
+            This may download new files, modify local files or trash local files
+    - `ignore` means that no action will be taken for the chosen file.
+
+    Using their index printed above, you can specify which paths to push, pull or ignore
+    Use `,` or ` `(space) to separate indices
+    Use `-` to specify indices in a range(inclusive)
+
+    Valid inputs:
+        push 1
+        pull 2 3
+        ignore 4,5, 6
+        push 7-10(This will be the same as: push 7, 8, 9, 10)
+
+
+restart
+    Terminate this process and use the same python interpreter to start another pysync instance
+
+    This will not commit the pending changes
+
+
+exit
+    Terminate this process without committing the pending changes
+
+
+help
+    Display this help message
+
+
+"""
 # def get_forced_depth(flist, path):
 #     max_depth = -1
 #     for i in flist:
@@ -24,6 +72,7 @@ from pysync.Exit import restart
 #     temp[get_forced_depth(aignore, path)] = "ignore"
 #     # * in a tie, ignore perfered over pull over push
 #     return False if max(temp) < 0 else temp[max(temp)]
+
 
 def get_forced(info):
     # ! This currently doesn't work correctly when a forced path is contained within another forced path
@@ -237,8 +286,10 @@ def choose_changes(diff_infos):
         return
     initing = True
     original_length = len(diff_infos)
-    text = """Use `push a` or `pull a-b` to change the action of files, e.g push 1-5
-Press Enter or use `apply` to apply the following changes:"""
+    text = "pysync will download files marked as `abuse`" if check_acknowledgement() \
+        else "pysync will not download files marked as `abuse`"
+    text += "\nThe following changes are pending, type `help` for further information:"
+
     while True:
         compress_deletes(diff_infos)
         print_changes(diff_infos, initing)
@@ -258,10 +309,10 @@ Press Enter or use `apply` to apply the following changes:"""
         command = inp[0]
         arguments = inp[1:]
 
-        valid_actions = ["push", "pull", "ignore", "apply", "restart", "exit"]
+        valid_actions = ["help", "push", "pull", "ignore", "apply", "restart", "exit"]
         if not command in valid_actions:
             text = "Unrecognized action, valid actions are: " + \
-                ", ".join(valid_actions)
+                ", ".join(valid_actions) + "type `help` for more information"
             continue
 
         if command == "apply":
@@ -286,7 +337,7 @@ Press Enter or use `apply` to apply the following changes:"""
         for i in diff_infos:
             if i.index is not None:
                 all_index[str(i.index)] = i
-        
+
         for inp in arguments:
             if inp == "all":
                 for i in match_attr(diff_infos, forced=False):

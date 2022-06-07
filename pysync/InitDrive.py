@@ -72,13 +72,9 @@ def init_drive():
     print("Token produced successfully")
     
     
-    if check_acknowledgement():
-        print("pysync will download files marked as 'abuse'")
-    else:
-        if get_option("ASK_ABUSE"):
-            ask_abuse_acknowledge()
-        else:
-            print("pysync will not download files marked as 'abuse'")
+    if not check_acknowledgement() and get_option("ASK_ABUSE"):
+        ask_abuse_acknowledge()
+        
         
     return service.files()
 
@@ -87,7 +83,7 @@ def ask_abuse_acknowledge():
     
     print("\nGoogle drive marks certain files as 'abuse'. These files are potentially dangerous.\n\
 Would you like to download files marked as abuse in the future?")
-    inp = input("Type the word: 'yes' to confirm: \n\n>>> ")
+    inp = input("Type the word: 'yes' to confirm(any other input will decline): \n\n>>> ")
     print("")
     if inp.lower().strip() == "yes":
         with open(get_root() + "/data/Internal/abuse_acknowledged", "w") as f:
