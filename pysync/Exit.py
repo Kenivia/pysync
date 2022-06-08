@@ -37,7 +37,7 @@ def on_exit(failure, timer=None):
     t = Thread(target=on_exit_thread, args=(timer, failure,), daemon=False)
     # * very important that daemon=False
     t.start()
-    
+
     # * at this point, the main thread should exit
     # * this also releases the socket bind so another pysync process can start now
 
@@ -93,8 +93,7 @@ def restart():
             command_used = " ".join([str(i) for i in sp_list])
             sp.call(sp_list)
         else:
-            print(
-                "Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
+            print("Neither gnome-terminal nor xfce4-terminal is available, unable to restart")
             input("Press enter to exit")
             return
 

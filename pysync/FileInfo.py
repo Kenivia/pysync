@@ -188,7 +188,7 @@ class FileInfo():
         if get_option("PRINT_UPLOAD") and countdown is not None:
             print(" ".join((str(countdown), self.action_human, self.path)))
             if countdown == 1:
-                print("Waiting for threads to finish..")
+                print("All jobs have been started, waiting for them to finish..")
 
         while True:
             try:
