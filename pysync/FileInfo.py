@@ -18,7 +18,7 @@ from pysync.OptionsParser import get_option
 
 
 """
-This file defines a base class FileInfo and `run_drive_ops` 
+This file defines a base class FileInfo and `run_drive_ops`
 
 """
 
@@ -29,6 +29,13 @@ class FileIDNotFoundError(Exception):
 
 class GDriveQuotaExceeded(Exception):
     pass
+
+
+def retry_text(_count, _max_count):
+    if _max_count >= 0 and _count >= _max_count:
+        return ", " + f"tried {_max_count} times, giving up" + ": "
+    else:
+        return ", " + f"retrying({_count}/{_max_count})" + ": "
 
 
 @logtime
@@ -46,10 +53,14 @@ def run_drive_ops(diff_infos, all_data, drive):
     """
 
     pending = match_attr(diff_infos, action="push") + match_attr(diff_infos, action="pull")
-    pending.sort(key=lambda x: (  # * folders first, then less depth first, then alphabetitc
-        not x.isfolder, len(x.path.split("/")), x.path), reverse=True)
-    before_paths = [i.path for i in pending]
 
+    pending.sort(key=lambda x: (  # * folders first, then less depth first, then alphabetitc\
+        not x.isfolder, len(x.path.split("/")), x.path), reverse=True)
+    # * important to sort by depth first, not just .path, contrary to other sorts for printing
+    # * the items are removed(from the back), thats why its reversed
+    # * sorta like a queue?
+
+    before_paths = [i.path for i in pending]
     if pending:
         print(f"Applying {str(len(pending))} changes..")
         if not get_option("PRINT_UPLOAD"):
@@ -64,15 +75,11 @@ def run_drive_ops(diff_infos, all_data, drive):
     with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
         while pending:
 
-            # * important to sort by depth first, not just .path, contrary to other sorts for printing
-            # * the items are removed(from the back), thats why its reversed
-            # * sorta like a queue?
-
             index = len(pending) - 1
             for _ in range(len(pending)):
 
                 if interrupt_key in all_data:
-                    raise all_data[interrupt_key]
+                    break
 
                 info = pending[index]
                 info.find_parent(all_data)
@@ -109,8 +116,7 @@ def run_drive_ops(diff_infos, all_data, drive):
                 future.add_done_callback(callback)
                 index -= 1
             # * after each iteration, the leftovers are sorted and ran again
-            time.sleep(get_option("RECHECK_TIME"))
-            
+
     if interrupt_key in all_data:
         exception = all_data[interrupt_key]
         if isinstance(exception, GDriveQuotaExceeded):
@@ -126,12 +132,10 @@ def run_drive_ops(diff_infos, all_data, drive):
                               exception=exception)
 
         else:
-            max_count = get_option("MAX_RETRY")
-            if max_count < 0:
-                print("WARNING retry count was negative but pysync gave up anyway")
-
-            exit_with_message(message="A file failed after " + str(max_count) + " retries",
-                              exception=None)
+            # * This should never happen
+            # * This means that a FileInfo threw an exception during drive_op
+            exit_with_message(message="A file failed unexpectedly with the error above and other pending files were interrupted",
+                              exception=exception)
     print("All done")
 
 
@@ -162,8 +166,6 @@ class FileInfo():
 
         self.op_completed = False
         self.checked_good = False
-        
-        
 
     def drive_op(self, drive, countdown=None):
         """Applies the operation specified by self.change_type and self.action
@@ -209,12 +211,6 @@ class FileInfo():
                 if max_count >= 0 and count >= max_count:
                     return None
 
-                def retry_text(_count, _max_count):
-                    if _max_count >= 0 and _count >= _max_count:
-                        return ", " + f"tried {_max_count} times, giving up" + ": "
-                    else:
-                        return ", " + f"retrying({_count}/{_max_count})" + ": "
-
                 count += 1
                 message = None
                 reason = traceback.format_exc()
@@ -229,6 +225,9 @@ class FileInfo():
                         message = "This file failed, rate of requests too high"
                     elif "storageQuotaExceeded" in repr(e):
                         raise GDriveQuotaExceeded(self.path)
+                else:
+                    # * unknown error, this will print `reason`
+                    pass
 
                 if message is not None:
                     print("\n" + message + retry_text(count, max_count) + self.ppath + "\n")
@@ -237,7 +236,7 @@ class FileInfo():
                     print("\nThis file failed with the following error" + retry_text(count, max_count) + self.ppath +
                           "\n" + reason)
 
-                time.sleep(0.5)
+                time.sleep(get_option("RETRY_TIME"))
 
         if self.action_code == "del remote" or self.action_code == "del local":
             deletion = True
@@ -323,7 +322,7 @@ class FileInfo():
     @property
     def ppath(self):
         return self.path if get_option("FULL_PATH") else self.remote_path
-    
+
     @property
     def isfolder(self):
         assert self.type == "folder" or self.type == "file"

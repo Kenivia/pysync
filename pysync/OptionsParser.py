@@ -158,7 +158,7 @@ def get_option(*keys):
         elif key == "APUSH" or key == "APULL" or key == "AIGNORE":
             return [remove_slash(abs_path(i)) for i in options[key]]
 
-        elif key == "RECHECK_TIME":
+        elif key == "RETRY_TIME":
             return 0.05
 
         elif key == "SIGNATURE":
