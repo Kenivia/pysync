@@ -99,7 +99,7 @@ Typing `help` before applying changes will display the following message:
         Using the paths' index printed above, you can specify which paths to push, pull or ignore
         Use `,` or ` `(space) to separate indices
         Use `-` to specify indices in a range(inclusive)
-        Use `all` to specify all indices
+        Use `all` to represent all indices
         
         Example inputs:
             push 6 5

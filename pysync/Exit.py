@@ -11,7 +11,7 @@ from pysync.Functions import SilentExit, get_root
 def exit_with_message(message=None, exception=None, raise_silent=True):
     if exception is not None:
         traceback.print_exception(exception, exception, exception.__traceback__, file=sys.stdout)
-
+    # * not using traceback.print_exc because sometimes we don't want to print the traceback
     if message is not None:
         print("\n" + message)
 

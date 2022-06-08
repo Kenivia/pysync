@@ -34,10 +34,9 @@ def process_creds(creds, scopes):
 
     print("Requesting a new token")
     try:
-        flow = InstalledAppFlow.from_client_secrets_file(
-            get_root() + CLIENT_SECRET, scopes)
+        flow = InstalledAppFlow.from_client_secrets_file(get_root() + CLIENT_SECRET, scopes)
     except FileNotFoundError as e:
-        exit_with_message(message="The file 'client_secrets.json' is not found at "+get_root()+"/data/",
+        exit_with_message(message="The file 'client_secrets.json' is not found at " + get_root() + "/data/",
                         exception=e)
         
         
