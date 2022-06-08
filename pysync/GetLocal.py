@@ -20,7 +20,8 @@ def filter_link(inp):
     for i in inp:
         path = i[0]
         if os.path.islink(path):
-            print(path + " is a symlink, ignored")
+            print(path + " is a symlink, ignored") 
+            # * can't be bothered making this comply with `Print absolute path`
         else:
             out.append(i)
     return out

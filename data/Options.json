@@ -5,6 +5,7 @@
     "Print upload progress": true,
     "Compare md5sum": false,
     "Ask for abuse acknowledgement on startup": true,
+    "Print absolute path": false,
     "Max upload threads": 40,
     "Max compute threads": -1,
     "Max retry count": 3,

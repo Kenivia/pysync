@@ -102,7 +102,6 @@ class LocalFileInfo(FileInfo):
                               fields="trashed, parents").execute()
 
             if _file["trashed"]:
-                print(self.path, "is untrashed")
                 body = {"trashed": False, }
                 old_parent = _file["parents"][0]
                 drive.update(
@@ -110,10 +109,11 @@ class LocalFileInfo(FileInfo):
                     fileId=file_id,
                     addParents=self.parentID,
                     removeParents=old_parent).execute()
+                print(self.ppath, "has been untrashed")
             else:
                 print(
                     "\tThis file local gdoc file has no matching remote file: " +
-                    self.path,
+                    self.ppath,
                 )
         else:
             # * is an ordinary file

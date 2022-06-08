@@ -3,8 +3,6 @@ import multiprocessing
 import os
 import json
 import platform
-import sys
-import traceback
 
 from functools import lru_cache
 
@@ -15,8 +13,11 @@ from pysync.Functions import (
     assert_list_start,
 )
 
-OPTIONS_NAME = "/data/Options.json"
-DEFAULT_NAME = "/data/Internal/Default Options.json"
+OPTIONS_PATH = "/data/Options.json"
+DEFAULT_OPTIONS_PATH = "/data/Internal/Default Options.json"
+# * These are needed to find Options.json in the first place
+# * so they are not configurable
+
 
 alias = {
     "Local path": "PATH",
@@ -25,6 +26,7 @@ alias = {
     "Print upload progress": "PRINT_UPLOAD",
     "Compare md5sum": "CHECK_MD5",
     "Ask for abuse acknowledgement on startup": "ASK_ABUSE",
+    "Print absolute path": "FULL_PATH",
 
     "Max upload threads": "MAX_UPLOAD",
     "Max compute threads": "MAX_COMPUTE",
@@ -38,9 +40,8 @@ alias = {
     "Default pull": "DPULL",
     "Default push": "DPUSH",
     "Default ignore": "DIGNORE",
-    
-
 }
+
 expected_types = {
     "Local path": str,
     "Ask before exit": bool,
@@ -48,7 +49,8 @@ expected_types = {
     "Print upload progress": bool,
     "Compare md5sum": bool,
     "Ask for abuse acknowledgement on startup": bool,
-    
+    "Print absolute path": bool,
+
     "Max upload threads": int,
     "Max compute threads": int,
     "Max retry count": int,
@@ -60,8 +62,6 @@ expected_types = {
     "Default pull": list,
     "Default push": list,
     "Default ignore": list,
-
-    
 }
 
 
@@ -80,33 +80,16 @@ def alias_to_code(raw_options):
     return options
 
 
-def cache_options():
-    all_available_code = [alias[i] for i in alias]
-    get_option(*all_available_code)  # * to load all the cache
-
-
 def check_options():
-    try:
-        real_check_options()
-    except Exception:
-        print("\n")
-        traceback.print_exc(file=sys.stdout)
-        print("\nThe error above occured while parsing Options.json.\n\
-A copy of default options can be found at " + get_root() + DEFAULT_NAME)
-        sys.exit()
-
-
-def real_check_options():
 
     assert platform.system() == "Linux"
-
-    options_path = get_root() + OPTIONS_NAME
+    options_path = get_root() + OPTIONS_PATH
     raw_options = json.load(open(options_path, "r"))
     seen_keys = []
 
     for raw_key in raw_options:
         if raw_key not in expected_types:
-            print(f"Unknown key: \"{raw_key}\" in {OPTIONS_NAME}, ignored")
+            print(f"Unknown key: \"{raw_key}\" in {OPTIONS_PATH}, ignored")
 
         assert isinstance(raw_options[raw_key], expected_types[raw_key])
         seen_keys.append(raw_key)
@@ -114,7 +97,7 @@ def real_check_options():
     if len(seen_keys) < len(raw_options):
         missing = raw_options.keys() - seen_keys
         raise ValueError(
-            f"The following keys are missing from {OPTIONS_NAME}: " + ", ".join(missing))
+            f"The following keys are missing from {OPTIONS_PATH}: " + ", ".join(missing))
 
     options = alias_to_code(raw_options)
 
@@ -150,8 +133,6 @@ def real_check_options():
 Each of the following must be included exactly once:
 \t\"local_new\", \"content_change\", \"mtime_change\", \"remote_new\"""")
 
-    cache_options()
-
 
 @lru_cache(None)
 def get_option(*keys):
@@ -161,7 +142,7 @@ def get_option(*keys):
         return tuple([get_option(i) for i in keys])
     else:
 
-        options_path = get_root() + OPTIONS_NAME
+        options_path = get_root() + OPTIONS_PATH
         raw_options = json.load(open(options_path, "r"))
 
         options = alias_to_code(raw_options)

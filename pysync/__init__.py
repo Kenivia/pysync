@@ -1,11 +1,11 @@
 from pysync.Differ import get_diff
 from pysync.Exit import on_exit, exit_with_message
 from pysync.FileInfo import run_drive_ops
-from pysync.Functions import SilentExit
+from pysync.Functions import SilentExit, get_root
 from pysync.GetLocal import get_local
 from pysync.GetRemote import get_remote, process_remote
 from pysync.InitDrive import init_drive
-from pysync.OptionsParser import get_option, check_options
+from pysync.OptionsParser import get_option, check_options, OPTIONS_PATH, DEFAULT_OPTIONS_PATH
 from pysync.Timer import init_main_timer
 from pysync.UserPrompt import apply_forced_and_default, choose_changes
 
@@ -53,13 +53,12 @@ def main():
         input("an instance of pysync is already running. Press enter to exit")
         return
 
-    check_options()
-    # * this is ran outside the try clause because some modules might not work if the options are not set correctly
-    # * instead it has its own error catcher 
-    
     print(COPYRIGHT_TEXT)
-    print()
+    Options_failed = True
     try:
+        check_options()
+        Options_failed = False
+
         timer = init_main_timer()
         real_main(get_option("PATH"), timer)
         on_exit(False, timer=timer)
@@ -69,4 +68,8 @@ def main():
     except KeyboardInterrupt:
         on_exit(False)
     except Exception as e:
-        exit_with_message(message=None, exception=e, raise_silent=False)
+        message = None
+        if Options_failed:
+            message = "pysync failed to parse " + get_root() + OPTIONS_PATH +\
+                "A copy of default options can be found at " + get_root() + DEFAULT_OPTIONS_PATH
+        exit_with_message(message=message, exception=e, raise_silent=False)

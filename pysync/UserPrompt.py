@@ -207,13 +207,13 @@ def print_half(infos, initing, forced, index):
                 if i.action == "ignore" and get_option("HIDE_FIGNORE"):
                     pass
                 else:
-                    print(i.action_human, i.path)
+                    print(i.action_human, i.ppath)
             else:
                 if initing:
                     i.index = index
-                    print(index, i.action_human, i.path)
+                    print(index, i.action_human, i.ppath)
                 else:
-                    print(i.index, i.action_human, i.path)
+                    print(i.index, i.action_human, i.ppath)
                 index += 1
 
 

@@ -34,7 +34,7 @@ def on_exit(failure, timer=None):
         print("Exiting")
         return
 
-    t = Thread(target=on_exit_thread, args=(timer, failure,), daemon=False)
+    t = Thread(target=on_exit_thread, args=(failure, timer,), daemon=False)
     # * very important that daemon=False
     t.start()
 
@@ -42,10 +42,10 @@ def on_exit(failure, timer=None):
     # * this also releases the socket bind so another pysync process can start now
 
 
-def on_exit_thread(timer=None, failure=False):
+def on_exit_thread(failure=False, timer=None):
 
     line_input = "\n\n>>> "
-    line_exit = "\nPress enter to exit"
+    line_exit = "\nPress Enter to exit"
     line_restart = "\nType \"restart\" to sync again"
     line_time = "\nType \"time\" to see how long each stage took"
 
@@ -55,10 +55,10 @@ def on_exit_thread(timer=None, failure=False):
     complete_text = "\nThe syncing process has completed successfully" + \
         line_exit + line_time + line_restart + line_input
 
-    handled_error_text = "\nThe error above has occurred " + \
+    error_text = "\nThe error above has occurred " + \
         line_exit + line_restart + line_input
 
-    text = handled_error_text if failure else (cancel_text if timer is None else complete_text)
+    text = error_text if failure else (cancel_text if timer is None else complete_text)
     while True:
 
         user_inp = input(text)
@@ -77,6 +77,7 @@ def on_exit_thread(timer=None, failure=False):
 
 
 def restart():
+    # TODO specify terminal in Option.json
     root_path = get_root()
     thispython = sys.executable
     retval = sp.run(["dpkg", "-s", "gnome-terminal"],

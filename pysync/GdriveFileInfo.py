@@ -87,7 +87,7 @@ class GdriveFileInfo(FileInfo):
                         response = drive.get_media(fileId=self.id, acknowledgeAbuse=True).execute()
                     else:
                         print("This file was not downloaded because it was marked as 'abuse':")
-                        print(self.path)
+                        print(self.ppath)
                         return
 
                 with open(self.path, "wb") as f:

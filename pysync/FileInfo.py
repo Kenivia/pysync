@@ -186,7 +186,7 @@ class FileInfo():
         max_count = get_option("MAX_RETRY")
         deletion = False
         if get_option("PRINT_UPLOAD") and countdown is not None:
-            print(" ".join((str(countdown), self.action_human, self.path)))
+            print(" ".join((str(countdown), self.action_human, self.ppath)))
             if countdown == 1:
                 print("All jobs have been started, waiting for them to finish..")
 
@@ -231,10 +231,10 @@ class FileInfo():
                         raise GDriveQuotaExceeded(self.path)
 
                 if message is not None:
-                    print("\n" + message + retry_text(count, max_count) + self.path + "\n")
+                    print("\n" + message + retry_text(count, max_count) + self.ppath + "\n")
 
                 else:
-                    print("\nThis file failed with the following error" + retry_text(count, max_count) + self.path +
+                    print("\nThis file failed with the following error" + retry_text(count, max_count) + self.ppath +
                           "\n" + reason)
 
                 time.sleep(0.5)
@@ -243,7 +243,7 @@ class FileInfo():
             deletion = True
 
         if count > 0:
-            print(f"Retry #" + str(count) + " was successful: " + self.path)
+            print(f"Retry #" + str(count) + " was successful: " + self.ppath)
 
         self.op_completed = True
         return self.path if deletion else self
@@ -320,6 +320,10 @@ class FileInfo():
 
         return hash(frozenset(out))
 
+    @property
+    def ppath(self):
+        return self.path if get_option("FULL_PATH") else self.remote_path
+    
     @property
     def isfolder(self):
         assert self.type == "folder" or self.type == "file"
