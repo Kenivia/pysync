@@ -8,43 +8,42 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
 
 ## Google Credentials
 
-- First and foremost, this app is not yet verified by Google. Therefore, you can't easily give the code permission to access and modify your drive.
+- First and foremost, this app is not yet verified by Google. Therefore, you can't give the code permission to access and modify your drive.
 - For the code to access your drive you'll have to create your own credentials.
-- The idea is that you make your own personal project and make yourself a test user.
-- Unfortunately, tutorials on this are rather hideous so please follow this step by step guide. This is up to date as of April 2022
+- **You will make your own "project" and make yourself a test user.**
+- Unfortunately, tutorials on this are rather hideous so please follow this step by step guide. This is up to date as of June 2022
   - go to <https://console.cloud.google.com/>
-  - click on "Select a project" towards the top left
+  - click on "Select a project" towards the top left(If you already have a project selected, it will say the name of that project instead)
   - click on "NEW PROJECT"
-  - pick a name
+  - pick a name(pysync)
   - select the project
+  - in a new tab, go to [this link](https://console.cloud.google.com/apis/library/drive.googleapis.com)
+  - click "ENABLE"
+  - go back to the [previous tab](https://console.cloud.google.com) 
   - click the 3 line burger icon on the top left
-  - under APIs & Services, click Credentials
-  - click CREATE CREDENTIALS
-  - click OAuth client ID
-  - click CONFIGURE CONSENT SCREEN
-  - click External
-  - enter any App name(pysync), your own User support email and the developer email(any email address will do)
-  - click Save and continue
-  - click ADD OR REMOVE SCOPES
-  - there will be a link that says [Google API Library](https://console.cloud.google.com/apis/library), open this in a new tab
-  - search for Google drive API, or use [this link](https://console.cloud.google.com/apis/library/drive.googleapis.com)
-  - click Enable
-  - now go back to the earlier tab with the search bar, you might have to refresh the page and go back to where you were
-  - enter google drive in the search bar, click the first one(Google Drive API)
+  - under "APIs & Services", click "Credentials"
+  - click "CREATE CREDENTIALS"(towards the top)
+  - click "OAuth client ID"
+  - click "CONFIGURE CONSENT SCREEN"
+  - click "External"
+  - enter any App name(pysync), a user support email and developer email(any email address will do)
+  - click "SAVE AND CONTINUE"
+  - click "ADD OR REMOVE SCOPES"
+  - search for "Google drive API" in the search bar(next to the word "Filter")
   - now there should be a list of 16 options, each of them representing a certain amount of permission
-  - tick the box on the one that says .../auth/drive under Scope, which should also say "See, edit, create, and delete all of your Google Drive files"
-  - scroll down a bit and click UPDATE
+  - tick the box on the one that says ".../auth/drive" under "Scope"(the 2nd one, it also says "See, edit, create, and delete all of your Google Drive files")
+  - scroll down a bit and click "UPDATE"
   - there should now be a corresponding entry under "Your sensitive scopes"
-  - click SAVE AND CONTINUE
-  - click ADD USERS
-  - enter the gmail address for the google drive that you're trying to sync
-  - click SAVE AND CONTINUE
+  - click "SAVE AND CONTINUE"
+  - click "ADD USERS"
+  - enter the gmail address *for the google drive that you're trying to sync*
+  - click "SAVE AND CONTINUE"
   - go back to the Credentials tab on the left
-  - click CREATE CREDENTIALS and OAuth client ID(just like before)
-  - select Desktop app for Application type, and enter any Name(pysync)
-  - click CREATE
-  - you'll be prompted with a screen, click DOWNLOAD JSON
-  - rename the file to `client_secrets.json` and place this file in `./pysync/data`
+  - click "CREATE CREDENTIALS" and "OAuth client ID"(just like before)
+  - select "Desktop app" for Application type, and enter any Name(pysync)
+  - click "CREATE"
+  - you'll be prompted with a screen, click "DOWNLOAD JSON"
+  - rename the file to `client_secrets.json` and copy this file into `./pysync/data/`
   
 ## Requirements
 
@@ -58,13 +57,11 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
 
 - `client_secret.json` created using the procedure above and placed in `./pysync-master/data/`
 
-- `xdg-open`(used for opening gdoc files by double clicking)
-
-- Either `gnome-terminal` or `xfce4-terminal` for a quick restart of the syncing process. Other than this function, any terminal will do
+- `xdg-open`(used for opening gdoc files by double clicking), `gnome-terminal` or `xfce4-terminal`(for a quick restart of the syncing process). These are not essential for other functions of pysync
 
 ## Usage
 
-- **MAKE A BACKUP OF YOUR GOOGLE DRIVE FOLDER BEFORE RUNNING THIS!**
+***MAKE A BACKUP OF YOUR GOOGLE DRIVE FOLDER BEFORE RUNNING THIS!***
 
 - `python3 ./pysync-master/pysync`
 
@@ -79,7 +76,7 @@ Typing `help` before applying changes will display the following message:
 
 
     apply
-        `apply` or simply submitting no input(pressing Enter) will commit these changes
+        `apply` or only pressing Enter will commit these changes
 
         MAKE A BACKUP OF YOUR FILES BEFORE RUNNING THIS!
         pysync comes with ABSOLUTELY NO WARRANTY
@@ -123,7 +120,7 @@ Typing `help` before applying changes will display the following message:
 
 ## Current features
 
-- Detect differences quickly, depending mostly on the size of the google drive and someties the disk read speed
+- Detect differences quickly, depending mostly on the size of the google drive and sometimes the disk read speed
 - The user can then choose which files to push/pull(upload/download)
 - Applies the chosen operations in parallel
 - For Google Docs, Google Sheets and Google Slides etc, download an executable text file that links to the file
@@ -139,4 +136,4 @@ Typing `help` before applying changes will display the following message:
 
 ## Contributing
 
-Any feedback & help are greatly appreciated!
+Any feedback or help is greatly appreciated!
