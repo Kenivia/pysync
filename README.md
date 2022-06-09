@@ -36,7 +36,7 @@ pysync is similar to [drive by odeke-em](https://github.com/odeke-em/drive), but
   - there should now be a corresponding entry under "Your sensitive scopes"
   - click "SAVE AND CONTINUE"
   - click "ADD USERS"
-  - enter the gmail address *for the google drive that you're trying to sync*
+  - enter the gmail address **for the google drive that you're trying to sync**
   - click "SAVE AND CONTINUE"
   - go back to the Credentials tab on the left
   - click "CREATE CREDENTIALS" and "OAuth client ID"(just like before)
