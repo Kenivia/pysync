@@ -4,7 +4,7 @@ pysync is a Linux script that uploads & download files to and from Google drive.
 
 This is not a background sync script - it is currently intended for use with user confirmation
 
-pysync is similar to [drive](https://github.com/odeke-em/drive), but is much faster (150s -> <30s for comparing ~5400 files), thanks mostly to parallelism and(probably) the more recent API used
+pysync is similar to [drive by odeke-em](https://github.com/odeke-em/drive), but is much faster (150s -> <30s for comparing ~5400 files), thanks mostly to parallelism and(probably) the more recent API used
 
 ## Google Credentials
 
@@ -17,7 +17,7 @@ pysync is similar to [drive](https://github.com/odeke-em/drive), but is much fas
   - click on "NEW PROJECT"
   - pick a name(pysync)
   - select the project
-  - in a new tab, go to [this link](https://console.cloud.google.com/apis/library/drive.googleapis.com)
+  - in a new tab, go to [this link](https://console.cloud.google.com/apis/library/drive.googleapis.com) to enable Google Drive API for this project
   - click "ENABLE"
   - go back to the [previous tab](https://console.cloud.google.com) 
   - click the 3 line burger icon on the top left
