@@ -4,7 +4,6 @@ import traceback
 
 import concurrent.futures as cf
 
-from multiprocessing import RLock
 from socket import timeout
 from googleapiclient.errors import HttpError, ResumableUploadError
 from httplib2 import ServerNotFoundError
@@ -120,8 +119,6 @@ def run_drive_ops(diff_infos, all_data, drive):
                                 all_data[info.path] = info
                         else:
                             # * the info gave up after retries
-                            # TODO need to handle its children
-                            # TODO but childrens should fail anyway maybe?
                             cancelled = []
                             for child_path in all_data:
                                 child = all_data[child_path]
@@ -233,7 +230,9 @@ class FileInfo():
         if get_option("PRINT_UPLOAD") and countdown is not None:
             print(" ".join((str(countdown), self.action_human, self.ppath)))
             if countdown == 1:
+                time.sleep(0.1)  # * so that this message is below other messages
                 print("All jobs have been started, waiting for them to finish..")
+
         while True:
             try:
                 self.op_checks()
@@ -280,7 +279,7 @@ class FileInfo():
 
                 time.sleep(get_option("RETRY_TIME"))
 
-        if self.action_code == "del remote" or self.action_code == "del local":
+        if self.action_code in ["del remote", "del local"]:
             self.deletion_occured = True
 
         if count > 0:
@@ -302,14 +301,14 @@ class FileInfo():
                 out = "uploading new" if readable else "up new"
             elif self.action == "pull":
                 if self.isfolder:
-                    out = "deleting local folder and ALL its content" if readable else "del local"
+                    out = "deleting local folder its content" if readable else "del local"
                 else:
                     out = "deleting local file" if readable else "del local"
 
         elif self.change_type == "remote_new":
             if self.action == "push":
                 if self.isfolder:
-                    out = "deleting remote folder and ALL its content" if readable else "del remote"
+                    out = "deleting remote folder its content" if readable else "del remote"
                 else:
                     out = "deleting remote file" if readable else "del remote"
             elif self.action == "pull":
@@ -352,12 +351,12 @@ class FileInfo():
     #     return hash(frozenset(out))
 
     @property
-    def ppath(self):
+    def ppath(self): # * stands for printing path"""  """
         return self.path if get_option("FULL_PATH") else self.remote_path
 
     @property
     def isfolder(self):
-        assert self.type == "folder" or self.type == "file"
+        assert self.type in ["folder", "file"]
         return self.type == "folder"
 
     @property

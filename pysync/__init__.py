@@ -13,11 +13,13 @@ from pysync.UserPrompt import apply_forced_and_default, choose_changes
 COPYRIGHT_TEXT = """pysync Copyright 2022 Kenivia
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it under certain conditions.
-For more information, see the file LICENSE and https://www.gnu.org/licenses/\n\n"""
+For more information, see https://www.gnu.org/licenses/gpl-3.0.html \n\n"""
 
 
 def real_main(path, timer):
 
+    # TODO make this a more interactive process, to prepare for a background thread constantly updating things
+    # TODO so that the user can come along and instantly sync
     local_data = {}
     print("Started loading local files..")
     thread = get_local(path, local_data, timer=timer.time("local"))

@@ -139,6 +139,8 @@ def check_options():
 Each of the following must be included exactly once:
 \t\"local_new\", \"content_change\", \"mtime_change\", \"remote_new\"""")
 
+    print("Options parsed successfully")
+
 
 @lru_cache(None)
 def get_option(*keys):
