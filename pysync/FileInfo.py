@@ -67,13 +67,11 @@ def run_drive_ops(diff_infos, all_data, drive):
     else:
         print("No available changes")
 
-    interrupt_key = "Interrupt///\\\\\\"
-    failed_key = "Failed///\\\\\\"
-    all_data[failed_key] = []
+    big_exception = []
+    failed = []
 
     max_threads = get_option("MAX_UPLOAD")
     # * must be processpool, threadpool runs into memory issue
-    lock = RLock()
 
     # TODO it seems that the executor isn't designed to get cancelled normally
     # TODO as in it always waits when keyboard interrupt
@@ -84,14 +82,18 @@ def run_drive_ops(diff_infos, all_data, drive):
 
         while pending:
             index = len(pending) - 1
-            if interrupt_key in all_data:
+            if big_exception:
                 break
 
             for _ in range(len(pending)):
-                if interrupt_key in all_data:
+                if big_exception:
                     break
 
                 info = pending[index]
+                if info.path not in all_data:  # * cancelled because parent failed
+                    pending.remove(info)
+                    index -= 1
+                    continue
                 info.find_parent(all_data)
 
                 if not info.check_parent():
@@ -105,14 +107,9 @@ def run_drive_ops(diff_infos, all_data, drive):
                     if exception is not None:
                         # ? This is for catastrophic failures like running out of space,
                         # ? Where everything else must also stop
-                        with lock:
-                            # * test/set situation, what might happen without lock is:
-                            # * thread 1 sees that there's no interrupt key
-                            # * thread 2 sees that there's no interrupt key
-                            # * thread 1 writes to it
-                            # * thread 2 writes to it, so end result is from thread 2 but it should've been 1
-                            if interrupt_key not in all_data:
-                                all_data[interrupt_key] = exception
+
+                        if not big_exception:
+                            big_exception.append(exception)
                     else:
                         info = fut.result()
 
@@ -125,13 +122,30 @@ def run_drive_ops(diff_infos, all_data, drive):
                             # * the info gave up after retries
                             # TODO need to handle its children
                             # TODO but childrens should fail anyway maybe?
-                            all_data[failed_key].append(info)
+                            cancelled = []
+                            for child_path in all_data:
+                                child = all_data[child_path]
+                                if isinstance(child, str):
+                                    continue
+                                if child.parent_path == info.path:
+                                    child.failed_reason = "One of the parent folders failed"
+                                    cancelled.append(child)
+                                    failed.append(child)
+
+                            if cancelled:
+                                print("The following files are cancelled as a result:")
+                                for i in cancelled:
+                                    print(i.index, i.path)
+                                    del all_data[i.path]
+                                print("-" * os.get_terminal_size().columns)
+
+                            failed.append(info)
 
                 future.add_done_callback(callback)
                 index -= 1
 
-    if interrupt_key in all_data:
-        exception = all_data[interrupt_key]
+    if big_exception:
+        exception = big_exception[0]
         if isinstance(exception, GDriveQuotaExceeded):
             final_straw = exception.args[0]
             after_paths = [i.path for i in pending]
@@ -149,15 +163,15 @@ def run_drive_ops(diff_infos, all_data, drive):
             exit_with_message(message="A file failed unexpectedly with the error above and other pending files were interrupted",
                               exception=exception)
 
-    assert interrupt_key not in all_data
+    assert not big_exception
 
-    if not all_data[failed_key]:
+    if not failed:
         print("All done")
 
     else:
         print("\nThe files below failed to sync:\n")
-        for index, info in enumerate(all_data[failed_key]):
-            print(str(index + 1) + ": " + info.ppath)
+        for index, info in enumerate(failed):
+            print(str(info.index) + ": " + info.ppath)
             print(info.failed_reason)
 
         on_exit(failure="some failed")
@@ -236,7 +250,7 @@ class FileInfo():
 
             except Exception as exception:
 
-                reason = traceback.format_exc() + '-' * os.get_terminal_size().columns
+                reason = traceback.format_exc() + "\n" + '-' * os.get_terminal_size().columns
                 if max_count >= 0 and count >= max_count:
                     self.failed_reason = reason
                     self.op_attempted = True
