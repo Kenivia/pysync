@@ -170,7 +170,7 @@ def run_drive_ops(diff_infos, all_data, drive):
 
     else:
         print("\nThe files below failed to sync:\n")
-        for index, info in enumerate(failed):
+        for index, info in enumerate(reversed(failed)):
             print(str(info.index) + ": " + info.ppath)
             print(info.failed_reason)
 
@@ -199,7 +199,7 @@ class FileInfo():
 
         self.change_type = None
         self.forced = False
-        self.index = None
+        self.index = ""
 
         self.isremotegdoc = False
 
@@ -272,7 +272,7 @@ class FileInfo():
                         raise GDriveQuotaExceeded(self.path)
 
                 if message is not None:
-                    print("\n" + message + retry_text(count, max_count) + self.ppath)
+                    print("\n" + self.index + message + retry_text(count, max_count) + self.ppath)
 
                 else:
                     print("\nUnknown failure" + retry_text(count, max_count) +

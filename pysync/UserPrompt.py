@@ -348,7 +348,7 @@ def choose_changes(diff_infos):
         changed = []
         all_index = {}
         for i in diff_infos:
-            if i.index is not None:
+            if i.index != "":
                 all_index[str(i.index)] = i
 
         for inp in arguments:
