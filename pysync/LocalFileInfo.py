@@ -5,7 +5,7 @@ from send2trash import send2trash
 from datetime import datetime
 from googleapiclient.http import MediaFileUpload
 
-from pysync.FileInfo import FileInfo
+from pysync.FileInfo import FileInfo, FileIDNotFoundError
 from pysync.Functions import hex_md5_file, local_to_utc
 from pysync.OptionsParser import get_option
 
@@ -105,20 +105,22 @@ class LocalFileInfo(FileInfo):
             _file = drive.get(fileId=file_id,
                               fields="trashed, parents").execute()
 
-            if _file["trashed"]:
-                body = {"trashed": False, }
-                old_parent = _file["parents"][0]
-                drive.update(
-                    body=body,
-                    fileId=file_id,
-                    addParents=self.parentID,
-                    removeParents=old_parent).execute()
-                print(self.ppath, "has been untrashed")
-            else:
-                print(
-                    "\tThis file local gdoc file has no matching remote file: " +
-                    self.ppath,
-                )
+            # if _file["trashed"]:
+            body = {"trashed": False, }
+            old_parent = _file["parents"][0]
+            drive.update(
+                body=body,
+                fileId=file_id,
+                addParents=self.parentID,
+                removeParents=old_parent).execute()
+            # ? Here, i think technically we dont even have to remove old parent? just add new ones?
+            # ? But having more than one parent will cause issues with get_remove
+            # ? Since currently we take the 1st parent
+            # ? idk just sounds like a can of worms
+            
+            # print(self.ppath, "has been untrashed")
+            # else:
+            #     print("\tThis file local gdoc file has no matching remote file: " + self.ppath,)
         else:
             # * is an ordinary file
             body = {"parents": [self.parentID],
@@ -142,6 +144,17 @@ class LocalFileInfo(FileInfo):
         with open(self.path, "wb") as f:
             f.write(response)
         self.copy_remote_mtime(drive)
+
+    def find_id(self):
+        text = open(self.path, "r").read()
+        for line in text.split("\n"):
+            if line.startswith("xdg-open https://docs.google.com/"):
+                split = text.split("/")
+                for index, item in enumerate(split):
+                    if item == "d":  # * the id is after a /d/ sequence
+                        return split[index + 1]
+
+        raise FileIDNotFoundError()
 
     def has_signature(self):
         if self.isfile and os.path.getsize(self.path) < 300:

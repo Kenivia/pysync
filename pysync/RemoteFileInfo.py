@@ -7,7 +7,7 @@ from googleapiclient.errors import HttpError
 
 from pysync.Functions import check_acknowledgement
 from pysync.OptionsParser import get_option
-from pysync.FileInfo import FileInfo, FileIDNotFoundError
+from pysync.FileInfo import FileInfo
 
 
 class GdriveFileInfo(FileInfo):
@@ -106,17 +106,6 @@ class GdriveFileInfo(FileInfo):
         return f"""xdg-open {self.link}
     # This file was created by pysync. Do not remove the line below!
     {get_option("SIGNATURE")}"""
-
-    def find_id(self):
-        text = open(self.path, "r").read()
-        for line in text.split("\n"):
-            if line.startswith("xdg-open https://docs.google.com/"):
-                split = text.split("/")
-                for index, item in enumerate(split):
-                    if item == "d":  # * the id is after a /d/ sequence
-                        return split[index + 1]
-
-        raise FileIDNotFoundError()
 
     def copy_remote_mtime(self, drive):
         assert self.path is not None

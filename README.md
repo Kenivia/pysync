@@ -82,11 +82,11 @@ Typing `help` before applying changes will display the following message:
         pysync comes with ABSOLUTELY NO WARRANTY
 
         pysync creates many(40 by default) processes to upload/download changes. This speeds up
-        the process for small files. However, this means that cancelling the process will require
-        the user to press Ctrl+C two or three times.
+        the process substantially for small files.
         
-        Note that if a file changes(locally or remotely) between loading and applying, the file may
-        fail with "unknown error". This should not lead to any loss of data
+        Note that if a file changes(locally or remotely) between loading and applying, pysync should
+        detect this and reject the file(it will say "unknown error"). 
+        This will not lead to any loss of data
 
 
     push, pull, ignore
@@ -128,7 +128,7 @@ Typing `help` before applying changes will display the following message:
 
 - Detect differences quickly, depending mostly on the size of the google drive and sometimes the disk read speed
 - The user can then choose which files to push/pull(upload/download)
-- Applies the chosen operations in parallel
+- Applies the chosen operations in parallel(40 at the same time by default)
 - For Google Docs, Google Sheets and Google Slides etc, download an executable text file that links to the file
 - Ext3/4 file systems don't allow folders and files with the same name but it is allowed on Google drive. You can avoid this problem with Capitalizations.
 - Keeps track of how long each stage of the program took
@@ -136,9 +136,12 @@ Typing `help` before applying changes will display the following message:
 ## Known issues/plans
 
 - Forced paths(specified in Options.json) don't behave correctly when a forced path contains another forced path
-- Google Docs files are currently download and delete only(moving the text file locally won't move the remote copy)
+- Having multiple copies of local files corresponding to the same Google doc file may cause issues
+- A background daemon that tracks changes to the local folder - though this might be more effort than it's worth
 - Implementation of background syncing and maybe a GUI, similar to [Google's Windows/macOs app](https://www.google.com/drive/download/), is the long term goal
 
 ## Contributing
 
 Any feedback or help is greatly appreciated!
+
+Contact me at kenivia.fan@gmail.com
