@@ -47,6 +47,9 @@ class GdriveFileInfo(FileInfo):
         assert self.action is not None
         assert self.action == "pull" or self.action == "push"
         assert self.partner is None
+        assert not self.op_attempted
+        assert not self.op_success
+        
         if self.isremotegdoc:
             assert self.link is not None
 

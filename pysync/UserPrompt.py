@@ -111,7 +111,7 @@ def apply_forced_and_default(diff_infos):
         if forced_action:
             info._action = forced_action
             info.forced = True
-        else:
+        elif info._action is None:
             info._action = get_default_action(info.change_type)
 
     return diff_infos

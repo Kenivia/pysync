@@ -76,8 +76,9 @@ def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
 
 
-class SilentExit(Exception):
+class SilentExit(BaseException):
     pass
+
 
 
 def match_attr(infos, **kwargs):

@@ -1,18 +1,19 @@
 import os
 import time
 import traceback
+import signal
+
 
 import concurrent.futures as cf
 
 from multiprocessing import RLock
-from datetime import datetime
 from socket import timeout
 from googleapiclient.errors import HttpError, ResumableUploadError
 from httplib2 import ServerNotFoundError
 
-from pysync.Functions import local_to_utc, match_attr
+from pysync.Functions import SilentExit, match_attr
 from pysync.OptionsParser import get_option
-from pysync.Exit import exit_with_message
+from pysync.Exit import exit_with_message, on_exit
 from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
 
@@ -35,7 +36,7 @@ def retry_text(_count, _max_count):
     if _max_count >= 0 and _count >= _max_count:
         return ", " + f"tried {_max_count} times, giving up" + ": "
     else:
-        return ", " + f"retrying({_count}/{_max_count})" + ": "
+        return ", " + f"retrying in {str(get_option('RETRY_TIME'))}s({_count}/{_max_count})" + ": "
 
 
 @logtime
@@ -68,16 +69,27 @@ def run_drive_ops(diff_infos, all_data, drive):
     else:
         print("No available changes")
 
-    interrupt_key = "uniqueKey///\\\\\\"
+    interrupt_key = "Interrupt///\\\\\\"
+    failed_key = "Failed///\\\\\\"
+    all_data[failed_key] = []
+
     max_threads = get_option("MAX_UPLOAD")
     # * must be processpool, threadpool runs into memory issue
     lock = RLock()
-    with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
+
+    # TODO it seems that the executor isn't designed to get cancelled normally
+    # TODO as in it always waits when keyboard interrupt
+    # TODO I might be able to do this if I don't use a `with` clause
+    # TODO but when I do that I can't figure out how to submit(and wait) properly
+    # TODO since there's complicated logic associated with the order of submits
+    with cf.ProcessPoolExecutor(max_workers=max_threads,) as executor:
+
         while pending:
-
             index = len(pending) - 1
-            for _ in range(len(pending)):
+            if interrupt_key in all_data:
+                break
 
+            for _ in range(len(pending)):
                 if interrupt_key in all_data:
                     break
 
@@ -93,6 +105,8 @@ def run_drive_ops(diff_infos, all_data, drive):
                 def callback(fut):
                     exception = fut.exception()
                     if exception is not None:
+                        # ? This is for catastrophic failures like running out of space,
+                        # ? Where everything else must also stop
                         with lock:
                             # * test/set situation, what might happen without lock is:
                             # * thread 1 sees that there's no interrupt key
@@ -102,20 +116,21 @@ def run_drive_ops(diff_infos, all_data, drive):
                             if interrupt_key not in all_data:
                                 all_data[interrupt_key] = exception
                     else:
-                        result = fut.result()
-                        if result is None:
+                        info = fut.result()
+
+                        if info.op_success:
+                            if info.deletion_occured:
+                                del all_data[info.path]
+                            else:
+                                all_data[info.path] = info
+                        else:
                             # * the info gave up after retries
                             # TODO need to handle its children
-                            pass
-                        elif isinstance(result, str):
-                            del all_data[result]
-                        else:
-                            # * this needs no lock because 2 infos won't try to write to the same path
-                            all_data[result.path] = result
+                            # TODO childrens should fail anyway maybe?
+                            all_data[failed_key].append(info)
 
                 future.add_done_callback(callback)
                 index -= 1
-            # * after each iteration, the leftovers are sorted and ran again
 
     if interrupt_key in all_data:
         exception = all_data[interrupt_key]
@@ -133,10 +148,22 @@ def run_drive_ops(diff_infos, all_data, drive):
 
         else:
             # * This should never happen
-            # * This means that a FileInfo threw an exception during drive_op
             exit_with_message(message="A file failed unexpectedly with the error above and other pending files were interrupted",
                               exception=exception)
-    print("All done")
+
+    assert interrupt_key not in all_data
+
+    if not all_data[failed_key]:
+        print("All done")
+
+    else:
+        print("\nThe files below failed to sync:\n")
+        for index, info in enumerate(all_data[failed_key]):
+            print(str(index + 1) + ": " + info.ppath)
+            print(info.failed_reason)
+
+        on_exit(failure="some failed")
+        raise SilentExit()
 
 
 class FileInfo():
@@ -164,8 +191,12 @@ class FileInfo():
 
         self.isremotegdoc = False
 
-        self.op_completed = False
+        self.op_attempted = False
+        self.op_success = False
         self.checked_good = False
+
+        self.failed_reason = None
+        self.deletion_occured = False
 
     def drive_op(self, drive, countdown=None):
         """Applies the operation specified by self.change_type and self.action
@@ -184,14 +215,13 @@ class FileInfo():
             GDriveQuotaExceeded: Google drive is full, this exception will contain self.path
 
         """
+
         count = 0
         max_count = get_option("MAX_RETRY")
-        deletion = False
         if get_option("PRINT_UPLOAD") and countdown is not None:
             print(" ".join((str(countdown), self.action_human, self.ppath)))
             if countdown == 1:
                 print("All jobs have been started, waiting for them to finish..")
-
         while True:
             try:
                 self.op_checks()
@@ -206,46 +236,47 @@ class FileInfo():
                 funcs[self.action_code](drive)
                 break
 
-            except Exception as e:
+            except Exception as exception:
 
+                reason = traceback.format_exc() + '-' * os.get_terminal_size().columns
                 if max_count >= 0 and count >= max_count:
-                    return None
+                    self.failed_reason = reason
+                    self.op_attempted = True
+                    return self
 
                 count += 1
                 message = None
-                reason = traceback.format_exc()
-                if isinstance(e, timeout):
-                    message = "This file timed out"
 
-                elif isinstance(e, ServerNotFoundError):
+                if isinstance(exception, timeout):
+                    message = "Timed out"
+
+                elif isinstance(exception, ServerNotFoundError):
                     message = "Couldn't connect to server"
 
-                elif isinstance(e, HttpError) or isinstance(e, ResumableUploadError):
-                    if "userRateLimitExceeded" in repr(e):
-                        message = "This file failed, rate of requests too high"
-                    elif "storageQuotaExceeded" in repr(e):
+                elif isinstance(exception, HttpError) or isinstance(exception, ResumableUploadError):
+                    if "userRateLimitExceeded" in repr(exception):
+                        message = "Rate of requests too high"
+                    elif "storageQuotaExceeded" in repr(exception):
                         raise GDriveQuotaExceeded(self.path)
-                else:
-                    # * unknown error, this will print `reason`
-                    pass
 
                 if message is not None:
-                    print("\n" + message + retry_text(count, max_count) + self.ppath + "\n")
+                    print("\n" + message + retry_text(count, max_count) + self.ppath)
 
                 else:
-                    print("\nThis file failed with the following error" + retry_text(count, max_count) + self.ppath +
-                          "\n" + reason)
+                    print(
+                        "\nUnknown failure" + retry_text(count, max_count) +
+                        self.ppath)  # + "\n" + reason)
 
                 time.sleep(get_option("RETRY_TIME"))
 
         if self.action_code == "del remote" or self.action_code == "del local":
-            deletion = True
+            self.deletion_occured = True
 
         if count > 0:
             print(f"Retry #" + str(count) + " was successful: " + self.ppath)
 
-        self.op_completed = True
-        return self.path if deletion else self
+        self.op_success = True
+        return self
 
     def get_action_code(self, readable):
 
@@ -277,22 +308,12 @@ class FileInfo():
             if self.action == "push":
                 out = "uploading difference" if readable else "up diff"
             elif self.action == "pull":
-                out = "donwloading difference" if readable else "down diff"
+                out = "downloading difference" if readable else "down diff"
         else:
             raise ValueError(self.change_type + " and " + self.action + " is not valid")
 
         forced = "forced " if self.forced and readable else ""
         return forced + out
-
-    def get_posix_mtime(self):
-        assert self.path is not None
-        return os.path.getmtime(self.path)
-
-    def get_iso_mtime(self):
-        assert self.path is not None
-        mtime = self.get_posix_mtime()
-        dt = datetime.fromtimestamp(mtime)
-        return local_to_utc(dt).isoformat()
 
     def find_parent(self, all_data):
 
@@ -435,4 +456,10 @@ class FileInfo():
 
     @property
     def parentID(self):
+        raise NotImplementedError
+
+    def get_raw_local_mtime(self):
+        raise NotImplementedError
+
+    def get_iso_mtime(self):
         raise NotImplementedError

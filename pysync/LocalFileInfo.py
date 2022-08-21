@@ -1,10 +1,12 @@
+
 import os
 
 from send2trash import send2trash
+from datetime import datetime
 from googleapiclient.http import MediaFileUpload
-from pysync.FileInfo import FileInfo
 
-from pysync.Functions import hex_md5_file
+from pysync.FileInfo import FileInfo
+from pysync.Functions import hex_md5_file, local_to_utc
 from pysync.OptionsParser import get_option
 
 
@@ -24,7 +26,7 @@ class LocalFileInfo(FileInfo):
             if kwargs["check_md5"]:
                 self.calculate_md5()
             else:
-                self.mtime = int(os.stat(self.path).st_mtime)
+                self.mtime = round(self.get_raw_local_mtime())
 
     def compare_info(self):
         """Checks if there are differences between self and self.partner
@@ -65,7 +67,9 @@ class LocalFileInfo(FileInfo):
 
         assert self.action is not None
         assert self.action == "pull" or self.action == "push"
-        assert not self.op_completed
+        assert not self.op_attempted
+        assert not self.op_success
+
         if self.partner is not None:
             assert not self.partner.islocal
 
@@ -190,6 +194,16 @@ class LocalFileInfo(FileInfo):
             return None
         self._parentID = self.partner.parentID
         return self.partner.parentID
+
+    def get_raw_local_mtime(self):
+        assert self.path is not None
+        return os.path.getmtime(self.path)
+
+    def get_iso_mtime(self):
+        assert self.path is not None
+        mtime = self.get_raw_local_mtime()
+        dt = datetime.fromtimestamp(mtime)
+        return local_to_utc(dt).isoformat().replace("+00:00", "Z")
 
     @property
     def path(self):
