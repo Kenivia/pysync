@@ -1,4 +1,3 @@
-import pathlib
 from pysync.Timer import logtime
 from pysync.Functions import check_acknowledgement, contains_parent, SilentExit, match_attr
 from pysync.OptionsParser import get_option
@@ -11,27 +10,32 @@ the changes above are proposed, the following commands are available:
 
 
 apply
-    `apply` or simply submitting no input(pressing Enter) will commit these changes
+    `apply` or simply pressing Enter will commit the changes listed above
 
     MAKE A BACKUP OF YOUR FILES BEFORE RUNNING THIS!
     pysync comes with ABSOLUTELY NO WARRANTY
 
     pysync creates many(40 by default) processes to upload/download changes. This speeds up
     the process for small files. However, this means that cancelling the process will require
-    the user to press Ctrl+C a few times quickly.
+    the user to press Ctrl+C two or three times.
+    
+    Note that if a file changes(locally or remotely) between loading and applying, the file may
+    fail with "unknown error". This should not lead to any loss of data
 
 
 push, pull, ignore
     - `push` means that you want what's on your local storage to replace what's on Google drive.
             This may upload new files, modify remote files or trash remote files
+            
     - `pull` means that you want what's on Google drive to replace what's on your local storage.
             This may download new files, modify local files or trash local files
+            
     - `ignore` means that no action will be taken for the chosen file.
 
-    Using the paths' index printed above, you can specify which paths to push, pull or ignore
-    Use `,` or ` `(space) to separate indices
-    Use `-` to specify indices in a range(inclusive)
-    Use `all` to represent all indices
+    Using indices in front of the files, you can specify which files to push, pull or ignore
+    Use "," or " "(space) to separate indices
+    Use "-" to specify indices in a range(inclusive on both ends)
+    Use "all" to represent all indices
 
     Example inputs:
         push 6 5
