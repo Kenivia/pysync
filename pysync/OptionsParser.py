@@ -3,6 +3,7 @@ import multiprocessing
 import os
 import json
 import platform
+import shutil
 
 from functools import lru_cache
 
@@ -82,8 +83,13 @@ def alias_to_code(raw_options):
 
 def check_options():
 
-    assert platform.system() == "Linux"
+    if platform.system() != "Linux":
+        print("Warning! pysync can only run on Linux")
     options_path = get_root() + OPTIONS_PATH
+    if not os.path.isfile(options_path):
+        print("Options not found at " + options_path + ", using default options")
+        shutil.copyfile(DEFAULT_OPTIONS_PATH, options_path)
+
     raw_options = json.load(open(options_path, "r"))
     seen_keys = []
 

@@ -76,7 +76,7 @@ Typing `help` before applying changes will display the following message:
 
 
     apply
-        `apply` or only pressing Enter will commit these changes
+        `apply` or simply submitting no input(pressing Enter) will commit these changes
 
         MAKE A BACKUP OF YOUR FILES BEFORE RUNNING THIS!
         pysync comes with ABSOLUTELY NO WARRANTY
@@ -97,13 +97,14 @@ Typing `help` before applying changes will display the following message:
         Use `,` or ` `(space) to separate indices
         Use `-` to specify indices in a range(inclusive)
         Use `all` to represent all indices
-        
+
         Example inputs:
             push 6 5
             pull 4
-            ignore 1,  3,2 
+            ignore 1,  3,2
             push 7-10(This will be the same as: push 7, 8, 9, 10)
             pull all
+
 
     restart
         Terminate this process and use the same python interpreter to start another pysync instance
