@@ -74,7 +74,7 @@ class Watcher:
                 with open(self.log_path, "a") as f:
                     f.writelines([get_alive_text()])
                     self.handler.trigger_cleanup(len(get_alive_text()))
-        
+
         except Exception as e:
             self.observer.stop()
             raise e
@@ -113,15 +113,15 @@ class MyHandler(FileSystemEventHandler):
             ftype = "D" if event.is_directory else "F"
 
             string = "\n" + mtime + ftype + etype + path
-            
+
             self.write(string)
             self.trigger_cleanup(len(string))
-            
+
     def trigger_cleanup(self, length):
         self.nowsize += length
         if self.nowsize - self.lastsize >= self.size_increment_trigger:
             self.cleanup()
-            
+
     def cleanup(self):
         # * 10 is file type (D or F)
         # * 11 is change type (C, D or M)
@@ -134,7 +134,7 @@ class MyHandler(FileSystemEventHandler):
         starting_line = text[0]
         first_alive = text[1]
         text = text[2:]
-        
+
         out = [first_alive]
         last_alive = first_alive  # * just in case there isn't any alive pings
         for line in reversed(text):
@@ -142,7 +142,7 @@ class MyHandler(FileSystemEventHandler):
                 last_alive = line
                 break
         out.append(last_alive)
-        
+
         path_dict = {}
         for line in text:
             path = line[12:]
@@ -156,7 +156,7 @@ class MyHandler(FileSystemEventHandler):
             temp = []
             all_lines = path_dict[path]
             for line in reversed(all_lines):
-                if line[11] == "M": # * only take the last mod
+                if line[11] == "M":  # * only take the last mod
                     temp.append(line)
                     break
 
@@ -168,7 +168,7 @@ class MyHandler(FileSystemEventHandler):
                     last_line = line
 
             # * let's assume that it's alternating like C D C D C
-            if len(CD_list) % 2 == 1: # * only do something if it's odd
+            if len(CD_list) % 2 == 1:  # * only do something if it's odd
                 temp.append(last_line)
 
             out.extend(temp)
@@ -177,7 +177,7 @@ class MyHandler(FileSystemEventHandler):
         with open(self.log_path, "w") as f:
             f.write("\n".join(out))
             print("sorted")
-            
+
         self.nowsize = os.path.getsize(self.log_path)
         self.lastsize = self.nowsize
 

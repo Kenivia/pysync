@@ -20,7 +20,7 @@ def filter_link(inp):
     for i in inp:
         path = i[0]
         if os.path.islink(path):
-            print(path + " is a symlink, ignored") 
+            print(path + " is a symlink, ignored")
             # * can't be bothered making this comply with `Print absolute path`
         else:
             out.append(i)
@@ -30,7 +30,7 @@ def filter_link(inp):
 @logtime
 def real_get_local(path, out_dict):
     """Adds FileInfo objects to out_dict with their paths as the key"""
-    
+
     file_paths, folder_paths = [], []
     for parent, dirs, files in os.walk(path):
         file_paths.extend(filter_link(

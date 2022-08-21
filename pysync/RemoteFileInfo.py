@@ -79,7 +79,6 @@ class GdriveFileInfo(FileInfo):
             os.mkdir(self.path)
         else:
             if not self.isremotegdoc:
-                # TODO abuse? but otherwise works
                 try:
                     response = drive.get_media(fileId=self.id).execute()
 

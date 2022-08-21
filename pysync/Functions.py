@@ -80,7 +80,6 @@ class SilentExit(BaseException):
     pass
 
 
-
 def match_attr(infos, **kwargs):
     # * doesn't support multiple values
     # * e.g action = push, action = pull because there's no way of knowing

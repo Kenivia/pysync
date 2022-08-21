@@ -32,14 +32,14 @@ push, pull, ignore
     Use `,` or ` `(space) to separate indices
     Use `-` to specify indices in a range(inclusive)
     Use `all` to represent all indices
-    
+
     Example inputs:
         push 6 5
         pull 4
-        ignore 1,  3,2 
+        ignore 1,  3,2
         push 7-10(This will be the same as: push 7, 8, 9, 10)
         pull all
-    
+
 
 restart
     Terminate this process and use the same python interpreter to start another pysync instance
@@ -288,7 +288,7 @@ def choose_changes(diff_infos):
     initing = True
     original_inp = ""
     original_length = len(diff_infos)
-    text = "pysync will download files marked as `abuse`" if check_acknowledgement() \
+    text = "pysync is allowed to download files marked as `abuse`" if check_acknowledgement() \
         else "pysync will not download files marked as `abuse`"
 
     while True:

@@ -33,9 +33,9 @@ def real_main(path, timer):
 
     print("Comparing..")
     diff_infos, all_data = get_diff(local_data, remote_data, timer=timer.time("compare"))
-    
-    all_data[path] = root # * This is needed for find_parent in run_drive_ops
-    
+
+    all_data[path] = root  # * This is needed for find_parent in run_drive_ops
+
     apply_forced_and_default(diff_infos, timer=timer.time("compare"))
 
     choose_changes(diff_infos, timer=timer.time("choose"))
@@ -77,4 +77,4 @@ def main():
 
         exit_with_message(message=message, exception=e, raise_silent=False)
         # * This should rarely happen
-        # * most errors should be caught somewhere, something gets printed and SilentExit is raised
+        # * most errors should be caught somewhere, something gets printed and SilentExit raised

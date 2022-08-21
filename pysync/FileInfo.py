@@ -1,8 +1,6 @@
 import os
 import time
 import traceback
-import signal
-
 
 import concurrent.futures as cf
 
@@ -126,7 +124,7 @@ def run_drive_ops(diff_infos, all_data, drive):
                         else:
                             # * the info gave up after retries
                             # TODO need to handle its children
-                            # TODO childrens should fail anyway maybe?
+                            # TODO but childrens should fail anyway maybe?
                             all_data[failed_key].append(info)
 
                 future.add_done_callback(callback)
@@ -263,9 +261,8 @@ class FileInfo():
                     print("\n" + message + retry_text(count, max_count) + self.ppath)
 
                 else:
-                    print(
-                        "\nUnknown failure" + retry_text(count, max_count) +
-                        self.ppath)  # + "\n" + reason)
+                    print("\nUnknown failure" + retry_text(count, max_count) +
+                          self.ppath)  # + "\n" + reason)
 
                 time.sleep(get_option("RETRY_TIME"))
 
@@ -324,21 +321,21 @@ class FileInfo():
             else:
                 self._parentID = all_data[self.parent_path].id
 
-    def __hash__(self):
+    # def __hash__(self):
 
-        out = {}
-        for key in self.__dict__:
-            if key == "partner":
-                out[key] = self.partner.id
-            item = self.__dict__[key]
-            if isinstance(item, dict):
-                out[key] = frozenset(item)
-            elif isinstance(item, list):
-                out[key] = tuple(item)
-            else:
-                out[key] = item
+    #     out = {}
+    #     for key in self.__dict__:
+    #         if key == "partner":
+    #             out[key] = self.partner.id
+    #         item = self.__dict__[key]
+    #         if isinstance(item, dict):
+    #             out[key] = frozenset(item)
+    #         elif isinstance(item, list):
+    #             out[key] = tuple(item)
+    #         else:
+    #             out[key] = item
 
-        return hash(frozenset(out))
+    #     return hash(frozenset(out))
 
     @property
     def ppath(self):

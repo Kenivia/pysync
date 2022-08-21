@@ -54,25 +54,25 @@ def on_exit_thread(error=False, timer=None):
 
     complete_text = "\nThe syncing process has completed successfully" + \
         line_exit + line_time + line_restart + line_input
-    
-    part_fail_text = "\nFiles listed above failed to sync, other files completed successfully"+\
-         line_exit + line_time + line_restart + line_input
-         
+
+    part_fail_text = "\nFiles listed above failed to sync, other files completed successfully" +\
+        line_exit + line_time + line_restart + line_input
+
     error_text = "\nThe error above has occurred " + \
         line_exit + line_restart + line_input
 
     if error == "some failed":
         text = part_fail_text
-        
+
     elif error:
         text = error_text
-        
+
     else:
         if timer is None:
             text = cancel_text
         else:
             text = complete_text
-            
+
     while True:
 
         user_inp = input(text)

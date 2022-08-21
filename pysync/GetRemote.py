@@ -3,7 +3,7 @@ from socket import timeout
 
 from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
-from pysync.GdriveFileInfo import GdriveFileInfo
+from pysync.RemoteFileInfo import GdriveFileInfo
 from pysync.Exit import exit_with_message
 
 
