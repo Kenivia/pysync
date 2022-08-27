@@ -1,6 +1,6 @@
 from pysync.Differ import get_diff
 from pysync.Exit import on_exit, exit_with_message
-from pysync.FileInfo import run_drive_ops
+from pysync.BaseFileInfo import run_drive_ops
 from pysync.Functions import SilentExit, get_root
 from pysync.GetLocal import get_local
 from pysync.GetRemote import get_remote, process_remote

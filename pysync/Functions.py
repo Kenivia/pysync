@@ -63,7 +63,7 @@ def dump_test_pkl(obj, name, datetime=None):
 
 
 def get_root():
-    # * im sure there's a better way of doing this but i can't find it
+    # TODO im sure there's a better way of doing this but i can't find it
     return str(PurePath(__file__).parent.parent)
 
 

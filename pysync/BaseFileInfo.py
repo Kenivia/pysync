@@ -175,7 +175,7 @@ def run_drive_ops(diff_infos, all_data, drive):
         raise SilentExit()
 
 
-class FileInfo():
+class BaseFileInfo():
 
     """Object containing the metadata of either a local or remote file"""
 

@@ -7,10 +7,10 @@ from googleapiclient.errors import HttpError
 
 from pysync.Functions import check_acknowledgement
 from pysync.OptionsParser import get_option
-from pysync.FileInfo import FileInfo
+from pysync.BaseFileInfo import BaseFileInfo
 
 
-class GdriveFileInfo(FileInfo):
+class GdriveFileInfo(BaseFileInfo):
 
     """
     Object containing the metadata of either a remote google drive file

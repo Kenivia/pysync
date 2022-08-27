@@ -5,7 +5,7 @@ from send2trash import send2trash
 from datetime import datetime
 from googleapiclient.http import MediaFileUpload
 
-from pysync.FileInfo import FileInfo, FileIDNotFoundError
+from pysync.BaseFileInfo import BaseFileInfo, FileIDNotFoundError
 from pysync.Functions import hex_md5_file, local_to_utc
 from pysync.OptionsParser import get_option
 
@@ -13,7 +13,7 @@ from pysync.OptionsParser import get_option
 UP_CHUNK_SIZE = -1  # * -1 for uploading in one go, specifying a chunksized doesn't seem to work
 
 
-class LocalFileInfo(FileInfo):
+class LocalFileInfo(BaseFileInfo):
 
     """Object containing the metadata of either a local file"""
 
