@@ -11,7 +11,7 @@ from pysync.UserPrompt import apply_forced_and_default, choose_changes
 
 
 COPYRIGHT_TEXT = """pysync Copyright 2022 Kenivia
-This program comes with ABSOLUTELY NO WARRANTY.
+This program comes with ABSOLUTELY NO WARRANTY. MAKE A BACKUP OF YOUR FILES BEFORE RUNNING THIS!
 This is free software, and you are welcome to redistribute it under certain conditions.
 For more information, see https://www.gnu.org/licenses/gpl-3.0.html \n\n"""
 

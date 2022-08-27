@@ -3,6 +3,8 @@
 junkyard.py
 example file output
 
+pysync/Watcher.py
+
 test_pkl/*
 *test*
 .pytest_cache/*
