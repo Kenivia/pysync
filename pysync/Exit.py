@@ -17,7 +17,7 @@ def exit_with_message(message=None, exception=None, raise_silent=True):
 
     on_exit(True)
     if raise_silent:
-        raise SilentExit
+        raise SilentExit()
 
 
 def on_exit(failure, timer=None):

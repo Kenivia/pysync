@@ -336,13 +336,13 @@ def choose_changes(diff_infos):
         if command == "exit":
             if len(arguments) > 0:
                 print("exit doesn't take arguments, ignored")
-            raise SilentExit
+            raise SilentExit()
 
         if command == "restart":
             restart()
             if len(arguments) > 0:
                 print("restart doesn't take arguments, ignored")
-            raise SilentExit
+            raise SilentExit()
 
         arguments, message = replace_hyphen(arguments, original_length)
         changed = []

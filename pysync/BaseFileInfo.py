@@ -196,7 +196,7 @@ class BaseFileInfo():
 
         self.change_type = None
         self.forced = False
-        self.index = ""
+        self.index = "Forced"
 
         self.isremotegdoc = False
 
