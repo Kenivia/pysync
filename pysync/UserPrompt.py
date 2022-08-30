@@ -1,7 +1,10 @@
 from pysync.Timer import logtime
-from pysync.Functions import check_acknowledgement, contains_parent, SilentExit, match_attr
+from pysync.Commons import check_acknowledgement, contains_parent, SilentExit, match_attr
 from pysync.OptionsParser import get_option
 from pysync.Exit import restart
+
+
+# TODO new user interface incoming maybe use a interactive terminal library
 
 
 HELP_STRING = """

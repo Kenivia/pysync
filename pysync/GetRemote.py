@@ -3,7 +3,7 @@ from socket import timeout
 
 from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
-from pysync.RemoteFileInfo import GdriveFileInfo
+from pysync.RemoteFileInfo import RemoteFileInfo
 from pysync.Exit import exit_with_message
 
 
@@ -84,6 +84,7 @@ def get_remote(drive):
 
 def get_root_id(drive):
 
+    #TODO make this a special object that inherits from BaseFileInfo
     root = drive.get(fileId="root",
                      fields="id").execute()
     return root["id"]
@@ -137,7 +138,7 @@ def process_remote(raw_files, root):
     assert isinstance(root, str)
 
     for i in raw_files:
-        file_info = GdriveFileInfo(**i)
+        file_info = RemoteFileInfo(**i)
         if not file_info.isorphan:
             if file_info.isfolder:
                 folder_list.append(file_info)

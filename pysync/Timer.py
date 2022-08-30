@@ -1,9 +1,11 @@
 import time
 from functools import wraps
 
-from pysync.Functions import match_attr
+from pysync.Commons import match_attr
 
 
+#TODO This could really do better
+#TODO Also it's a bit early to do timers since I don't even have a working program
 def init_main_timer():
     stages = {"local": FuncTimer("comp", "Loading local files"),
               "init": FuncTimer("user", "Initializing drive"),

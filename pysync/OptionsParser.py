@@ -7,7 +7,7 @@ import shutil
 
 from functools import lru_cache
 
-from pysync.Functions import (
+from pysync.Commons import (
     get_root,
     remove_slash,
     abs_path,

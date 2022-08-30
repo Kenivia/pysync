@@ -6,7 +6,7 @@ from datetime import datetime
 from googleapiclient.http import MediaFileUpload
 
 from pysync.BaseFileInfo import BaseFileInfo, FileIDNotFoundError
-from pysync.Functions import hex_md5_file, local_to_utc
+from pysync.Commons import hex_md5_file, local_to_utc
 from pysync.OptionsParser import get_option
 
 
@@ -15,7 +15,7 @@ UP_CHUNK_SIZE = -1  # * -1 for uploading in one go, specifying a chunksized does
 
 class LocalFileInfo(BaseFileInfo):
 
-    """Object containing the metadata of either a local file"""
+    """Object containing the metadata of a local file"""
 
     def __init__(self, **kwargs):
 
@@ -117,10 +117,7 @@ class LocalFileInfo(BaseFileInfo):
             # ? But having more than one parent will cause issues with get_remove
             # ? Since currently we take the 1st parent
             # ? idk just sounds like a can of worms
-            
-            # print(self.ppath, "has been untrashed")
-            # else:
-            #     print("\tThis file local gdoc file has no matching remote file: " + self.ppath,)
+
         else:
             # * is an ordinary file
             body = {"parents": [self.parentID],

@@ -5,7 +5,7 @@ import traceback
 from threading import Thread
 
 from pysync.OptionsParser import get_option
-from pysync.Functions import SilentExit, get_root
+from pysync.Commons import SilentExit, get_root
 
 
 def exit_with_message(message=None, exception=None, raise_silent=True):

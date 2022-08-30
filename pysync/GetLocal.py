@@ -30,6 +30,7 @@ def filter_link(inp):
 @logtime
 def real_get_local(path, out_dict):
     """Adds FileInfo objects to out_dict with their paths as the key"""
+    # TODO interrupt this with Signal?
 
     file_paths, folder_paths = [], []
     for parent, dirs, files in os.walk(path):

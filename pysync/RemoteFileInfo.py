@@ -5,12 +5,12 @@ import dateutil.parser as dup
 
 from googleapiclient.errors import HttpError
 
-from pysync.Functions import check_acknowledgement
+from pysync.Commons import check_acknowledgement
 from pysync.OptionsParser import get_option
 from pysync.BaseFileInfo import BaseFileInfo
 
 
-class GdriveFileInfo(BaseFileInfo):
+class RemoteFileInfo(BaseFileInfo):
 
     """
     Object containing the metadata of either a remote google drive file
@@ -29,7 +29,7 @@ class GdriveFileInfo(BaseFileInfo):
         if "parents" in kwargs:
             assert len(kwargs["parents"]) == 1
             self._parentID = kwargs["parents"][0]
-        # TODO make a "shared" folder for orphans(because they're all shared files i think)
+        # TODO make a folder for orphans(because they're all shared files i think)
 
         if self.isfile:
             self._md5sum = kwargs["md5Checksum"] if "md5Checksum" in kwargs else None
@@ -118,9 +118,9 @@ class GdriveFileInfo(BaseFileInfo):
         if self._path is not None:
             return self._path
         assert self.parent is not None
-        parent_path = get_option("PATH") if isinstance(self.parent, str) else self.parent.path
+        parent_path = get_option("PATH") if isinstance(self.parent, str) else self.parent.path # * If none are initiated, this runs recursively
         self._path = parent_path + "/" + self.name
-        return self._path
+        return self._path # * I suppose this is a use case of the walrus operator :=
 
     def check_parent(self):
         if self.action_code == "down new":

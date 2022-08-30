@@ -10,7 +10,7 @@ from json.decoder import JSONDecodeError
 from pysync.Exit import exit_with_message
 from pysync.OptionsParser import get_option
 from pysync.Timer import logtime
-from pysync.Functions import check_acknowledgement, get_root
+from pysync.Commons import check_acknowledgement, get_root
 
 
 CLIENT_SECRET = "/data/client_secrets.json"
@@ -73,7 +73,6 @@ def init_drive():
     
     if not check_acknowledgement() and get_option("ASK_ABUSE"):
         ask_abuse_acknowledge()
-        
         
     return service.files()
 

@@ -8,7 +8,7 @@ from socket import timeout
 from googleapiclient.errors import HttpError, ResumableUploadError
 from httplib2 import ServerNotFoundError
 
-from pysync.Functions import SilentExit, match_attr
+from pysync.Commons import SilentExit, contains_parent, match_attr
 from pysync.OptionsParser import get_option
 from pysync.Exit import exit_with_message, on_exit
 from pysync.Timer import logtime
@@ -70,13 +70,13 @@ def run_drive_ops(diff_infos, all_data, drive):
     failed = []
 
     max_threads = get_option("MAX_UPLOAD")
-    # * must be processpool, threadpool runs into memory issue
 
     # TODO it seems that the executor isn't designed to get cancelled normally
     # TODO as in it always waits when keyboard interrupt
     # TODO I might be able to do this if I don't use a `with` clause
     # TODO but when I do that I can't figure out how to submit(and wait) properly
     # TODO since there's complicated logic associated with the order of submits
+    # * must be processpool, threadpool runs into memory issue
     with cf.ProcessPoolExecutor(max_workers=max_threads,) as executor:
 
         while pending:
@@ -90,9 +90,16 @@ def run_drive_ops(diff_infos, all_data, drive):
 
                 info = pending[index]
                 if info.path not in all_data:  # * cancelled because parent failed
+                    print("Warning, path not in all_data, removed")
                     pending.remove(info)
                     index -= 1
                     continue
+
+                if info.failed_reason is not None:
+                    pending.remove(info)
+                    index -= 1
+                    continue
+
                 info.find_parent(all_data)
 
                 if not info.check_parent():
@@ -100,6 +107,7 @@ def run_drive_ops(diff_infos, all_data, drive):
 
                 future = executor.submit(info.drive_op, drive, countdown=len(pending))
                 pending.remove(info)
+                index -= 1
 
                 def callback(fut):
                     exception = fut.exception()
@@ -119,27 +127,25 @@ def run_drive_ops(diff_infos, all_data, drive):
                                 all_data[info.path] = info
                         else:
                             # * the info gave up after retries
-                            cancelled = []
+                            temp_fail = []
                             for child_path in all_data:
                                 child = all_data[child_path]
                                 if isinstance(child, str):
                                     continue
-                                if child.parent_path == info.path:
+                                if contains_parent(info.path, child_path, accept_self=False):
                                     child.failed_reason = "One of the parent folders failed"
-                                    cancelled.append(child)
+                                    temp_fail.append(child)
                                     failed.append(child)
 
-                            if cancelled:
+                            if temp_fail:
                                 print("The following files are cancelled as a result:")
-                                for i in cancelled:
+                                for i in temp_fail:
                                     print(i.index, i.path)
-                                    del all_data[i.path]
                                 print("-" * os.get_terminal_size().columns)
 
                             failed.append(info)
 
                 future.add_done_callback(callback)
-                index -= 1
 
     if big_exception:
         exception = big_exception[0]
@@ -167,7 +173,8 @@ def run_drive_ops(diff_infos, all_data, drive):
 
     else:
         print("\nThe files below failed to sync:\n")
-        for index, info in enumerate(reversed(failed)):
+        for index, info in enumerate(
+                sorted(failed, key=lambda x: x.index if isinstance(x.index, int) else -1)):
             print(str(info.index) + ": " + info.ppath)
             print(info.failed_reason)
 
@@ -334,24 +341,8 @@ class BaseFileInfo():
             else:
                 self._parentID = all_data[self.parent_path].id
 
-    # def __hash__(self):
-
-    #     out = {}
-    #     for key in self.__dict__:
-    #         if key == "partner":
-    #             out[key] = self.partner.id
-    #         item = self.__dict__[key]
-    #         if isinstance(item, dict):
-    #             out[key] = frozenset(item)
-    #         elif isinstance(item, list):
-    #             out[key] = tuple(item)
-    #         else:
-    #             out[key] = item
-
-    #     return hash(frozenset(out))
-
     @property
-    def ppath(self): # * stands for printing path"""  """
+    def ppath(self):  # * stands for printing path
         return self.path if get_option("FULL_PATH") else self.remote_path
 
     @property
@@ -411,65 +402,4 @@ class BaseFileInfo():
         raise NotImplementedError
 
     def down_diff(self):
-        raise NotImplementedError
-
-    def calculate_md5(self):
-        raise NotImplementedError
-
-    def has_signature(self):
-        raise NotImplementedError
-
-    def gen_localgdoc(self):
-        raise NotImplementedError
-
-    def copy_remote_mtime(self):
-        raise NotImplementedError
-
-    @property
-    def path(self):
-        raise NotImplementedError
-
-    @property
-    def md5sum(self):
-        raise NotImplementedError
-
-    @property
-    def id(self):
-        raise NotImplementedError
-
-    @property
-    def islocal(self):
-        raise NotImplementedError
-
-    @property
-    def isremote(self):
-        raise NotImplementedError
-
-    @property
-    def isorphan(self):
-        raise NotImplementedError
-
-    @property
-    def name(self):
-        raise NotImplementedError
-
-    @property
-    def parentID(self):
-        raise NotImplementedError
-
-    @property
-    def islocalgdoc(self):
-        raise NotImplementedError
-
-    def check_parent(self):
-        return NotImplementedError
-
-    @property
-    def parentID(self):
-        raise NotImplementedError
-
-    def get_raw_local_mtime(self):
-        raise NotImplementedError
-
-    def get_iso_mtime(self):
         raise NotImplementedError
