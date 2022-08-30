@@ -1,16 +1,24 @@
-
 import os
+import hashlib as hl
 
 from send2trash import send2trash
 from datetime import datetime
 from googleapiclient.http import MediaFileUpload
 
 from pysync.BaseFileInfo import BaseFileInfo, FileIDNotFoundError
-from pysync.Commons import hex_md5_file, local_to_utc
+from pysync.Commons import local_to_utc
 from pysync.OptionsParser import get_option
 
 
 UP_CHUNK_SIZE = -1  # * -1 for uploading in one go, specifying a chunksized doesn't seem to work
+
+
+def hex_md5_file(path):
+    hash_md5 = hl.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
 
 
 class LocalFileInfo(BaseFileInfo):

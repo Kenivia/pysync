@@ -7,12 +7,8 @@ import shutil
 
 from functools import lru_cache
 
-from pysync.Commons import (
-    get_root,
-    remove_slash,
-    abs_path,
-    assert_list_start,
-)
+from pysync.Commons import get_root
+
 
 OPTIONS_PATH = "/data/Options.json"
 DEFAULT_OPTIONS_PATH = "/data/Internal/Default Options.json"
@@ -64,6 +60,36 @@ expected_types = {
     "Default push": list,
     "Default ignore": list,
 }
+
+
+def remove_slash(path):
+    return path[:-1] if path.endswith("/") else path
+
+
+def abs_path(inp):
+    """Converts inp into an absolute path
+
+    takes care of: "..", ".", "~" and when there's no prefix
+    the path will behave just like in terminals
+    This is different to os.path.abspath, which just adds cwd to the front
+    """
+    if inp.startswith(".."):
+        return "/".join(os.getcwd().split("/")[0:-1]) + inp[2:]
+    elif inp.startswith("."):
+        return os.getcwd() + inp[1:]
+
+    elif inp.startswith("~"):
+        return str(os.path.expanduser("~")) + inp[1:]
+
+    elif not inp.startswith("/"):
+        return os.getcwd() + "/" + inp
+    else:
+        return inp
+
+
+def assert_list_start(start, inp_list):
+    for i in inp_list:
+        assert i.startswith(start)
 
 
 def code_to_alias(alias, inp):
@@ -167,7 +193,7 @@ def get_option(*keys):
             return [remove_slash(abs_path(i)) for i in options[key]]
 
         elif key == "RETRY_TIME":
-            return 0.05
+            return 0
 
         elif key == "SIGNATURE":
             return "#da84f858e8104ca0534138cfa2ea" + "pysync" + "2ccf69e6a9d2b7481882ff1a651ad177a108"

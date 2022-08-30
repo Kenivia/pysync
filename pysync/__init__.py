@@ -20,6 +20,8 @@ def real_main(path, timer):
 
     # TODO make this a more interactive process, to prepare for a background thread constantly updating things
     # TODO so that the user can come along and instantly sync
+    # TODO this can also allow for easier testing since we can save states in between functions
+    # TODO also easier option modification
     local_data = {}
     print("Started loading local files..")
     thread = get_local(path, local_data, timer=timer.time("local"))
