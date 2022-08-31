@@ -55,15 +55,15 @@ class RemoteFileInfo(BaseFileInfo):
 
         if self.action_code == "del remote":
             assert self.id is not None
-            assert not os.path.exists(self.path)
+            self.assert_msg(not os.path.exists(self.path),msg="Tried to delete remote copy, but it still exists locally")
 
         elif self.action_code == "down new":
             assert self.id is not None
-            assert not os.path.exists(self.path)
-            assert os.path.isdir(self.parent_path)
+            self.assert_msg(not os.path.exists(self.path),msg="Tried to download file, but it already exists locally")
+            self.assert_msg(os.path.isdir(self.parent_path), msg ="Tried to download file, but the local folder containing it doesn't exist")
 
         elif self.action_code == "up diff" or self.action_code == "down diff":
-            assert os.path.exists(self.path)
+            self.assert_msg(os.path.exists(self.path), msg="Tried to update file, but it doesn't exist locally")
             assert self.id is not None
         else:
             raise AssertionError("action_code was invalid(" + str(self.action_code), ")")

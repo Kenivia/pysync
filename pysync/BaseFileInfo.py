@@ -1,3 +1,4 @@
+from ast import Assert
 import os
 import time
 import traceback
@@ -256,9 +257,9 @@ class BaseFileInfo():
 
             except Exception as exception:
 
-                reason = traceback.format_exc() + "\n" + '-' * os.get_terminal_size().columns
+                trace = traceback.format_exc() + "\n" + '-' * os.get_terminal_size().columns
                 if max_count >= 0 and count >= max_count:
-                    self.failed_reason = reason
+                    self.failed_reason = trace
                     self.op_attempted = True
                     return self
 
@@ -378,6 +379,10 @@ class BaseFileInfo():
     @property
     def action_human(self):
         return self.get_action_code(True)
+
+    def assert_msg(self, condition, msg="Unknown issue"):
+        if condition:
+            raise AssertionError(msg)
 
     def compare_info(self):
         raise NotImplementedError

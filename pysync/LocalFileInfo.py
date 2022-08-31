@@ -82,14 +82,17 @@ class LocalFileInfo(BaseFileInfo):
             assert not self.partner.islocal
 
         if self.action_code == "up new":
-            assert os.path.exists(self.path)
+            self.assert_msg(os.path.exists(self.path),
+                            msg="Tried to upload file, but it no longer exists locally")
             assert self.parentID is not None
 
         elif self.action_code == "del local":
-            assert os.path.exists(self.path)
+            self.assert_msg(os.path.exists(self.path),
+                            msg="Tried to delete file, but it no longer exists locally")
 
         elif self.action_code == "up diff" or self.action_code == "down diff":
-            assert os.path.exists(self.path)
+            self.assert_msg(os.path.exists(self.path),
+                            msg="Tried to update file, but it no longer exists locally")
             assert self.id is not None
         else:
             raise AssertionError("action_code was invalid(" + str(self.action_code), ")")
@@ -226,10 +229,6 @@ class LocalFileInfo(BaseFileInfo):
     @property
     def path(self):
         return self._path
-
-    @property
-    def isfile(self):
-        return not self.isfolder
 
     @property
     def islocal(self):
