@@ -10,7 +10,8 @@ import subprocess as sp
 import pkg_resources
 
 
-required = {"python-dateutil",
+required = {"pytermgui",
+            "python-dateutil",
             "send2trash",
             "google-api-python-client",
             "google-auth-oauthlib",

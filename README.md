@@ -47,9 +47,9 @@ pysync is similar to [drive by odeke-em](https://github.com/odeke-em/drive), but
   
 ## Requirements
 
-- `python3.6+`
+- `python3.8+`
 
-- `python-dateutil`, `send2trash`, `google-api-python-client` and `google-auth-oauthlib`
+- `pytermgui`, `python-dateutil`, `send2trash`, `google-api-python-client` and `google-auth-oauthlib`
 
 - pysync will detect missing packages and install them automatically using `pip`.
   
