@@ -381,7 +381,7 @@ class BaseFileInfo():
         return self.get_action_code(True)
 
     def assert_msg(self, condition, msg="Unknown issue"):
-        if condition:
+        if not condition:
             raise AssertionError(msg)
 
     def compare_info(self):
