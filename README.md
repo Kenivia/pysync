@@ -1,6 +1,6 @@
 # pysync
 
-pysync is a Python script that uploads & download files to and from Google drive for Linux.
+pysync is a fast google drive syncing script for Linux
 
 This is not a background sync script - it is currently intended for use with user confirmation
 
@@ -49,9 +49,9 @@ pysync is similar to [drive by odeke-em](https://github.com/odeke-em/drive), but
 
 - `python3.8+`
 
-- `pytermgui`, `python-dateutil`, `send2trash`, `google-api-python-client` and `google-auth-oauthlib`
+- `json-minify`, `python-dateutil`, `send2trash`, `google-api-python-client` and `google-auth-oauthlib`
 
-- pysync will detect missing packages and install them automatically using `pip`.
+- pysync will detect missing packages and install them automatically with pip.
   
 - a folder at `~/gdrive` to sync with (you can change the location in `./pysync/data/Options.json`)
 
@@ -63,66 +63,12 @@ pysync is similar to [drive by odeke-em](https://github.com/odeke-em/drive), but
 
 ***MAKE A BACKUP OF YOUR GOOGLE DRIVE FOLDER BEFORE RUNNING THIS!***
 
-- `python3 ./pysync/pysync`
+- `cd ./pysync-master`
+- `python3 pysync --diff`
+- (optional)`python3 pysync --modify`
+- finally: `python3 pysync --commit`
 
-You will be prompted by a google page asking for permission to your google files. Then, follow the instructions
-
-Options can be specified using ./pysync/data/Option.json
-
-Typing `help` before applying changes will display the following message:
-
-    pysync has detected some differences between the local files and the files on Google drive.
-    the changes above are proposed, the following commands are available:
-
-
-    apply
-        `apply` or simply pressing Enter will commit the changes listed above
-
-        MAKE A BACKUP OF YOUR FILES BEFORE RUNNING THIS!
-        pysync comes with ABSOLUTELY NO WARRANTY
-
-        pysync creates many(40 by default) processes to upload/download changes. This speeds up
-        the process substantially for small files.
-        
-        Note that if a file changes(locally or remotely) between loading and applying, pysync should
-        detect this and reject the file(it will say "unknown error"). 
-        This will not lead to any loss of data
-
-
-    push, pull, ignore
-        - `push` means that you want what's on your local storage to replace what's on Google drive.
-                This may upload new files, modify remote files or trash remote files
-                
-        - `pull` means that you want what's on Google drive to replace what's on your local storage.
-                This may download new files, modify local files or trash local files
-                
-        - `ignore` means that no action will be taken for the chosen file.
-
-        Using indices in front of the files, you can specify which files to push, pull or ignore
-        Use "," or " "(space) to separate indices
-        Use "-" to specify indices in a range(inclusive on both ends)
-        Use "all" to represent all indices
-
-        Example inputs:
-            push 6 5
-            pull 4
-            ignore 1,  3,2
-            push 7-10(This will be the same as: push 7, 8, 9, 10)
-            pull all
-
-
-    restart
-        Terminate this process and use the same python interpreter to start another pysync instance
-
-        This will not apply the pending changes
-
-
-    exit
-        Terminate this process without applying the pending changes
-
-
-    help
-        Display this help message
+Some settings can be configured in Options.json.
 
 ## Current features
 
@@ -130,7 +76,6 @@ Typing `help` before applying changes will display the following message:
 - The user can then choose which files to push/pull(upload/download)
 - Applies the chosen operations in parallel(40 at the same time by default)
 - For Google Docs, Google Sheets and Google Slides etc, download an executable text file that links to the file
-- Keeps track of how long each stage of the program took
 
 ## Known issues
 
@@ -140,7 +85,6 @@ Typing `help` before applying changes will display the following message:
 
 ## Current plans
 
-- A more flexible command line - allowing doing different stages with separate commands and backing up data
 - Background syncing and maybe a GUI, similar to [Google's Windows/macOs app](https://www.google.com/drive/download/), is the long term goal
 
 ## Contributing

@@ -31,19 +31,15 @@ class LocalFileInfo(BaseFileInfo):
         self._path = kwargs["path"]
         self.type = kwargs["type"]
         if self.isfile:
+            self.mtime = round(self.get_raw_local_mtime())
             if kwargs["check_md5"]:
                 self.calculate_md5()
-            else:
-                self.mtime = round(self.get_raw_local_mtime())
 
     def compare_info(self):
         """Checks if there are differences between self and self.partner
 
-        mtime_change will only trigger if there is >3 sec difference
-        md5sum won't be checked if mtime_change is already triggered
-
         Returns:
-            bool/str: False, "content_change" or "mtime_change"
+            bool/str: False or "content_change"
         """
 
         assert self.path == self.partner.path
@@ -54,14 +50,10 @@ class LocalFileInfo(BaseFileInfo):
         if self.isfolder:
             return False
 
-        if self._md5sum is not None:
+        assert self.mtime is not None
+        if (self.mtime - self.partner.mtime) >= 3:
             if self.md5sum != self.partner.md5sum:
                 self.change_type = "content_change"
-                return self.change_type
-        else:
-            assert self.mtime is not None
-            if (self.mtime - self.partner.mtime) >= 3:
-                self.change_type = "mtime_change"
                 return self.change_type
 
         return False

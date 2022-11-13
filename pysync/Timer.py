@@ -133,9 +133,13 @@ def logtime(func):
         if "timer" in kwargs:
             timer = kwargs["timer"]
             del kwargs["timer"]
-            timer.start()
-            result = func(*args, **kwargs)
-            timer.stop()
+            if timer is not None:
+                
+                timer.start()
+                result = func(*args, **kwargs)
+                timer.stop()
+            else:
+                result = func(*args, **kwargs)
 
         else:
             result = func(*args, **kwargs)

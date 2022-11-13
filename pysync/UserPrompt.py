@@ -21,7 +21,7 @@ apply
     pysync creates many(40 by default) processes to upload/download changes. This speeds up
     the process for small files. However, this means that cancelling the process will require
     the user to press Ctrl+C two or three times.
-    
+
     Note that if a file changes(locally or remotely) between loading and applying, the file may
     fail with "unknown error". This should not lead to any loss of data
 
@@ -29,10 +29,10 @@ apply
 push, pull, ignore
     - `push` means that you want what's on your local storage to replace what's on Google drive.
             This may upload new files, modify remote files or trash remote files
-            
+
     - `pull` means that you want what's on Google drive to replace what's on your local storage.
             This may download new files, modify local files or trash local files
-            
+
     - `ignore` means that no action will be taken for the chosen file.
 
     Using indices in front of the files, you can specify which files to push, pull or ignore
@@ -42,9 +42,9 @@ push, pull, ignore
 
     Example inputs:
         push 6 5
-        pull 4
+        pull 1,2 3,  4
         ignore 1,  3,2
-        push 7-10(This will be the same as: push 7, 8, 9, 10)
+        push 7-10(This will be the same as: push 7 8 9 10)
         pull all
 
 
@@ -226,11 +226,11 @@ def print_half(infos, initing, forced, index):
 
 def print_changes(infos, initing):
 
-    normal = match_attr(infos, forced=False,)
-    print_half(normal, initing, False, 1)
-
     forced = match_attr(infos, forced=True)
     print_half(forced, initing, True, None)
+
+    normal = match_attr(infos, forced=False)
+    print_half(normal, initing, False, 1)
 
 
 def print_totals(infos):
@@ -323,7 +323,7 @@ def choose_changes(diff_infos):
         arguments = inp[1:]
 
         valid_actions = ["help", "push", "pull", "ignore", "apply", "restart", "exit"]
-        if not command in valid_actions:
+        if command not in valid_actions:
             text = "Unrecognized action, valid actions are: " + \
                 ", ".join(valid_actions)
             continue
@@ -381,3 +381,55 @@ def choose_changes(diff_infos):
             text += "Input interpreted as: " + command + " " + " ".join(changed)
         else:
             text += "Input was not valid, nothing has been changed"
+
+
+def apply_modification(diff_infos, inp):
+    inp = [i for i in inp if i]  # * remove blanks
+
+    original_inp = "\nInput received: `" + " ".join(inp) + "`"
+    command = inp[0]
+    arguments = inp[1:]
+
+    arguments, message = replace_hyphen(arguments, len(diff_infos))
+    changed = []
+    all_index = {}
+    for i in diff_infos:
+        if i.index != "":
+            all_index[str(i.index)] = i
+
+    for inp in arguments:
+        if inp == "all":
+            for i in match_attr(diff_infos, forced=False):
+                i._action = command
+                changed.append(str(i.index))
+            if len(arguments) > 1:
+                message += "`all` was not the only input, ignoring other inputs"
+            continue
+
+        elif inp.isnumeric():
+            # * shouldn't need to check for forced here since forced don't get an index
+            if inp not in all_index:
+                message += inp + " is invalid, ignored\n"
+                continue
+            info = all_index[inp]
+            info._action = command
+            changed.append(str(info.index))
+
+        else:
+            message += inp + " is invalid, ignored\n"
+    changed = add_hyphens(changed)
+    text = message
+    if changed:
+        text += "Input interpreted as: " + command + " " + " ".join(changed)
+    else:
+        text += "Input was not valid, nothing has been changed"
+
+    if original_inp:
+        text += original_inp
+
+    text += "\nThe following changes are pending, type `help` for more information:"
+    compress_deletes(diff_infos)
+    print_changes(diff_infos, True)
+    print("\n" + text)
+    print_totals(diff_infos)
+    return diff_infos

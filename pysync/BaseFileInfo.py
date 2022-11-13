@@ -11,7 +11,7 @@ from httplib2 import ServerNotFoundError
 
 from pysync.Commons import SilentExit, contains_parent, match_attr
 from pysync.OptionsParser import get_option
-from pysync.Exit import exit_with_message, on_exit
+from pysync.Exit import exit_with_msg, on_exit
 from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
 
@@ -47,7 +47,7 @@ def get_pending(diff_infos):
     # * sorta like a queue?
 
     if pending:
-        print(f"Applying {str(len(pending))} changes..")
+        print(f"Applying {str(len(pending))} changes...")
         if not get_option("PRINT_UPLOAD"):
             print("Not showing the progress")
     else:
@@ -56,7 +56,7 @@ def get_pending(diff_infos):
 
 
 @logtime
-def run_drive_ops(diff_infos, all_data, drive):
+def commit_drive_ops(diff_infos, all_data, drive):
     """Run drive_op for each push/pull operation using many threads
 
     Will not exceed the `Max upload threads` option
@@ -156,7 +156,7 @@ def run_drive_ops(diff_infos, all_data, drive):
             done_paths = [i for i in before_paths
                           if i not in after_paths and i != final_straw]
             done_text = "\n".join(sorted(done_paths, key=lambda x: (len(x.split("/")), x)))
-            exit_with_message("The following files were done before running out of space on Google drive:\n" +
+            exit_with_msg("The following files were done before running out of space on Google drive:\n" +
                               done_text + "\n\n" +
                               f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space" +
                               "\nYour drive ran out of space while trying to upload this file: " + final_straw,
@@ -164,7 +164,7 @@ def run_drive_ops(diff_infos, all_data, drive):
 
         else:
             # * This should never happen
-            exit_with_message(message="A file failed unexpectedly with the error above and other pending files were interrupted",
+            exit_with_msg(msg="A file failed unexpectedly with the error above and other pending files were interrupted",
                               exception=exception)
 
     assert not big_exception
@@ -239,7 +239,7 @@ class BaseFileInfo():
             print(" ".join((str(countdown), self.action_human, self.ppath)))
             if countdown == 1:
                 time.sleep(0.1)  # * so that this message is below other messages
-                print("All jobs have been started, waiting for them to finish..")
+                print("All jobs have been started, waiting for them to finish...")
 
         while True:
             try:
@@ -279,7 +279,7 @@ class BaseFileInfo():
                         raise GDriveQuotaExceeded(self.path)
 
                 if message is not None:
-                    print("\n" + self.index + message + retry_text(count, max_count) + self.ppath)
+                    print("\n" + str(self.index) + " " + message + retry_text(count, max_count) + self.ppath)
 
                 else:
                     print("\nUnknown failure" + retry_text(count, max_count) +
@@ -309,20 +309,20 @@ class BaseFileInfo():
                 out = "uploading new" if readable else "up new"
             elif self.action == "pull":
                 if self.isfolder:
-                    out = "deleting local folder its content" if readable else "del local"
+                    out = "deleting local folder and all of its content" if readable else "del local"
                 else:
                     out = "deleting local file" if readable else "del local"
 
         elif self.change_type == "remote_new":
             if self.action == "push":
                 if self.isfolder:
-                    out = "deleting remote folder its content" if readable else "del remote"
+                    out = "deleting remote folder and all of its content" if readable else "del remote"
                 else:
                     out = "deleting remote file" if readable else "del remote"
             elif self.action == "pull":
                 out = "downloading new" if readable else "down new"
 
-        elif self.change_type == "content_change" or self.change_type == "mtime_change":
+        elif self.change_type == "content_change":
             if self.action == "push":
                 out = "uploading difference" if readable else "up diff"
             elif self.action == "pull":
