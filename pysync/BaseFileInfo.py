@@ -1,4 +1,3 @@
-from ast import Assert
 import os
 import time
 import traceback
@@ -12,7 +11,6 @@ from httplib2 import ServerNotFoundError
 from pysync.Commons import SilentExit, contains_parent, match_attr
 from pysync.OptionsParser import get_option
 from pysync.Exit import exit_with_msg, on_exit
-from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
 
 
@@ -55,7 +53,6 @@ def get_pending(diff_infos):
     return pending
 
 
-@logtime
 def commit_drive_ops(diff_infos, all_data, drive):
     """Run drive_op for each push/pull operation using many threads
 
@@ -156,16 +153,20 @@ def commit_drive_ops(diff_infos, all_data, drive):
             done_paths = [i for i in before_paths
                           if i not in after_paths and i != final_straw]
             done_text = "\n".join(sorted(done_paths, key=lambda x: (len(x.split("/")), x)))
-            exit_with_msg("The following files were done before running out of space on Google drive:\n" +
-                              done_text + "\n\n" +
-                              f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space" +
-                              "\nYour drive ran out of space while trying to upload this file: " + final_straw,
-                              exception=exception)
+            exit_with_msg(
+                "The following files were done before running out of space on Google drive:\n" +
+                done_text +
+                "\n\n" +
+                f"Goole drive quota exceeded, the {str(len(done_paths))} files above were done before running out of space" +
+                "\nYour drive ran out of space while trying to upload this file: " +
+                final_straw,
+                exception=exception)
 
         else:
             # * This should never happen
-            exit_with_msg(msg="A file failed unexpectedly with the error above and other pending files were interrupted",
-                              exception=exception)
+            exit_with_msg(
+                msg="A file failed unexpectedly with the error above and other pending files were interrupted",
+                exception=exception)
 
     assert not big_exception
 

@@ -1,4 +1,3 @@
-from pysync.Timer import logtime
 from pysync.Commons import check_acknowledgement, contains_parent, SilentExit, match_attr
 from pysync.OptionsParser import get_option
 from pysync.Exit import restart
@@ -110,7 +109,6 @@ def get_default_action(change_type):
         raise ValueError
 
 
-@logtime
 def apply_forced_and_default(diff_infos):
 
     for info in diff_infos:
@@ -286,7 +284,6 @@ def compress_deletes(diff_infos):
     return diff_infos
 
 
-@logtime
 def choose_changes(diff_infos):
     """Prompts the user to change which change types to push/pull
     """

@@ -18,7 +18,7 @@ This file defines miscellaneous functions that:
 
 def readable(start, finish=time.time()):
     timestamp = datetime.fromtimestamp(start)
-    ago =  datetime.fromtimestamp(finish) - timestamp
+    ago = datetime.fromtimestamp(finish) - timestamp
 
     str_ago = str(ago).split(".")[0]
     str_timestamp = str(timestamp).split(".")[0]

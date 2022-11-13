@@ -10,13 +10,13 @@ from json.decoder import JSONDecodeError
 
 from pysync.Exit import exit_with_msg
 from pysync.OptionsParser import get_option
-from pysync.Timer import logtime
 from pysync.Commons import check_acknowledgement, get_root
 
 
 CLIENT_SECRET = "/data/client_secrets.json"
 ACK_TEXT = "The prescence of this file indicates that the user has agreed to downloading files marked as 'abuse' from Google drive.\
 \nTo disallow this, delete this file."
+
 
 def process_creds(creds, scopes, user_interact=True):
     if creds and creds.valid:
@@ -33,32 +33,29 @@ def process_creds(creds, scopes, user_interact=True):
             print("Couldn't refresh old token")
 
         except TransportError as e:
-            exit_with_msg(msg="pysync couldn't refresh your token, please check your internet connection", 
-                             exception=e)
+            exit_with_msg(msg="pysync couldn't refresh your token, please check your internet connection",
+                          exception=e)
 
     if not user_interact:
         exit_with_msg(msg="User interaction was forbidden, will not open a web page",)
-    
 
     print("Requesting a new token")
     try:
         flow = InstalledAppFlow.from_client_secrets_file(get_root() + CLIENT_SECRET, scopes)
     except FileNotFoundError as e:
         exit_with_msg(msg="The file 'client_secrets.json' is not found at " + get_root() + "/data/",
-                        exception=e)
-    
-    
+                      exception=e)
+
     creds = flow.run_local_server(port=0)
     return creds
 
 
-@logtime
 def init_drive(user_interact=True):
     """Initializes drive using credentials.json and asks for abuse acknowledgement
 
     Returns:
-        googleapiclient.discovery.Resource: keep in mind this object is unpicklable 
-                                so it can't be returned by processes(and threads?) 
+        googleapiclient.discovery.Resource: keep in mind this object is unpicklable
+                                so it can't be returned by processes(and threads?)
     """
 
     creds = None
@@ -77,16 +74,15 @@ def init_drive(user_interact=True):
 
     service = build('drive', 'v3', credentials=creds)
     print("Google drive token produced successfully")
-    
-    
+
     if not check_acknowledgement() and get_option("ASK_ABUSE") and user_interact:
         ask_abuse_acknowledge()
-        
+
     return service.files()
 
 
 def ask_abuse_acknowledge():
-    
+
     print("\nGoogle drive marks certain files as 'abuse'. These files are potentially dangerous.\n\
 Would you like to download files marked as abuse in the future?")
     inp = input("Type the word 'yes' to confirm(any other input will decline): \n>>> ")
@@ -96,14 +92,14 @@ Would you like to download files marked as abuse in the future?")
             f.write(ACK_TEXT)
         print("pysync will download files marked as 'abuse' in the future.\
 \nTo undo this, delete the file " + get_root() + "/data/Internal/abuse_acknowledged")
-        
+
     else:
         print("pysync will not download files marked as 'abuse'.\
 \npysync will continue to list these files but won't actually download them\
 \npysync will continue asking you for permission, you may turn this off in Options.json")
     print("")
-            
-            
+
+
 def copy_client_secret(path):
     if os.path.isfile(path):
         client_secret_path = get_root() + "/data/client_secrets.json"

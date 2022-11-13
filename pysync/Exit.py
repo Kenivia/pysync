@@ -4,7 +4,6 @@ import traceback
 
 from threading import Thread
 
-
 from pysync.Commons import SilentExit, get_root
 
 

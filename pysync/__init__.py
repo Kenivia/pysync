@@ -1,14 +1,8 @@
 import os
 import shutil
-import socket
 import subprocess as sp
-import sys
-import tempfile as tf
 import time
 import traceback
-from datetime import datetime, timedelta
-
-from filelock import FileLock
 
 from pysync.BaseFileInfo import commit_drive_ops
 from pysync.Commons import SilentExit, get_root, pdump, pload, readable
@@ -17,11 +11,13 @@ from pysync.Exit import exit_with_msg, on_exit
 from pysync.GetLocal import get_local
 from pysync.GetRemote import get_dump_remote
 from pysync.InitDrive import copy_client_secret, init_drive
-from pysync.OptionsParser import get_option, get_root, parse_options
-from pysync.Timer import init_main_timer
-from pysync.UserPrompt import (apply_forced_and_default, apply_modification,
-                               choose_changes, compress_deletes, print_changes,
-                               print_totals)
+from pysync.OptionsParser import get_option, get_root
+from pysync.UserPrompt import (
+    apply_forced_and_default,
+    apply_modification,
+    compress_deletes,
+    print_changes,
+    print_totals)
 
 
 def decide_cache_new(inp):
@@ -164,7 +160,7 @@ def main(args):
                 return
 
             modified = apply_modification(diff_infos, args.modify)
-            
+
             dump_data_diff(all_data, modified, diff_time, time.time())
 
             if diff_unix / 60 > 10:
@@ -173,21 +169,19 @@ def main(args):
             print("Use \"pysync --commit\" to apply these changes. There will be no further confirmations!")
 
         elif args.commit:
-            
 
             drive = init_drive()
             all_data, diff_infos, diff_time, mod_time = load_data_diff()
-            
-            
-            remote_pkl = get_root() + "/data/Internal/Latest_remote.pkl"
-            if os.path.isfile(remote_pkl):
-                os.remove(remote_pkl)
+
             diff_pkl = get_root() + "/data/Internal/Diff_info.pkl"
             if os.path.isfile(diff_pkl):
                 os.remove(diff_pkl)
             else:
                 print("\"--diff\" must be ran before running commit")
                 return
+            remote_pkl = get_root() + "/data/Internal/Latest_remote.pkl"
+            if os.path.isfile(remote_pkl):
+                os.remove(remote_pkl)
 
             compress_deletes(diff_infos)
             print_changes(diff_infos, True)

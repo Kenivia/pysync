@@ -1,11 +1,5 @@
-import time
-
-from pysync.Commons import pdump,pload
-from pysync.OptionsParser import get_root
-from pysync.Timer import logtime
 
 
-@logtime
 def get_diff(local_data, remote_data):
     """Determines the difference between the two
 

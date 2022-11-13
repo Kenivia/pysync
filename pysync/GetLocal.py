@@ -3,7 +3,6 @@ from threading import Thread
 import concurrent.futures as cf
 
 from pysync.LocalFileInfo import LocalFileInfo
-from pysync.Timer import logtime
 from pysync.OptionsParser import get_option
 
 
@@ -27,7 +26,7 @@ def filter_link(inp):
     return out
 
 
-@logtime
+
 def real_get_local(path, out_dict):
     """Adds FileInfo objects to out_dict with their paths as the key"""
     # TODO interrupt this with Signal?

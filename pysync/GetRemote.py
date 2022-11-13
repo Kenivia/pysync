@@ -3,7 +3,6 @@ from socket import timeout
 from time import time
 from filelock import FileLock
 
-from pysync.Timer import logtime
 from pysync.OptionsParser import get_option, get_root
 from pysync.RemoteFileInfo import RemoteFileInfo
 from pysync.Exit import exit_with_msg
@@ -19,7 +18,6 @@ def kws_to_query(kws_list, equals, operator, exclude_list=[]):
     return f"({(' '+operator+' ').join(mimetype)}) and trashed = false and 'me' in owners"
 
 
-@logtime
 def get_remote(drive):
     """Lists remote files that are not in trash and are owned by me
 
@@ -120,7 +118,6 @@ def get_remote_proc(args):
     return out
 
 
-@logtime
 def process_remote(raw_files, root):
     """Converts google drive responses into GdriveFileInfo objects
 

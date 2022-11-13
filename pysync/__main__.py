@@ -10,7 +10,6 @@ import subprocess as sp
 import pkg_resources
 import argparse
 from argparse import RawTextHelpFormatter
-import shutil
 
 
 def check_dependencies():
