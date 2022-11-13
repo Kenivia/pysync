@@ -1,10 +1,13 @@
 import concurrent.futures as cf
 from socket import timeout
+from time import time
+from filelock import FileLock
 
 from pysync.Timer import logtime
-from pysync.OptionsParser import get_option
+from pysync.OptionsParser import get_option, get_root
 from pysync.RemoteFileInfo import RemoteFileInfo
-from pysync.Exit import exit_with_message
+from pysync.Exit import exit_with_msg
+from pysync.Commons import pdump
 
 
 def kws_to_query(kws_list, equals, operator, exclude_list=[]):
@@ -74,23 +77,23 @@ def get_remote(drive):
 
     max_threads = len(all_args) + 1
     with cf.ProcessPoolExecutor(max_workers=max_threads) as executor:
-        future = executor.submit(get_root_id, drive)
-        for item in executor.map(get_remote_thread, all_args):
+        root_future = executor.submit(get_root_id, drive)
+        for item in executor.map(get_remote_proc, all_args):
             results.extend(item)
-        root = future.result()
+        root = root_future.result()
 
-    return results, root
+    return process_remote(results, root), root
 
 
 def get_root_id(drive):
 
-    #TODO make this a special object that inherits from BaseFileInfo
+    # TODO make this a special object that inherits from BaseFileInfo
     root = drive.get(fileId="root",
                      fields="id").execute()
     return root["id"]
 
 
-def get_remote_thread(args):
+def get_remote_proc(args):
 
     drive, fields, query = args[0], args[1], args[2]
     out = []
@@ -107,7 +110,7 @@ def get_remote_thread(args):
             ).execute()
         except timeout as e:
             # ? i can probably make it so that you resume the listing after internet is back? thats kinda confusing tho
-            exit_with_message(message="Timed out while listing remote files, please check your internet connection",
+            exit_with_msg(msg="Timed out while listing remote files, please check your internet connection",
                               exception=e)
 
         page_token = response.get('nextPageToken', None)
@@ -122,8 +125,6 @@ def process_remote(raw_files, root):
     """Converts google drive responses into GdriveFileInfo objects
 
     The difficult part is to find the absolute paths of the files as gdrive only tells you a file's parent
-
-    get_remote and process_remote aren't combined in one function to allow separate timing using @logtime
 
     Args:
         raw_files (list): list of dictionaries from get_remote
@@ -145,7 +146,7 @@ def process_remote(raw_files, root):
             else:
                 file_list.append(file_info)
         else:
-            # TODO handle orphan files, which are all sharedWithMe
+            # TODO handle orphan files, which should all be sharedWithMe
             pass
 
     out_dict = {get_option("PATH"): root}
@@ -164,3 +165,23 @@ def process_remote(raw_files, root):
         out_dict[id_map[i].path] = id_map[i]
 
     return out_dict
+
+
+def dump_remote(remote_data, root, pickle_path):
+
+    lock_path = pickle_path + ".lock"
+    lock = FileLock(lock_path)
+
+    with lock:
+        pdump({"rdata": remote_data,
+               "root": root,
+               "time": time(),
+               "def_not_safe": False}, pickle_path)
+        print(f"Dumped remote data at {pickle_path}")
+
+
+def get_dump_remote(drive):
+    pickle_path = get_root() + "/data/Internal/Latest_remote.pkl"
+    remote_data, root = get_remote(drive)
+    dump_remote(remote_data, root, pickle_path)
+    return remote_data, root

@@ -4,10 +4,13 @@ import os
 import json
 import platform
 import shutil
+import sys
+from json_minify import json_minify
 
 from functools import lru_cache
 
 from pysync.Commons import get_root
+from pysync.Exit import exit_with_msg
 
 
 OPTIONS_PATH = "/data/Options.json"
@@ -20,8 +23,8 @@ alias = {
     "Local path": "PATH",
     "Ask before exit": "ASK_AT_EXIT",
     "Hide forced ignore": "HIDE_FIGNORE",
-    "Print upload progress": "PRINT_UPLOAD",
-    "Compare md5sum": "CHECK_MD5",
+    "Print commit progress": "PRINT_UPLOAD",
+    "Compare all md5sum": "CHECK_MD5",
     "Ask for abuse acknowledgement on startup": "ASK_ABUSE",
     "Print absolute path": "FULL_PATH",
 
@@ -37,14 +40,17 @@ alias = {
     "Default pull": "DPULL",
     "Default push": "DPUSH",
     "Default ignore": "DIGNORE",
+
+    "Get remote cache interval": "CACHE_INTERVAL",
+
 }
 
 expected_types = {
     "Local path": str,
     "Ask before exit": bool,
     "Hide forced ignore": bool,
-    "Print upload progress": bool,
-    "Compare md5sum": bool,
+    "Print commit progress": bool,
+    "Compare all md5sum": bool,
     "Ask for abuse acknowledgement on startup": bool,
     "Print absolute path": bool,
 
@@ -59,6 +65,9 @@ expected_types = {
     "Default pull": list,
     "Default push": list,
     "Default ignore": list,
+
+    "Get remote cache interval": int,
+
 }
 
 
@@ -107,16 +116,24 @@ def alias_to_code(raw_options):
     return options
 
 
-def check_options():
+def load_json_file(path):
+    return json.loads(json_minify(open(path, "r").read()))
+
+
+def real_parse_options():
 
     if platform.system() != "Linux":
-        print("Warning! pysync can only run on Linux")
+        print("Warning! pysync is intended to run only on Linux")
+
     options_path = get_root() + OPTIONS_PATH
+    defaults_path = get_root() + DEFAULT_OPTIONS_PATH
+
     if not os.path.isfile(options_path):
         print("Options not found at " + options_path + ", using default options")
-        shutil.copyfile(get_root() + DEFAULT_OPTIONS_PATH, options_path)
+        shutil.copyfile(defaults_path, options_path)
 
-    raw_options = json.load(open(options_path, "r"))
+    raw_options = load_json_file(options_path)
+    default_options = load_json_file(defaults_path)
     seen_keys = []
 
     for raw_key in raw_options:
@@ -126,15 +143,15 @@ def check_options():
         assert isinstance(raw_options[raw_key], expected_types[raw_key])
         seen_keys.append(raw_key)
 
-    if len(seen_keys) < len(raw_options):
-        missing = raw_options.keys() - seen_keys
+    if len(seen_keys) < len(default_options):
+        missing = default_options.keys() - seen_keys
         raise ValueError(
             f"The following keys are missing from {OPTIONS_PATH}: " + ", ".join(missing))
 
     options = alias_to_code(raw_options)
 
     if options["MAX_UPLOAD"] > 50:
-        print("Warning! \"Max upload threads\" was set to a value higher than 50. This may cause upload to fail")
+        print("Warning! \"Max upload threads\" was set to a value higher than 50. This may cause uploads to fail")
 
     options["PATH"] = remove_slash(abs_path(options["PATH"]))
     options["APULL"] = [remove_slash(abs_path(i)) for i in options["APULL"]]
@@ -154,16 +171,18 @@ def check_options():
     temp.extend(dpush)
     temp.extend(dignore)
 
-    if len(dpull) + len(dpush) + len(dignore) != 4:
+    if len(dpull) + len(dpush) + len(dignore) != 3:
         raise AssertionError(
-            "The options: Default pull, Default push Default ignore must contain exactly 4 items between them")
+            "The options: Default pull, Default push and Default ignore must contain exactly 3 items between them")
 
-    needed = ["local_new", "content_change", "mtime_change", "remote_new"]
+    needed = ["local_new", "content_change", "remote_new"]
     for i in needed:
         if temp.count(i) != 1:
             raise AssertionError("""The options: DEFAULT_PUSH, DEFAULT_PULL and DEFAULT_IGNORE are not set correctly.
 Each of the following must be included exactly once:
-\t\"local_new\", \"content_change\", \"mtime_change\", \"remote_new\"""")
+\t\"local_new\", \"content_change\", \"remote_new\"""")
+
+    assert options["CACHE_INTERVAL"] > 0
 
     print("Options parsed successfully")
 
@@ -177,7 +196,7 @@ def get_option(*keys):
     else:
 
         options_path = get_root() + OPTIONS_PATH
-        raw_options = json.load(open(options_path, "r"))
+        raw_options = load_json_file(options_path)
 
         options = alias_to_code(raw_options)
         key = keys[0]
@@ -200,3 +219,14 @@ def get_option(*keys):
 
         else:
             return options[key]
+
+
+def parse_options():
+    try:
+        real_parse_options()
+
+    except Exception as e:
+        message = "pysync failed to parse " + get_root() + OPTIONS_PATH +\
+            ", A copy of default options can be found at " + get_root() + DEFAULT_OPTIONS_PATH
+        exit_with_msg(msg=message, exception=e, raise_silent=False)
+        sys.exit()

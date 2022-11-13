@@ -46,5 +46,5 @@ def real_get_local(path, out_dict):
                                      type=inp[1], path=inp[0], check_md5=get_option("CHECK_MD5")),
                                  file_paths + folder_paths):
             out_dict[info.path] = info
-    print("Finished loading local files")
+    # print("Finished loading local files")
 #

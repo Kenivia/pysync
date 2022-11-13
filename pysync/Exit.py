@@ -4,18 +4,25 @@ import traceback
 
 from threading import Thread
 
-from pysync.OptionsParser import get_option
+
 from pysync.Commons import SilentExit, get_root
 
 
-def exit_with_message(message=None, exception=None, raise_silent=True):
+"""
+This file provides functions called when the process exits
+This should be safe to import just like Commons
+"""
+
+
+def exit_with_msg(msg=None, exception=None, raise_silent=True,):
     if exception is not None:
         traceback.print_exception(exception, exception, exception.__traceback__, file=sys.stdout)
     # * not using traceback.print_exc because sometimes we don't want to print the traceback
-    if message is not None:
-        print("\n" + message)
+    if msg is not None:
+        print("\n" + msg)
 
     on_exit(True)
+
     if raise_silent:
         raise SilentExit()
 
@@ -30,7 +37,12 @@ def on_exit(failure, timer=None):
         failure (bool): whether or not pysync completed successfully
         timer (pysync.TimeLogger, optional): TimeLogger object from event_sequence
     """
-    if not get_option("ASK_AT_EXIT"):
+    try:
+        from pysync.OptionsParser import get_option
+        if not get_option("ASK_AT_EXIT"):
+            print("Exiting")
+            return
+    except Exception:
         print("Exiting")
         return
 

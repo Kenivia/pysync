@@ -1,7 +1,7 @@
 import os
 import pathlib
 import pickle as pkl
-import time as ti
+import time
 import subprocess as sp
 
 from pathlib import PurePath
@@ -14,6 +14,23 @@ This file defines miscellaneous functions that:
     - are flexible for use in a variety of situations
 
 """
+
+
+def readable(start, finish=time.time()):
+    timestamp = datetime.fromtimestamp(start)
+    ago =  datetime.fromtimestamp(finish) - timestamp
+
+    str_ago = str(ago).split(".")[0]
+    str_timestamp = str(timestamp).split(".")[0]
+    unix = ago.total_seconds()
+    return str_ago, str_timestamp, unix
+
+
+def bind_socket(socket_name):
+    import socket
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    # Create an abstract socket, by prefixing it with null.
+    s.bind(f'\0{socket_name}')
 
 
 def check_acknowledgement():
@@ -37,7 +54,7 @@ def add_zero(inp):
 
 
 def get_today_name():
-    _date = ti.localtime()
+    _date = time.localtime()
     day = add_zero(str(_date.tm_mday))
     mon = add_zero(str(_date.tm_mon))
     year = str(_date.tm_year)
