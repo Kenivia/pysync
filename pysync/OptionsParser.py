@@ -158,7 +158,11 @@ def real_parse_options():
     options["APUSH"] = [remove_slash(abs_path(i)) for i in options["APUSH"]]
     options["AIGNORE"] = [remove_slash(abs_path(i)) for i in options["AIGNORE"]]
 
-    assert os.path.isdir(options["PATH"])
+    try:
+        assert os.path.isdir(options["PATH"])
+    except:
+        AssertionError(options["PATH"]+ " is not a directory")
+        
     assert_list_start(options["PATH"], options["APULL"])
     assert_list_start(options["PATH"], options["APUSH"])
     assert_list_start(options["PATH"], options["AIGNORE"])

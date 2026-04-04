@@ -6,10 +6,9 @@ from pysync.LocalFileInfo import LocalFileInfo
 from pysync.OptionsParser import get_option
 
 
-def get_local(path, output_dict, timer=None):
+def get_local(path, output_dict, ):
 
-    t = Thread(target=real_get_local, args=(path, output_dict,),
-               kwargs={"timer": timer})
+    t = Thread(target=real_get_local, args=(path, output_dict,),)
     t.start()
     return t
 

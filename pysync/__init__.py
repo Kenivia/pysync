@@ -151,7 +151,7 @@ def main(args):
             all_data, diff_infos, diff_time, mod_time = load_data_diff()
             diff_ago, diff_stamp, diff_unix = readable(diff_time)
 
-            print(f"Modifying the output of diff from {diff_ago} ago({diff_stamp}")
+            print(f"Modifying the output of diff from {diff_ago} ago({diff_stamp})")
 
             if diff_unix / 60 > 60:
                 print("It has been more than 1 hour since the \"diff\", please run diff again")
@@ -190,8 +190,8 @@ def main(args):
 
             diff_ago, diff_stamp, diff_unix = readable(diff_time)
             mod_ago, mod_stamp, mod_unix = readable(mod_time)
-            print(f"Committing the output of diff from {diff_ago} ago({diff_stamp}")
-            print(f"Committing the output of modify from {mod_ago} ago({mod_stamp}")
+            print(f"Committing the output of diff from {diff_ago} ago({diff_stamp})")
+            print(f"Committing the output of modify from {mod_ago} ago({mod_stamp})")
             if diff_unix / 60 > 10:
                 input("""Warning! It's been more than 10 minutes since the \"diff\" command ran
     Changes made after it may be overwritten!

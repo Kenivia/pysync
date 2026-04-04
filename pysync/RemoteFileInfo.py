@@ -34,8 +34,12 @@ class RemoteFileInfo(BaseFileInfo):
         if self.isfile:
             self._md5sum = kwargs["md5Checksum"] if "md5Checksum" in kwargs else None
             if "application/vnd.google-apps." in kwargs["mimeType"]:
-                self.isremotegdoc = True
-                self.link = kwargs["webViewLink"]
+                try:
+                    self.link = kwargs["webViewLink"]
+                    self.isremotegdoc = True
+                except KeyError: #shortcuts, just ignore
+                    pass
+                    
 
     def op_checks(self):
         """performs various checks before applying changes
