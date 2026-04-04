@@ -2,8 +2,6 @@
 
 pysync is a fast google drive syncing script for Linux. It was last known to work in 2022, I havn't tested it thoroughly since then so it may run into issues.
 
-Note that this sohuld not be used as a background sync script - it cannot tell which copy it should keep (Local "last modified" is not reliable). Use as an interactive commandline tool instead.
-
 pysync was inspired by [drive by odeke-em](https://github.com/odeke-em/drive), it is much faster by initiating multiple queries at once.
 
 ## Google Credentials
@@ -128,6 +126,7 @@ Some settings can be configured in Options.json.
 - Ext3/4 file systems don't allow folders and files with the same name but it is allowed on Google drive. pysync will reject these files. You can avoid this problem with Capitalizations.
 - Forced paths(specified in Options.json) don't behave correctly when a forced path contains another forced path
 - Having multiple copies of local files corresponding to the same Google doc file may cause issues
+- This should not be used as a background sync script - it cannot tell which copy it should keep (Local "last modified" is not reliable). Use as an interactive commandline tool instead.
 
 ## Contributing
 
